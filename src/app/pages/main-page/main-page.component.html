@@ -1,0 +1,118 @@
+<app-header-widget></app-header-widget>
+<app-sidebar-widget></app-sidebar-widget>
+
+<div class="content">
+    <router-outlet></router-outlet>
+</div>
+
+
+<!-- https://api.monobank.ua/bank/currency
+[{
+"currencyCodeA": 840,
+"currencyCodeB": 980,
+"date": 1707729606,
+"rateBuy": 37.62,
+"rateSell": 38.1505
+}]
+
+https://api.monobank.ua/personal/statement/3cWauWKmk1zKlct5eedYRA/1706738400000/1707750822231
+{
+"id": "wC0gn-_l-opCOgekjg",
+"time": 1707740078,
+"description": "Пузата Хата",
+"mcc": 5814,
+"originalMcc": 5814,
+"amount": -33800,
+"operationAmount": -33800,
+"currencyCode": 980,
+"commissionRate": 0,
+"cashbackAmount": 0,
+"balance": 141200,
+"hold": true,
+"receiptId": "MXH8-08X5-99A1-1XT7"
+}
+
+X-Token:
+uej2mZBYReTWf...
+
+
+https://api.monobank.ua/personal/client-info
+{
+"clientId": "AM3kuMk1zp",
+"name": "Шкарупа Даніїл",
+"webHookUrl": "",
+"permissions": "psfj",
+"accounts": [
+{
+"id": "PvU6rC5jdhwv4oE_Haf--g",
+"sendId": "34V8kUznag",
+"currencyCode": 840,
+"cashbackType": "UAH",
+"balance": 100,
+"creditLimit": 0,
+"maskedPan": [
+"537541******4094"
+],
+"type": "black",
+"iban": "UA333220010000026203341473530"
+},
+{
+"id": "6IDXdWnQpoKIS7tdpYlwUA",
+"sendId": "AM3kuMk1zp",
+"currencyCode": 980,
+"cashbackType": "UAH",
+"balance": 501099,
+"creditLimit": 500000,
+"maskedPan": [
+"444111******6684"
+],
+"type": "black",
+"iban": "UA913220010000026202334133112"
+},
+{
+"id": "3cWauWKmk1zKlct5eedYRA",
+"sendId": "32qKZSgnVo",
+"currencyCode": 980,
+"cashbackType": "UAH",
+"balance": 141200,
+"creditLimit": 0,
+"maskedPan": [
+"444111******4551"
+],
+"type": "white",
+"iban": "UA923220010000026209334240138"
+}
+],
+"jars": [
+{
+"id": "B3xPmkrLeIWN4NqfijO8iLnPKH4NHas",
+"sendId": "jar/9UFcK6d8M9",
+"title": "Хата",
+"description": "",
+"currencyCode": 980,
+"balance": 459646,
+"goal": 1750000
+},
+{
+"id": "8PkFsJYA4OiMel3mgFJm-Ho7EVM4j8o",
+"sendId": "jar/2c764ZQLQF",
+"title": "СумДыра",
+"description": "Sumdu",
+"currencyCode": 980,
+"balance": 255266,
+"goal": 1850000
+},
+{
+"id": "MX3xDBxDMswUaBwaDxkSayouwWvO_7A",
+"sendId": "jar/32iPgv8WRu",
+"title": "Reserve",
+"description": "",
+"currencyCode": 980,
+"balance": 49569,
+"goal": 6000000
+}
+]
+}
+
+X-Token:
+uej2mZBYReTWf... -->

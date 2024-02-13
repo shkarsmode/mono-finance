@@ -1,0 +1,27 @@
+@mixin abs-xy-pos($y, $x) {
+    top: $y;
+    left: $x;
+    position: absolute;
+}
+
+@mixin fx-xy-pos($y, $x) {
+    top: $y;
+    left: $x;
+    position: fixed;
+}
+
+@mixin tt-center {
+    transform: translate(-50%, -50%);
+}
+
+@mixin size($width, $height) {
+    width: $width;
+    height: $height;
+}
+
+@mixin block {
+    border: 2px solid #eae9e997;
+    border-radius: 10px;
+    padding: 10px;
+    background-color: white;
+}

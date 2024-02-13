@@ -1,0 +1,69 @@
+@import 'mixins';
+
+:host {
+    @include block;
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+}
+
+svg {
+    width: 20px;
+    height: 20px;
+}
+
+.top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    >div:first-child {
+        display: flex;
+        align-items: center;
+
+        svg {
+            margin-right: 10px;
+        }
+    }
+}
+
+.wrap-input {
+    position: relative;
+    display: flex;
+
+    &__icon {
+        @include abs-xy-pos(50%, 20px);
+        @include tt-center;
+    }
+
+    input {
+        padding: 8px 10px;
+        padding-left: 40px;
+        border: 1px solid rgba(128, 128, 128, 0.176);
+        border-radius: 5px;
+        outline: none;
+    }
+}
+
+table {
+    thead {
+        th {
+            color: rgba(128, 128, 128, 0.4);
+            font-weight: 500;
+            text-transform: uppercase;
+            padding-bottom: 10px;
+        }
+
+        border-bottom: 1px solid rgba(128, 128, 128, 0.4);
+    }
+
+    tbody {
+        th {
+            padding-top: 10px;
+        }
+    }
+
+    th {
+        text-align: left;
+    }
+}

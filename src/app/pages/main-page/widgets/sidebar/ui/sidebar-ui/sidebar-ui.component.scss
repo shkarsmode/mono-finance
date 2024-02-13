@@ -1,0 +1,143 @@
+:host {
+    display: flex;
+    flex-direction: column;
+
+    width: 300px;
+    height: 100%;
+
+    background-color: white;
+    border-right: 2px solid #eae9e997;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    padding: 20px 0px 20px 10px;
+    border-bottom: 2px solid #eae9e997;
+
+    &__text {
+        font-size: 19px;
+        font-style: italic;
+    }
+
+    &__svg {
+        height: 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    svg {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+
+.content {
+    padding: 10px 10px;
+    user-select: none;
+
+    &__navigation {
+        display: flex;
+        flex-direction: column;
+        row-gap: 10px;
+
+        padding-bottom: 30px;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eae9e9c1;
+
+        &-link {
+            display: flex;
+            align-items: center;
+
+            padding: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+
+            li {
+                display: flex;
+                align-items: center;
+                font-weight: 500;
+
+                svg-icon,
+                svg {
+                    max-width: 22px;
+                    max-height: 22px;
+                    margin-right: 10px;
+                }
+            }
+
+            &:hover,
+            &_active {
+                background-color: #eae9e9c1;
+            }
+
+            transition: background-color .3s ease-in-out;
+        }
+    }
+
+    &__subheader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+
+        &-text {
+            text-transform: uppercase;
+            color: #979797;
+        }
+
+        &-button,
+        svg {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            transform: scale(0.95);
+
+            &:hover {
+                transform: scale(1);
+            }
+        }
+    }
+
+    &__groups {
+        display: flex;
+        flex-direction: column;
+        row-gap: 5px;
+
+        padding-bottom: 30px;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #eae9e9c1;
+
+        &-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .groups-item {
+            padding: 10px;
+            border-radius: 5px;
+
+            &__emoji {
+                font-size: 25px;
+                margin-right: 10px;
+                transition: transform .3s;
+            }
+
+            &__text {
+                font-weight: 500;
+            }
+
+            &:hover {
+                background-color: #eae9e9c1;
+
+                .groups-item__emoji {
+                    transform: rotateZ(90deg);
+                }
+            }
+
+            transition: background-color .3s ease-in-out;
+        }
+    }
+}

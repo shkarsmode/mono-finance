@@ -1,0 +1,15 @@
+@import 'mixins';
+
+app-header-widget {
+    @include abs-xy-pos(0, 300px);
+}
+
+app-sidebar-widget {
+    @include abs-xy-pos(0, 0);
+}
+
+.content {
+    margin-left: 300px;
+    margin-top: 30px;
+    padding: 20px;
+}

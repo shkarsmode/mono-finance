@@ -1,0 +1,67 @@
+<div class="logo">
+    <svg-icon 
+        class="logo__svg" 
+        src="assets/svg/monobank.svg">
+    </svg-icon>
+    <span class="logo__text">Finance</span>
+</div>
+
+<div class="content">
+    <ul class="content__navigation">
+        <a
+            class="content__navigation-link"
+            routerLink="/dashboard"
+            routerLinkActive="content__navigation-link_active">
+            <li>
+                <svg-icon src="assets/svg/home.svg"></svg-icon>
+                Dashboard
+            </li>
+        </a>
+        <a
+            class="content__navigation-link"
+            routerLink="/savings"
+            routerLinkActive="content__navigation-link_active">
+            <li>
+                <svg-icon src="assets/svg/savings.svg"></svg-icon>
+                Savings
+            </li>
+        </a>
+        <a
+            class="content__navigation-link"
+            routerLink="/transactions"
+            routerLinkActive="content__navigation-link_active">
+            <li>
+                <svg-icon src="assets/svg/transactions.svg"></svg-icon>
+                Transactions
+            </li>
+        </a>
+        <a
+            class="content__navigation-link"
+            routerLink="/exchange"
+            routerLinkActive="content__navigation-link_active">
+            <li>
+                <svg-icon src="assets/svg/exchange.svg"></svg-icon>
+                Exchange
+            </li>
+        </a>
+    </ul>
+
+    <div class="content__subheader">
+        <span class="content__subheader-text">Groups</span>
+        <svg-icon 
+            class="content__subheader-button"
+            src="assets/svg/plus.svg">
+        </svg-icon>
+    </div>
+
+    <ul class="content__groups">
+        <li class="content__groups-item groups-item">
+            <span class="groups-item__emoji emoji">🍖</span>
+            <span class="groups-item__text">Food</span>
+        </li>
+        <li class="content__groups-item groups-item">
+            <span class="groups-item__emoji emoji">🐾</span>
+            <span class="groups-item__text">Pet</span>
+        </li>
+    </ul>
+</div>

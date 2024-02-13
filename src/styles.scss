@@ -1,1 +1,21 @@
 /* You can add global styles to this file, and also import other style files */
+@import 'assets/scss/reset.scss';
+@import 'assets/scss/variables.scss';
+
+* {
+    font-family: $basic-font-family;
+    color: $text-color;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    background-color: #f7f8fa;
+    font-size: 14px;
+}
+
+.emoji {
+    font-family: $emoji-font-family;
+}
