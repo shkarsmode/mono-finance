@@ -39,15 +39,6 @@ export class MonobankService {
     public getClientInfo(): Observable<IAccountInfo> {
         return this.http
             .get<IAccountInfo>(`${this.monobankApi}/personal/client-info`, {
-                observe: 'response',
-                responseType: 'json',
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods':
-                        'GET, POST, PATCH, PUT, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers':
-                        'Origin, Content-Type, X-Auth-Token',
-                },
             })
             .pipe(
                 tap((clientInfo: any) => clientInfo as IAccountInfo)
