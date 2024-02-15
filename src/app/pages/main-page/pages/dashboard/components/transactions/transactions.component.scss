@@ -65,5 +65,31 @@ table {
 
     th {
         text-align: left;
+
+        &.date-th {
+            width: 160px;
+        }
+
+        &.status-th {
+            width: 110px;
+        }
+
+        &.amount-th {
+            width: 110px;
+        }
+    }
+
+    tr {
+        height: 36px;
+        border-bottom: 1px solid #d2d2d24d;
+    }
+}
+
+.amount {
+    font-weight: 600;
+    color: green;
+
+    &.sent {
+        color: red;
     }
 }

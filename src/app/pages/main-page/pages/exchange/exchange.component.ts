@@ -18,15 +18,7 @@ export class ExchangeComponent {
             .pipe(take(1))
             .subscribe((res) => {
                 this.data = res;
-                this.cdr.detectChanges();
-            });
-
-        this.monobankService
-            .getClientInfo()
-            .pipe(take(1))
-            .subscribe((res) => {
-                this.data2 = res;
-                this.cdr.detectChanges();
+                this.cdr.markForCheck();
             });
     }
 }

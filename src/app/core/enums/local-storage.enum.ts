@@ -3,4 +3,5 @@ export enum LocalStorage {
     MonobankClientInfo = 'monobankClientInfo',
     MonobankTransactions = 'monobankTransactions',
     MonobankToken = 'monobankToken',
+    UpdatedMonobankDataAt = 'updatedMonobankDataAt'
 }

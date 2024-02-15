@@ -15,25 +15,27 @@
     <thead>
         <tr>
             <th>Payment</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Amount</th>
+            <th class="date-th">Date</th>
+            <th class="status-th">Status</th>
+            <th class="amount-th">Amount</th>
         </tr>
     </thead>
     <tbody>
-        <tr>
-            <th>Mbappe</th>
-            <td>Jan 3, 2024 * 17:41</td>
-            <td>Received</td>
-            <!-- <td>Sent</td> -->
-            <td>-300.50 UAH</td>
-        </tr>
-        <tr>
-            <th>Mbappe</th>
-            <td>Jan 3, 2024 * 17:41</td>
-            <td>Received</td>
-            <!-- <td>Sent</td> -->
-            <td>-300.50 UAH</td>
-        </tr>
+        @for (transaction of transactions; track transaction.id) {
+            <tr>
+                <th>{{ transaction.description }}</th>
+                <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
+                @if (transaction.amount < 0) {
+                    <td>Sent</td>
+                } @else {
+                    <td>Received</td>
+                }
+                <td 
+                    class="amount"
+                    [class.sent]="transaction.amount < 0">
+                    {{ transaction.amount / 100 }} UAH
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

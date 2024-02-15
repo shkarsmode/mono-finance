@@ -12,11 +12,7 @@ export class MainPageComponent {
     constructor(
         private readonly contexts: ChildrenOutletContexts,
         private mono: MonobankService
-    ) {
-        this.mono.getActualCurrency().subscribe((res) => {
-            console.log(res);
-        });
-    }
+    ) {}
 
     public getRouteAnimationData() {
         return this.contexts.getContext('primary')?.route?.snapshot?.data?.[
