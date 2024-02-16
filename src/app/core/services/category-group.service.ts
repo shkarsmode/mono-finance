@@ -23,22 +23,21 @@ export class CategoryGroupService {
         return this.categoryGroups$;
     }
 
-    private init(): void {
+    public init(): void {
         const firstMonthDay = new Date(new Date().setDate(1)).setUTCHours(
             0,
             0,
             0,
             0
         );
+
         this.monobankService
-            .getTransactions(
-                firstMonthDay,
-                Date.now(),
-                '3cWauWKmk1zKlct5eedYRA'
-            )
+            .getTransactions(firstMonthDay, Date.now())
             .pipe(first())
             .subscribe((transactions) => {
-                this.processTransactionsBasedOnGroups(transactions);
+                if (transactions && !('error' in transactions)) {
+                    this.processTransactionsBasedOnGroups(transactions);
+                }
             });
     }
 

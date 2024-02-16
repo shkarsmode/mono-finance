@@ -77,13 +77,18 @@ export class MonobankService {
 
     public getTransactions(
         dateStart: number,
-        dateEnd: number,
-        cardId: string
-    ): Observable<ITransactions[]> {
+        dateEnd: number
+    ): Observable<ITransactions[] | any> {
+        const cardId = localStorage.getItem(
+            LocalStorage.MonobankActiveCardId
+        );
+        if (!cardId) return of({ error: 'Invalid token' });
         if (this.isCanSendQuery(LocalStorage.MonobankTransactions))
             return this.http
                 .get<ITransactions[]>(
-                    `${this.monobankApi}/personal/statement/${cardId}/${dateStart}/${dateEnd}`
+                    `${this.monobankApi}/personal/statement/${
+                        cardId
+                    }/${dateStart}/${dateEnd}`
                 )
                 .pipe(
                     catchError((_) =>
@@ -129,7 +134,9 @@ export class MonobankService {
             this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
 
         if (!updatedAtObj || !(key in updatedAtObj)) {
-            this.router.navigateByUrl(AppRouteEnum.Login);
+            if (!localStorage.getItem(LocalStorage.MonobankToken)) {
+                this.router.navigateByUrl(AppRouteEnum.Login);
+            }
             console.error('You have to authorize');
             return true;
         }

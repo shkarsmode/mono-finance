@@ -34,8 +34,7 @@ export class DashboardComponent implements OnInit {
 
         this.transactions$ = this.monobankService.getTransactions(
             firstMonthDay,
-            Date.now(),
-            '3cWauWKmk1zKlct5eedYRA'
+            Date.now()
         );
     }
 
