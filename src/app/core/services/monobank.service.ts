@@ -128,7 +128,7 @@ export class MonobankService {
         const updatedAtObj: { [key: string]: number } =
             this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
 
-        if (updatedAtObj && !(key in updatedAtObj)) {
+        if (!updatedAtObj || !(key in updatedAtObj)) {
             this.router.navigateByUrl(AppRouteEnum.Login);
             console.error('You have to authorize');
             return true;
