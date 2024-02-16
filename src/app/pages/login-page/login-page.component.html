@@ -1,1 +1,32 @@
-<p>login-page works!</p>
+<div class="login-container">
+    <h2>Auth with Monobank token</h2>
+    <p>Input your token:</p>
+
+    <form>
+        <label for="token">Token:</label>
+        <input
+            id="token"
+            name="token"
+            #token
+            placeholder="Введите ваш токен"
+            required
+            type="text"
+            (input)="onInputChange($event)">
+        <button
+            (click)="submitToken()"
+            [disabled]="!isValid || isLoading"
+            type="button">
+            Submit
+        </button>
+
+        @if (errorMessage) {
+            <div class="error-message">{{ errorMessage }}</div>
+        }
+    </form>
+
+    <a
+        href="https://api.monobank.ua/index.html"
+        target="_blank">
+        How to find Token?
+    </a>
+</div>

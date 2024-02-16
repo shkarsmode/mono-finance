@@ -1,0 +1,58 @@
+@import 'mixins';
+
+:host {
+    @include abs-xy-pos(45%, 50%);
+    @include tt-center;
+}
+
+.login-container {
+    width: 450px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+}
+
+input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+button {
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: #0056b3;
+    }
+
+    &:disabled {
+        opacity: 0.3;
+    }
+}
+
+
+
+.error-message {
+    color: red;
+    font-weight: 500;
+}

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
-import { LocalStorage } from '@core/enums';
+import { Router } from '@angular/router';
+import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICurrency, ITransactions } from '@core/interfaces';
 import { MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { Observable, catchError, of, tap } from 'rxjs';
@@ -13,6 +14,7 @@ export class MonobankService {
     constructor(
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
+        private readonly router: Router,
         @Inject(MONOBANK_API) private readonly monobankApi: string
     ) {}
 
@@ -43,25 +45,29 @@ export class MonobankService {
         );
     }
 
-    public getClientInfo(): Observable<IAccountInfo> {
+    public getClientInfo(): Observable<IAccountInfo | any> {
         if (this.isCanSendQuery(LocalStorage.MonobankClientInfo))
             return this.http
                 .get<IAccountInfo>(`${this.monobankApi}/personal/client-info`)
                 .pipe(
-                    catchError((_) =>
-                        of(
-                            this.localStorageService.get(
-                                LocalStorage.MonobankClientInfo
-                            ) as IAccountInfo
-                        )
-                    ),
-                    tap((clientInfo) =>
+                    catchError((error) => {
+                        const clientInfo = this.localStorageService.get(
+                            LocalStorage.MonobankClientInfo
+                        ) as IAccountInfo;
+
+                        if (!clientInfo) {
+                            // this.localStorageService.remove(LocalStorage.MonobankToken);
+                            return of({ error: 'Invalid token' })
+                        }
+
                         this.setLocalStorageData(
                             LocalStorage.MonobankClientInfo,
                             clientInfo
-                        )
-                    )
+                        );
+                        return of(clientInfo);
+                    })
                 );
+
         return of(
             this.localStorageService.get(
                 LocalStorage.MonobankClientInfo
@@ -121,6 +127,12 @@ export class MonobankService {
     private isCanSendQuery(key: LocalStorage): boolean {
         const updatedAtObj: { [key: string]: number } =
             this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
+        console.log(updatedAtObj);
+        if (!updatedAtObj[key]) {
+            this.router.navigateByUrl(AppRouteEnum.Login);
+            console.error('You have to authorize');
+            return true;
+        }
 
         return updatedAtObj[key] < Date.now() - 60000;
     }
