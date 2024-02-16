@@ -54,7 +54,7 @@ export class CategoryGroupService {
                 {
                     emoji: '💕',
                     name: 'Магаз',
-                    keys: ['Ашан', 'Сільпо'],
+                    keys: ['Ашан', 'Сільпо', 'Novus'],
                     amount: 0,
                 },
                 {
