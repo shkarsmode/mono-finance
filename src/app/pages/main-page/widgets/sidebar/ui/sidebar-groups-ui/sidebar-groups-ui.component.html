@@ -1,0 +1,17 @@
+<div class="content__subheader">
+    <span class="content__subheader-text">Groups</span>
+    <svg-icon class="content__subheader-button" src="assets/svg/plus.svg">
+    </svg-icon>
+</div>
+
+<ul class="content__groups">
+    @for (group of groups; track group.name) {
+        <li class="content__groups-item groups-item">
+            <div>
+                <span class="groups-item__emoji emoji">{{ group.emoji }}</span>
+                <span class="groups-item__text">{{ group.name }}</span>
+            </div>
+            <div class="groups-item__amount">{{  group.amount / 100}} UAH</div>
+        </li>
+    }
+</ul>

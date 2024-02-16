@@ -1,0 +1,14 @@
+.groups-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    div {
+        display: flex;
+        align-items: center;
+    }
+
+    &__amount {
+        font-weight: 500;
+    }
+}
