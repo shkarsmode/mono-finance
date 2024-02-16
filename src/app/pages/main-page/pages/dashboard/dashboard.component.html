@@ -1,1 +1,15 @@
-<app-transactions [transactions]="(transactions$ | async)"></app-transactions>
+@if ((transactions$ | async); as transactions) {
+    <app-chart 
+        [transactions]="transactions"
+        [label]="'Montly Income'"
+        [type]="ChartType.Income">
+    </app-chart>
+    
+    <app-chart 
+        [transactions]="transactions"
+        [label]="'Montly Expenses'"
+        [type]="ChartType.Expenses">
+    </app-chart>
+
+    <app-transactions [transactions]="transactions"></app-transactions>
+}

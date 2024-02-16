@@ -16,30 +16,6 @@ export class MonobankService {
         @Inject(MONOBANK_API) private readonly monobankApi: string
     ) {}
 
-    private setLocalStorageData(
-        key: LocalStorage,
-        value: ICurrency[] | IAccountInfo | ITransactions[]
-    ): void {
-        this.localStorageService.set(key, value);
-        const updatedAtObj: { [key: string]: number } =
-            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt) ??
-            {};
-
-        updatedAtObj[key] = Date.now();
-
-        this.localStorageService.set(
-            LocalStorage.UpdatedMonobankDataAt,
-            updatedAtObj
-        );
-    }
-
-    private isCanSendQuery(key: LocalStorage): boolean {
-        const updatedAtObj: { [key: string]: number } =
-            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt); 
-
-        return updatedAtObj[key] < Date.now() - 60000;
-    }
-
     public getActualCurrency(): Observable<ICurrency[]> {
         if (this.isCanSendQuery(LocalStorage.MonobankCurrency))
             return this.http
@@ -72,7 +48,6 @@ export class MonobankService {
             return this.http
                 .get<IAccountInfo>(`${this.monobankApi}/personal/client-info`)
                 .pipe(
-                    tap((clientInfo: any) => clientInfo as IAccountInfo),
                     catchError((_) =>
                         of(
                             this.localStorageService.get(
@@ -124,5 +99,29 @@ export class MonobankService {
                 LocalStorage.MonobankTransactions
             ) as ITransactions[]
         );
+    }
+
+    private setLocalStorageData(
+        key: LocalStorage,
+        value: ICurrency[] | IAccountInfo | ITransactions[]
+    ): void {
+        this.localStorageService.set(key, value);
+        const updatedAtObj: { [key: string]: number } =
+            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt) ??
+            {};
+
+        updatedAtObj[key] = Date.now();
+
+        this.localStorageService.set(
+            LocalStorage.UpdatedMonobankDataAt,
+            updatedAtObj
+        );
+    }
+
+    private isCanSendQuery(key: LocalStorage): boolean {
+        const updatedAtObj: { [key: string]: number } =
+            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
+
+        return updatedAtObj[key] < Date.now() - 60000;
     }
 }

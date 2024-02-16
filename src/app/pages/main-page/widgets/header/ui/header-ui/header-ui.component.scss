@@ -1,0 +1,25 @@
+:host {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    height: 61px;
+    width: 100%;
+
+    background-color: white;
+    border-bottom: 2px solid #ececec;
+
+    padding: 0 20px;
+}
+
+h2 {
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.profile {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: lightgreen;
+}

@@ -46,22 +46,5 @@
         </a>
     </ul>
 
-    <div class="content__subheader">
-        <span class="content__subheader-text">Groups</span>
-        <svg-icon 
-            class="content__subheader-button"
-            src="assets/svg/plus.svg">
-        </svg-icon>
-    </div>
-
-    <ul class="content__groups">
-        <li class="content__groups-item groups-item">
-            <span class="groups-item__emoji emoji">🍖</span>
-            <span class="groups-item__text">Food</span>
-        </li>
-        <li class="content__groups-item groups-item">
-            <span class="groups-item__emoji emoji">🐾</span>
-            <span class="groups-item__text">Pet</span>
-        </li>
-    </ul>
+    <app-sidebar-groups-ui [groups]="groups"></app-sidebar-groups-ui>
 </div>

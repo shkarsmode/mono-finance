@@ -3,5 +3,6 @@ export enum LocalStorage {
     MonobankClientInfo = 'monobankClientInfo',
     MonobankTransactions = 'monobankTransactions',
     MonobankToken = 'monobankToken',
-    UpdatedMonobankDataAt = 'updatedMonobankDataAt'
+    UpdatedMonobankDataAt = 'updatedMonobankDataAt',
+    MyCategoryGroups = 'myCategoryGroups',
 }

@@ -6,10 +6,13 @@ app-header-widget {
 
 app-sidebar-widget {
     @include abs-xy-pos(0, 0);
+    width: 300px;
+    border-right: 2px solid #ececec;
+    background: white;
 }
 
 .content {
     margin-left: 300px;
-    margin-top: 30px;
+    margin-top: 61px;
     padding: 20px;
 }
