@@ -45,8 +45,8 @@ export class MonobankService {
         );
     }
 
-    public getClientInfo(): Observable<IAccountInfo | any> {
-        if (this.isCanSendQuery(LocalStorage.MonobankClientInfo))
+    public getClientInfo(isTestAuth: boolean = false): Observable<IAccountInfo | any> {
+        if (isTestAuth || this.isCanSendQuery(LocalStorage.MonobankClientInfo))
             return this.http
                 .get<IAccountInfo>(`${this.monobankApi}/personal/client-info`)
                 .pipe(
@@ -57,7 +57,7 @@ export class MonobankService {
 
                         if (!clientInfo) {
                             // this.localStorageService.remove(LocalStorage.MonobankToken);
-                            return of({ error: 'Invalid token' })
+                            return of({ error: 'Invalid token' });
                         }
 
                         this.setLocalStorageData(
@@ -128,7 +128,7 @@ export class MonobankService {
         const updatedAtObj: { [key: string]: number } =
             this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
 
-        if (!(key in updatedAtObj)) {
+        if (updatedAtObj && !(key in updatedAtObj)) {
             this.router.navigateByUrl(AppRouteEnum.Login);
             console.error('You have to authorize');
             return true;

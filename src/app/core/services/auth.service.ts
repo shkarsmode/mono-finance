@@ -22,7 +22,7 @@ export class AuthService {
         // this.localStorageService.set(LocalStorage.MonobankToken, token);
         localStorage.setItem(LocalStorage.MonobankToken, token);
         this.monobankService
-            .getClientInfo()
+            .getClientInfo(true)
             .pipe(first())
             .subscribe((res) => this.authData$.next(res));
     }
