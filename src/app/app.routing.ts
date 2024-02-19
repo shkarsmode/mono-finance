@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AppRouteEnum } from '@core/enums';
+import { authGuard } from '@core/helpers';
 
 const routes: Routes = [
     {
@@ -9,6 +10,7 @@ const routes: Routes = [
     },
     {
         path: AppRouteEnum.Main,
+        canActivate: [authGuard],
         loadChildren: () => import('./pages').then((m) => m.MainPageModule),
     },
     {

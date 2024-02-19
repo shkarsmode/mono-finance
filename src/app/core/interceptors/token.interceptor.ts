@@ -7,9 +7,7 @@ import { LocalStorage } from '@core/enums';
     providedIn: 'root'
 })
 export class TokenInterceptor implements HttpInterceptor {
-
-
-    intercept(request: HttpRequest<any>, next: HttpHandler) {
+    public intercept(request: HttpRequest<any>, next: HttpHandler) {
         const token = localStorage.getItem(LocalStorage.MonobankToken);
         if (token) {
             request = request.clone({

@@ -20,18 +20,20 @@ export class AuthService {
     ) {}
 
     public processToken(token: string): void {
-        // this.localStorageService.set(LocalStorage.MonobankToken, token);
-        localStorage.setItem(LocalStorage.MonobankToken, token);
+        this.localStorageService.set(LocalStorage.MonobankToken, token);
         this.monobankService
-            .getClientInfo(true)
+            .testAuthenticationAccess()
             .pipe(
                 first(),
-                tap((clientInfo: IAccountInfo) => {
+                tap((clientInfo: IAccountInfo | { error: string }) => {
                     this.localStorageService.set(
                         LocalStorage.MonobankClientInfo,
                         clientInfo
                     );
                     let activeIndex = 0;
+
+                    if ('error' in clientInfo) return;
+
                     clientInfo.accounts.forEach((account, index) => {
                         if (
                             clientInfo.accounts[activeIndex].balance -
@@ -44,7 +46,7 @@ export class AuthService {
                     const activeCardId = clientInfo.accounts[activeIndex].id;
                     this.activeCardId = activeCardId;
 
-                    localStorage.setItem(
+                    this.localStorageService.set(
                         LocalStorage.MonobankActiveCardId,
                         activeCardId
                     );

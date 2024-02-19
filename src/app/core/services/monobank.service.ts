@@ -12,113 +12,123 @@ import { LocalStorageService } from './local-storage.service';
 })
 export class MonobankService {
     constructor(
+        private readonly router: Router,
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
-        private readonly router: Router,
         @Inject(MONOBANK_API) private readonly monobankApi: string
     ) {}
 
     public getActualCurrency(): Observable<ICurrency[]> {
-        if (this.isCanSendQuery(LocalStorage.MonobankCurrency))
-            return this.http
-                .get<ICurrency[]>(`${this.monobankApi}/bank/currency`)
-                .pipe(
-                    catchError((_) =>
-                        of(
-                            this.localStorageService.get(
-                                LocalStorage.MonobankCurrency
-                            ) as ICurrency[]
-                        )
-                    ),
-                    tap((currency) =>
-                        this.setLocalStorageData(
-                            LocalStorage.MonobankCurrency,
-                            currency
-                        )
-                    )
-                );
+        const currencyApiUrl = `${this.monobankApi}/bank/currency`;
 
-        return of(
-            this.localStorageService.get(
-                LocalStorage.MonobankCurrency
-            ) as ICurrency[]
-        );
+        if (this.shouldSendQuery(LocalStorage.MonobankCurrency)) {
+            return this.http.get<ICurrency[]>(currencyApiUrl).pipe(
+                catchError(() =>
+                    of(this.getLocalStorageData(LocalStorage.MonobankCurrency))
+                ),
+                tap((currency) =>
+                    this.updateLocalStorage(
+                        LocalStorage.MonobankCurrency,
+                        currency
+                    )
+                )
+            );
+        }
+
+        return of(this.getLocalStorageData(LocalStorage.MonobankCurrency));
     }
 
-    public getClientInfo(isTestAuth: boolean = false): Observable<IAccountInfo | any> {
-        if (isTestAuth || this.isCanSendQuery(LocalStorage.MonobankClientInfo))
+    public testAuthenticationAccess(): Observable<IAccountInfo | any> {
+        const clientInfoApiUrl = `${this.monobankApi}/personal/client-info`;
+        return this.http
+            .get<IAccountInfo>(clientInfoApiUrl)
+            .pipe(catchError((error) => this.handleClientInfoError(error)));
+    }
+
+    public getClientInfo(): Observable<IAccountInfo | any> {
+        const clientInfoApiUrl = `${this.monobankApi}/personal/client-info`;
+
+        if (
+            this.shouldSendQuery(LocalStorage.MonobankClientInfo)
+        ) {
             return this.http
-                .get<IAccountInfo>(`${this.monobankApi}/personal/client-info`)
-                .pipe(
-                    catchError((error) => {
-                        const clientInfo = this.localStorageService.get(
-                            LocalStorage.MonobankClientInfo
-                        ) as IAccountInfo;
+                .get<IAccountInfo>(clientInfoApiUrl)
+                .pipe(catchError((error) => this.handleClientInfoError(error)));
+        }
 
-                        if (!clientInfo) {
-                            // this.localStorageService.remove(LocalStorage.MonobankToken);
-                            return of({ error: 'Invalid token' });
-                        }
-
-                        this.setLocalStorageData(
-                            LocalStorage.MonobankClientInfo,
-                            clientInfo
-                        );
-                        return of(clientInfo);
-                    })
-                );
-
-        return of(
-            this.localStorageService.get(
-                LocalStorage.MonobankClientInfo
-            ) as IAccountInfo
-        );
+        return of(this.getLocalStorageData(LocalStorage.MonobankClientInfo));
     }
 
     public getTransactions(
         dateStart: number,
         dateEnd: number
     ): Observable<ITransactions[] | any> {
-        const cardId = localStorage.getItem(
-            LocalStorage.MonobankActiveCardId
-        );
+        const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
+        const transactionsApiUrl = `${this.monobankApi}/personal/statement/${cardId}/${dateStart}/${dateEnd}`;
+
         if (!cardId) return of({ error: 'Invalid token' });
-        if (this.isCanSendQuery(LocalStorage.MonobankTransactions))
-            return this.http
-                .get<ITransactions[]>(
-                    `${this.monobankApi}/personal/statement/${
-                        cardId
-                    }/${dateStart}/${dateEnd}`
-                )
-                .pipe(
-                    catchError((_) =>
-                        of(
-                            this.localStorageService.get(
-                                LocalStorage.MonobankTransactions
-                            ) as ITransactions[]
-                        )
-                    ),
-                    tap((transactions) =>
-                        this.setLocalStorageData(
-                            LocalStorage.MonobankTransactions,
-                            transactions
+
+        if (this.shouldSendQuery(LocalStorage.MonobankTransactions)) {
+            return this.http.get<ITransactions[]>(transactionsApiUrl).pipe(
+                catchError(() =>
+                    of(
+                        this.getLocalStorageData(
+                            LocalStorage.MonobankTransactions
                         )
                     )
-                );
-        return of(
-            this.localStorageService.get(
-                LocalStorage.MonobankTransactions
-            ) as ITransactions[]
-        );
+                ),
+                tap((transactions) =>
+                    this.updateLocalStorage(
+                        LocalStorage.MonobankTransactions,
+                        transactions
+                    )
+                )
+            );
+        }
+
+        return of(this.getLocalStorageData(LocalStorage.MonobankTransactions));
     }
 
-    private setLocalStorageData(
-        key: LocalStorage,
-        value: ICurrency[] | IAccountInfo | ITransactions[]
-    ): void {
+    private shouldSendQuery(key: LocalStorage): boolean {
+        const updatedAtObj: { [key: string]: number } =
+            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
+
+        if (!updatedAtObj || !(key in updatedAtObj)) {
+            if (!this.localStorageService.get<string>(LocalStorage.MonobankToken)) {
+                this.router.navigateByUrl(AppRouteEnum.Login);
+            }
+            console.error('You have to authorize');
+            return true;
+        }
+
+        return updatedAtObj[key] < this.expiryTime;
+    }
+
+    private get expiryTime(): number {
+        return Date.now() - 60000;
+    }
+
+    private handleClientInfoError(error: any): Observable<IAccountInfo | any> {
+        const clientInfo = this.getLocalStorageData(
+            LocalStorage.MonobankClientInfo
+        ) as IAccountInfo;
+
+        if (!clientInfo) {
+            return of({ error: 'Invalid token' });
+        }
+
+        this.updateLocalStorage(LocalStorage.MonobankClientInfo, clientInfo);
+        return of(clientInfo);
+    }
+
+    private getLocalStorageData(key: LocalStorage): any {
+        return this.localStorageService.get(key);
+    }
+
+    private updateLocalStorage(key: LocalStorage, value: any): void {
         this.localStorageService.set(key, value);
         const updatedAtObj: { [key: string]: number } =
-            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt) ??
+            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt) ||
             {};
 
         updatedAtObj[key] = Date.now();
@@ -127,20 +137,5 @@ export class MonobankService {
             LocalStorage.UpdatedMonobankDataAt,
             updatedAtObj
         );
-    }
-
-    private isCanSendQuery(key: LocalStorage): boolean {
-        const updatedAtObj: { [key: string]: number } =
-            this.localStorageService.get(LocalStorage.UpdatedMonobankDataAt);
-
-        if (!updatedAtObj || !(key in updatedAtObj)) {
-            if (!localStorage.getItem(LocalStorage.MonobankToken)) {
-                this.router.navigateByUrl(AppRouteEnum.Login);
-            }
-            console.error('You have to authorize');
-            return true;
-        }
-
-        return updatedAtObj[key] < Date.now() - 60000;
     }
 }
