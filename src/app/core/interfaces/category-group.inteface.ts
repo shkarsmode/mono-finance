@@ -1,7 +1,7 @@
 
 export interface ICategoryGroup {
     emoji: string;
-    name: string;
+    title: string;
     keys: string[];
     amount: number;
 }

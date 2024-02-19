@@ -1,0 +1,98 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 400px;
+    min-height: 450px;
+    padding: 20px 5px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+h2 {
+    margin-bottom: 30px;
+    font-size: 25px;
+    font-weight: 500;
+}
+
+.emoji {
+    font-size: 35px;
+}
+
+.choose-emoji {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 80px;
+    height: 80px;
+
+    font-size: 35px;
+    font-weight: 500;
+
+    border: 1px dashed #48aaed;
+    background-color: #48abed34;
+    cursor: pointer;
+    color: rgb(21 119 255 / 85%);
+
+    transition: all .3s, font-size 0s;
+
+    &:before {
+        content: "Emoji";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 0px;
+        font-size: 16px;
+        opacity: 0.3;
+    }
+
+    &:hover {
+        background-color: #48abed4b;
+        border: 1px solid #48aaed;
+    }
+}
+
+.emoji-selected {
+    font-size: 40px;
+
+    &:before {
+        content: none;
+    }
+}
+
+mat-select {
+    width: 82px;
+}
+
+mat-form-field {
+    width: 80%;
+}
+
+button ::ng-deep span {
+    color: white;
+}
+
+:host ::ng-deep .mat-mdc-select-min-line {
+    font-size: 23px;
+}
+
+:host ::ng-deep .mat-mdc-select-trigger {
+    opacity: 0;
+}
+
+::ng-deep .cdk-overlay-pane:has(.emoji) {
+    ::-webkit-scrollbar {
+        width: 0px;
+    }
+}

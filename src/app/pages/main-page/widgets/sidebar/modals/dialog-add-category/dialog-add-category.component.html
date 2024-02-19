@@ -1,0 +1,78 @@
+<form>
+    <h2>Creating a group</h2>
+
+    <div
+        class="choose-emoji"
+        [class.emoji-selected]="emojiRef.value"
+        (click)="emojiRef.open()">
+        {{ emojiRef.value ? emojiRef.value : '+' }}
+    </div>
+    <mat-select required #emojiRef>
+        @for (emoji of emojis; track emoji) {
+            <mat-option
+                class="emoji"
+                [value]="emoji">
+                {{ emoji }}
+            </mat-option>
+        }
+    </mat-select>
+
+    <mat-form-field>
+        <mat-label>Name your group</mat-label>
+        <input
+            #titleRef
+            matInput
+            type="text">
+        @if (titleRef.value) {
+            <button
+                (click)="titleRef.value = ''"
+                aria-label="Clear"
+                mat-icon-button
+                matSuffix>
+                <mat-icon>close</mat-icon>
+            </button>
+        }
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Keys</mat-label>
+        <mat-chip-grid
+            #chipGrid
+            aria-label="Keys selection">
+            @for (key of keys; track key) {
+                <mat-chip-row (removed)="remove(key)">
+                    {{ key }}
+                    <button
+                        [attr.aria-label]="'remove ' + key"
+                        matChipRemove>
+                        <mat-icon>cancel</mat-icon>
+                    </button>
+                </mat-chip-row>
+            }
+        </mat-chip-grid>
+        <input
+            [matChipInputFor]="chipGrid"
+            [formControl]="keysCtrl"
+            [matAutocomplete]="auto"
+            [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+            (matChipInputTokenEnd)="add($event)"
+            #keysInput
+            placeholder="New key..." />
+        <mat-autocomplete
+            (optionSelected)="selected($event)"
+            #auto="matAutocomplete">
+            @for (fruit of filteredKeys | async; track fruit) {
+                <mat-option [value]="fruit">{{fruit}}</mat-option>
+            }
+        </mat-autocomplete>
+    </mat-form-field>
+
+    <button
+        type="button"
+        color="primary"
+        mat-raised-button
+        (click)="create()">
+        Add group
+    </button>
+
+</form>

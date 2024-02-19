@@ -6,5 +6,13 @@ $success-color: #1a7725;
 $warning-color: #f34847;
 $light-text-color: #c1c1c1;
 
-$basic-font-family: "Montserrat", sans-serif;
-$emoji-font-family: "Noto Color Emoji", sans-serif;
+$basic-font-family: "Montserrat",
+sans-serif;
+$emoji-font-family: "Noto Color Emoji",
+sans-serif;
+
+html {
+    --mdc-filled-text-field-caret-color: #48aaed;
+    --mdc-filled-text-field-focus-active-indicator-color: #48aaed;
+    --mdc-filled-text-field-focus-label-text-color: #48aaed;
+}

@@ -8,6 +8,7 @@ import { AngularSvgIconModule } from 'angular-svg-icon';
 import { environment } from '../environments';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app.routing';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 @NgModule({
     declarations: [AppComponent],
@@ -27,6 +28,7 @@ import { AppRoutingModule } from './app.routing';
             useClass: TokenInterceptor,
             multi: true
         },
+        provideAnimationsAsync(),
     ],
     bootstrap: [AppComponent],
 })

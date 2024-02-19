@@ -30,28 +30,32 @@ export class AuthService {
                         LocalStorage.MonobankClientInfo,
                         clientInfo
                     );
-                    let activeIndex = 0;
-
+                    
                     if ('error' in clientInfo) return;
-
-                    clientInfo.accounts.forEach((account, index) => {
-                        if (
-                            clientInfo.accounts[activeIndex].balance -
-                                clientInfo.accounts[activeIndex].creditLimit <
-                            account.balance - account.creditLimit
-                        ) {
-                            activeIndex = index;
-                        }
-                    });
-                    const activeCardId = clientInfo.accounts[activeIndex].id;
-                    this.activeCardId = activeCardId;
-
-                    this.localStorageService.set(
-                        LocalStorage.MonobankActiveCardId,
-                        activeCardId
-                    );
+                    
+                    this.setDefaultCardBasedOnAmount(clientInfo);
                 })
             )
             .subscribe((res) => this.authData$.next(res));
+    }
+
+    private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
+        let activeIndex = 0;
+        clientInfo.accounts.forEach((account, index) => {
+            if (
+                clientInfo.accounts[activeIndex].balance -
+                    clientInfo.accounts[activeIndex].creditLimit <
+                account.balance - account.creditLimit
+            ) {
+                activeIndex = index;
+            }
+        });
+        const activeCardId = clientInfo.accounts[activeIndex].id;
+        this.activeCardId = activeCardId;
+
+        this.localStorageService.set(
+            LocalStorage.MonobankActiveCardId,
+            activeCardId
+        );
     }
 }

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
-import { IAccountInfo, ICurrency, ITransactions } from '@core/interfaces';
+import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
 import { MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { Observable, catchError, of, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
@@ -62,14 +62,14 @@ export class MonobankService {
     public getTransactions(
         dateStart: number,
         dateEnd: number
-    ): Observable<ITransactions[] | any> {
+    ): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const transactionsApiUrl = `${this.monobankApi}/personal/statement/${cardId}/${dateStart}/${dateEnd}`;
 
         if (!cardId) return of({ error: 'Invalid token' });
 
         if (this.shouldSendQuery(LocalStorage.MonobankTransactions)) {
-            return this.http.get<ITransactions[]>(transactionsApiUrl).pipe(
+            return this.http.get<ITransaction[]>(transactionsApiUrl).pipe(
                 catchError(() =>
                     of(
                         this.getLocalStorageData(

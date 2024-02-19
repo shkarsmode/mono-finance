@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { ICategoryGroup } from '@core/interfaces';
 
 @Component({
@@ -9,4 +9,9 @@ import { ICategoryGroup } from '@core/interfaces';
 })
 export class SidebarGroupsUiComponent {
     @Input() groups: ICategoryGroup[] | null;
+    @Output() openGroup: EventEmitter<void> = new EventEmitter();
+
+    public open(): void {
+        this.openGroup.emit();
+    }
 }

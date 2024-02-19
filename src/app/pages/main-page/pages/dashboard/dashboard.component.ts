@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ChartType } from '@core/enums';
-import { ICategoryGroup, ITransactions } from '@core/interfaces';
+import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { Observable } from 'rxjs';
 
@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 })
 export class DashboardComponent implements OnInit {
     public groups$: Observable<ICategoryGroup[]>;
-    public transactions$: Observable<ITransactions[]>;
+    public transactions$: Observable<ITransaction[]>;
     public readonly ChartType: typeof ChartType = ChartType;
 
     constructor(

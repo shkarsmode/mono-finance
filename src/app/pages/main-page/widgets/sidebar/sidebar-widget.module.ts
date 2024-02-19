@@ -1,13 +1,39 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { RouterModule } from '@angular/router';
 import { AngularSvgIconModule } from 'angular-svg-icon';
+import { DialogAddCategoryComponent } from './modals';
 import { SidebarGroupsUiComponent, SidebarUiComponent } from './ui';
 import { SidebarWidgetComponent } from './view';
 
 @NgModule({
-    declarations: [SidebarWidgetComponent, SidebarUiComponent, SidebarGroupsUiComponent],
-    imports: [CommonModule, AngularSvgIconModule, RouterModule],
+    declarations: [
+        SidebarWidgetComponent,
+        SidebarUiComponent,
+        SidebarGroupsUiComponent,
+        DialogAddCategoryComponent,
+    ],
+    imports: [
+        CommonModule,
+        AngularSvgIconModule,
+        RouterModule,
+        MatDialogModule,
+        MatSelectModule,
+        MatAutocompleteModule,
+        MatInputModule,
+        MatIconModule,
+        MatButtonModule,
+        MatChipsModule,
+        ReactiveFormsModule
+    ],
     exports: [SidebarWidgetComponent],
 })
 export class SidebarWidgetModule {}

@@ -1,7 +1,7 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { ChartType } from '@core/enums';
 import { ChartFactory } from '@core/helpers';
-import { ITransactions } from '@core/interfaces';
+import { ITransaction } from '@core/interfaces';
 
 @Component({
     selector: 'app-chart',
@@ -10,7 +10,7 @@ import { ITransactions } from '@core/interfaces';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChartComponent implements AfterViewInit {
-    @Input() public transactions: ITransactions[];
+    @Input() public transactions: ITransaction[];
     @Input() public type: ChartType = ChartType.Income;
     @Input() public label: string;
 

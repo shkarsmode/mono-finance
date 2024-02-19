@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { ITransactions } from '@core/interfaces';
+import { ITransaction } from '@core/interfaces';
 
 @Component({
     selector: 'app-transactions',
@@ -8,5 +8,5 @@ import { ITransactions } from '@core/interfaces';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsComponent {
-    @Input() public transactions: ITransactions[] | null;
+    @Input() public transactions: ITransaction[] | null;
 }

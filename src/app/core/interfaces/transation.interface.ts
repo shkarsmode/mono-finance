@@ -1,4 +1,4 @@
-export interface ITransactions {
+export interface ITransaction {
     readonly id: string;
     readonly time: number;
     readonly description: string;

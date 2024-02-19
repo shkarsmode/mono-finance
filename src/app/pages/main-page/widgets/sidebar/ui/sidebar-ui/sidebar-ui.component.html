@@ -46,5 +46,8 @@
         </a>
     </ul>
 
-    <app-sidebar-groups-ui [groups]="groups"></app-sidebar-groups-ui>
+    <app-sidebar-groups-ui 
+        [groups]="groups"
+        (openGroup)="openGroup()">
+    </app-sidebar-groups-ui>
 </div>

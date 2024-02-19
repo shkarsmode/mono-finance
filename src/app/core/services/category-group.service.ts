@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { LocalStorage } from '@core/enums';
-import { ICategoryGroup, ITransactions } from '@core/interfaces';
+import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { BehaviorSubject, Observable, first } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { MonobankService } from './monobank.service';
@@ -9,7 +9,8 @@ import { MonobankService } from './monobank.service';
     providedIn: 'root',
 })
 export class CategoryGroupService {
-    private readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> = 
+    private transactions: ITransaction[] = [];
+    private readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
 
     constructor(
@@ -17,6 +18,17 @@ export class CategoryGroupService {
         private readonly localStorageService: LocalStorageService
     ) {
         this.init();
+    }
+
+    public set(group: ICategoryGroup): void {
+        const groups = this.localStorageService.get(
+            LocalStorage.MyCategoryGroups
+        ) as ICategoryGroup[];
+        this.localStorageService.set(LocalStorage.MyCategoryGroups, [
+            ...groups,
+            group,
+        ]);
+        this.processTransactionsBasedOnGroups();
     }
 
     public get(): Observable<ICategoryGroup[]> {
@@ -36,47 +48,20 @@ export class CategoryGroupService {
             .pipe(first())
             .subscribe((transactions) => {
                 if (transactions && !('error' in transactions)) {
-                    this.processTransactionsBasedOnGroups(transactions);
+                    this.transactions = transactions;
+                    this.processTransactionsBasedOnGroups();
                 }
             });
     }
 
-    private processTransactionsBasedOnGroups(
-        transactions: ITransactions[]
-    ): void {
+    private processTransactionsBasedOnGroups(): void {
         let groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups
         ) as ICategoryGroup[];
 
-        if (!groups) {
-            const defaultGroups: ICategoryGroup[] = [
-                {
-                    emoji: '💕',
-                    name: 'Магаз',
-                    keys: ['Ашан', 'Сільпо', 'Novus'],
-                    amount: 0,
-                },
-                {
-                    emoji: '🛻',
-                    name: 'Taxi',
-                    keys: ['Uklon', 'Bolt'],
-                    amount: 0,
-                },
-                {
-                    emoji: '🚘',
-                    name: 'Getmancar',
-                    keys: ['getmancar.ua'],
-                    amount: 0,
-                },
-            ];
-            this.localStorageService.set(
-                LocalStorage.MyCategoryGroups,
-                defaultGroups
-            );
-            groups = defaultGroups;
-        }
+        groups = this.getDefaultGroupsIfNotExist(groups);
 
-        transactions.forEach((transaction) => {
+        this.transactions.forEach((transaction) => {
             let isFit = false;
             groups.forEach((group) => {
                 isFit = group.keys.some((key) =>
@@ -88,8 +73,37 @@ export class CategoryGroupService {
             });
         });
 
-        console.log(groups);
-
         this.categoryGroups$.next(groups);
+    }
+
+    private getDefaultGroupsIfNotExist(groups: ICategoryGroup[]): ICategoryGroup[] {
+        if (groups) return groups;
+
+        const defaultGroups: ICategoryGroup[] = [
+            {
+                emoji: '💕',
+                title: 'Магаз',
+                keys: ['Ашан', 'Сільпо', 'Novus'],
+                amount: 0,
+            },
+            {
+                emoji: '🛻',
+                title: 'Taxi',
+                keys: ['Uklon', 'Bolt'],
+                amount: 0,
+            },
+            {
+                emoji: '🚘',
+                title: 'Getmancar',
+                keys: ['getmancar.ua'],
+                amount: 0,
+            },
+        ];
+        this.localStorageService.set(
+            LocalStorage.MyCategoryGroups,
+            defaultGroups
+        );
+        
+        return defaultGroups;
     }
 }

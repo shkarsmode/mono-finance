@@ -1,6 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'assets/scss/reset.scss';
 @import 'assets/scss/variables.scss';
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
 
 * {
     font-family: $basic-font-family;
@@ -19,3 +20,5 @@ body {
 .emoji {
     font-family: $emoji-font-family;
 }
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

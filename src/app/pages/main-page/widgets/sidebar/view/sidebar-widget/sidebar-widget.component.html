@@ -1,1 +1,4 @@
-<app-sidebar-ui [groups]="groups$ | async"></app-sidebar-ui>
+<app-sidebar-ui 
+    [groups]="groups$ | async"
+    (openModal)="openModalToAddCategory()">
+</app-sidebar-ui>

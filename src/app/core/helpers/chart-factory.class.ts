@@ -1,5 +1,5 @@
 import { ChartType } from "@core/enums";
-import { ITransactions } from "@core/interfaces";
+import { ITransaction } from "@core/interfaces";
 import Chart from 'chart.js/auto';
 import moment from "moment";
 
@@ -18,7 +18,7 @@ export class ChartFactory {
     private data: number[];
 
     constructor(
-        private readonly transactions: ITransactions[],
+        private readonly transactions: ITransaction[],
         private readonly canvas: HTMLCanvasElement,
         private readonly label: string,
         private readonly type: ChartType
@@ -73,7 +73,7 @@ export class ChartFactory {
     }
 
     private groupDataByDay(
-        data: ITransactions[]
+        data: ITransaction[]
     ): { day: string; totalAmount: number }[] {
         const dailyData: { [day: string]: number[] } = {};
 
