@@ -1,15 +1,39 @@
-@if ((transactions$ | async); as transactions) {
-    <app-chart 
-        [transactions]="transactions"
-        [label]="'Montly Income'"
-        [type]="ChartType.Income">
-    </app-chart>
-    
-    <app-chart 
-        [transactions]="transactions"
-        [label]="'Montly Expenses'"
-        [type]="ChartType.Expenses">
-    </app-chart>
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    @if ((clientInfo$ | async); as clientInfo) {
+        @for (account of clientInfo.accounts; track account.id) {
+            <app-card
+                [class.active]="account.id === (activeCardId$ | async)"
+                [class.white]="account.type === 'white'"
+                [account]="account"
+                [name]="clientInfo.name"
+                (onClick)="onCardClick($event)">
+            </app-card>
+        }
+    } @else {
+        <app-card [class.skeleton]="true"></app-card>
+        <app-card
+            [class.skeleton]="true"
+            [class.white]="true">
+        </app-card>
+    }
+</div>
 
-    <app-transactions [transactions]="transactions"></app-transactions>
+@if (transactions) {
+    <div style="display: flex; gap: 20px; margin-top: 20px">
+        <div>
+            <app-chart 
+                [transactions]="transactions"
+                [label]="'Montly Income'"
+                [type]="ChartType.Income">
+            </app-chart>
+            
+            <app-chart 
+                [transactions]="transactions"
+                [label]="'Montly Expenses'"
+                [type]="ChartType.Expenses">
+            </app-chart>
+        </div>
+
+        <app-transactions [transactions]="transactions"></app-transactions>
+    </div>
 }

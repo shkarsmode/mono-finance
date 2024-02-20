@@ -17,7 +17,7 @@ interface IJar {
     goal: number;
 }
 
-interface IAccount {
+export interface IAccount {
     id: string;
     sendId: string;
     currencyCode: number;

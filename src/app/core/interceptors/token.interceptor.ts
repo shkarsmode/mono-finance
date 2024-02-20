@@ -4,7 +4,7 @@ import { LocalStorage } from '@core/enums';
 
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: 'root',
 })
 export class TokenInterceptor implements HttpInterceptor {
     public intercept(request: HttpRequest<any>, next: HttpHandler) {

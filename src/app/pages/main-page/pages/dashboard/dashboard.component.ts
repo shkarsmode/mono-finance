@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ChartType } from '@core/enums';
-import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable } from 'rxjs';
+import { Observable, Subject, delay, first, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
@@ -12,30 +12,62 @@ import { Observable } from 'rxjs';
 })
 export class DashboardComponent implements OnInit {
     public groups$: Observable<ICategoryGroup[]>;
+    public clientInfo$: Observable<IAccountInfo>;
     public transactions$: Observable<ITransaction[]>;
+    public activeCardId$: Observable<string>;
+    public transactions: ITransaction[] = [];
+
     public readonly ChartType: typeof ChartType = ChartType;
+    private readonly destroy$: Subject<void> = new Subject();
 
     constructor(
+        private readonly cdr: ChangeDetectorRef,
         private readonly monobankService: MonobankService,
         private readonly categoryGroupService: CategoryGroupService
     ) {}
 
     public ngOnInit(): void {
-        this.initTransactionsData();
+        this.initActiveCardId();
+        this.initAccountInfoData();
         this.initCategoryGroupsData();
+        this.initTransactionsDataObserver();
+        this.initTransactionsUpdatesObserver();
     }
 
-    public initCategoryGroupsData(): void {
-        this.groups$ = this.categoryGroupService.get();
+    private initTransactionsUpdatesObserver(): void {
+        this.monobankService.transactionsUpdated$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(this.initTransactionsDataObserver.bind(this));
     }
 
-    private initTransactionsData(): void {
+    public onCardClick(account: IAccount): void {
+        this.monobankService.setActiveCardId(account.id);
+    }
+
+    private initAccountInfoData(): void {
+        this.clientInfo$ = this.monobankService.getClientInfo().pipe(delay(2000));
+    }
+
+    private initCategoryGroupsData(): void {
+        this.groups$ = this.categoryGroupService.categoryGroups$;
+    }
+
+    private initTransactionsDataObserver(): void {
         const firstMonthDay = this.getFirstMonthDay(new Date());
 
-        this.transactions$ = this.monobankService.getTransactions(
+        this.monobankService.getTransactions(
             firstMonthDay,
             Date.now()
-        );
+        )
+            .pipe(first())
+            .subscribe(transactions => {
+                this.transactions = transactions;
+                this.cdr.markForCheck();
+            });
+    }
+
+    private initActiveCardId(): void {
+        this.activeCardId$ = this.monobankService.activeCardId$;
     }
 
     private getFirstMonthDay(date: Date): number {

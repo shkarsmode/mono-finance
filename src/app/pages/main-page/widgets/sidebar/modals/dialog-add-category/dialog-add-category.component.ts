@@ -1,6 +1,6 @@
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { ENTER } from '@angular/cdk/keycodes';
-import { Component, ElementRef, Inject, ViewChild, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Inject, ViewChild, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatChipInputEvent } from '@angular/material/chips';
@@ -12,6 +12,7 @@ import { Observable, map, startWith } from 'rxjs';
     selector: 'app-dialog-add-category',
     templateUrl: './dialog-add-category.component.html',
     styleUrl: './dialog-add-category.component.scss',
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DialogAddCategoryComponent {
     public keys: string[] = [];

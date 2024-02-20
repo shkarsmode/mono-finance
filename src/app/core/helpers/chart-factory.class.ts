@@ -16,17 +16,46 @@ const CHART_BG_COLORS_MAP = {
 export class ChartFactory {
     private labels: string[];
     private data: number[];
+    private chart: Chart;
 
     constructor(
-        private readonly transactions: ITransaction[],
+        private transactions: ITransaction[],
         private readonly canvas: HTMLCanvasElement,
-        private readonly label: string,
-        private readonly type: ChartType
-    ) { }
+        private label: string,
+        private type: ChartType
+    ) {}
+
+    public update(
+        transactions: ITransaction[], 
+        label: string = this.label, 
+        type: ChartType = this.type
+    ): void {
+        this.transactions = transactions;
+        this.label = label;
+        this.type = type;
+
+        this.prepareDataToCreate();
+        this.updateFields();
+    }
+
+    public destroy(): void {
+        this.chart.destroy();
+    }
+
+    private updateFields(): void {
+        this.chart.data.labels = this.labels;
+        this.chart.data.datasets.forEach(dataset => {
+            dataset.label = this.label;
+            dataset.data = this.data;
+            dataset.borderColor = CHART_COLORS_MAP[this.type];
+            dataset.backgroundColor = CHART_BG_COLORS_MAP[this.type];
+        });
+        this.chart.update();
+    }
 
     public init(): void {
         this.prepareDataToCreate();
-        new Chart(this.canvas, {
+        this.chart = new Chart(this.canvas, {
             type: 'line',
             data: {
                 labels: this.labels,
@@ -62,9 +91,9 @@ export class ChartFactory {
 
     private prepareDataToCreate(): void {
         const sortedTransactions = this.transactions.filter((transaction) =>
-            (this.type === ChartType.Income
+            this.type === ChartType.Income
                 ? transaction.amount > 0
-                : transaction.amount < 0)
+                : transaction.amount < 0
         );
         const dailyData = this.groupDataByDay(sortedTransactions);
 

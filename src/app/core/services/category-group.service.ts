@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { LocalStorage } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
-import { BehaviorSubject, Observable, first } from 'rxjs';
+import { BehaviorSubject, first } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { MonobankService } from './monobank.service';
 
@@ -10,14 +10,21 @@ import { MonobankService } from './monobank.service';
 })
 export class CategoryGroupService {
     private transactions: ITransaction[] = [];
-    private readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
+    public readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
 
     constructor(
         private readonly monobankService: MonobankService,
         private readonly localStorageService: LocalStorageService
     ) {
-        this.init();
+    this.init();
+        this.initTransactionsUpdatesObserver();
+    }
+
+    private initTransactionsUpdatesObserver(): void {
+        this.monobankService.transactionsUpdated$.subscribe(
+            this.processTransactionsBasedOnGroups.bind(this)
+        );
     }
 
     public set(group: ICategoryGroup): void {
@@ -29,10 +36,6 @@ export class CategoryGroupService {
             group,
         ]);
         this.processTransactionsBasedOnGroups();
-    }
-
-    public get(): Observable<ICategoryGroup[]> {
-        return this.categoryGroups$;
     }
 
     public init(): void {
@@ -55,6 +58,9 @@ export class CategoryGroupService {
     }
 
     private processTransactionsBasedOnGroups(): void {
+        const transactionKey = this.monobankService.monobankTransactionKey;
+        this.transactions = this.localStorageService.get(transactionKey);
+
         let groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups
         ) as ICategoryGroup[];

@@ -8,10 +8,6 @@
     color: $text-color;
 }
 
-html {
-    height: 100%;
-}
-
 body {
     background-color: #f7f8fa;
     font-size: 14px;
@@ -20,5 +16,18 @@ body {
 .emoji {
     font-family: $emoji-font-family;
 }
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+html,
+body {
+    height: 100%;
+}
+
+mat-snack-bar-container {
+    .mdc-snackbar__label {
+        white-space: pre-wrap
+    }
+
+    .mdc-button__label {
+        font-size: 30px;
+    }
+}

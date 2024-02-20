@@ -9,15 +9,16 @@ import { MonobankService } from './monobank.service';
     providedIn: 'root',
 })
 export class AuthService {
-    public activeCardId: string = '';
     public readonly authData$: BehaviorSubject<
         IAccountInfo | { error: string } | any
     > = new BehaviorSubject(null);
 
+    
+
     constructor(
         private readonly localStorageService: LocalStorageService,
         private readonly monobankService: MonobankService
-    ) {}
+    ) { }
 
     public processToken(token: string): void {
         this.localStorageService.set(LocalStorage.MonobankToken, token);
@@ -51,7 +52,7 @@ export class AuthService {
             }
         });
         const activeCardId = clientInfo.accounts[activeIndex].id;
-        this.activeCardId = activeCardId;
+        this.monobankService.activeCardId$.next(activeCardId);
 
         this.localStorageService.set(
             LocalStorage.MonobankActiveCardId,
