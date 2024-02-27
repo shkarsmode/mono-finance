@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
+import { TransactionsFilterPipe } from './pipes/transactions-filter.pipe';
 
 @NgModule({
-    declarations: [],
+    declarations: [TransactionsFilterPipe],
     imports: [CommonModule],
-    exports: []
+    exports: [TransactionsFilterPipe],
 })
 export class SharedModule {}

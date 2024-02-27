@@ -7,7 +7,10 @@
         <div class="wrap-input__icon">
             <svg-icon src="assets/svg/search.svg"></svg-icon>
         </div>
-        <input type="text" placeholder="Search">
+        <input
+            placeholder="Search"
+            type="text"
+            (input)="onInputEvent($event)">
     </div>
 </div>
 
@@ -21,7 +24,10 @@
         </tr>
     </thead>
     <tbody>
-        @for (transaction of transactions; track transaction.id) {
+        @for (
+            transaction of transactions; 
+            track transaction.id
+        ) {
             <tr>
                 <th>{{ transaction.description }}</th>
                 <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>

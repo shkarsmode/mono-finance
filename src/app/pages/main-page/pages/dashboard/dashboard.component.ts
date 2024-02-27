@@ -16,6 +16,7 @@ export class DashboardComponent implements OnInit {
     public transactions$: Observable<ITransaction[]>;
     public activeCardId$: Observable<string>;
     public transactions: ITransaction[] = [];
+    public searchTransactionsValue: string = '';
 
     public readonly ChartType: typeof ChartType = ChartType;
     private readonly destroy$: Subject<void> = new Subject();
@@ -34,6 +35,10 @@ export class DashboardComponent implements OnInit {
         this.initTransactionsUpdatesObserver();
     }
 
+    public onSearchTransaction(searchValue: string): void {
+        this.searchTransactionsValue = searchValue;
+    }
+
     private initTransactionsUpdatesObserver(): void {
         this.monobankService.transactionsUpdated$
             .pipe(takeUntil(this.destroy$))
@@ -45,7 +50,9 @@ export class DashboardComponent implements OnInit {
     }
 
     private initAccountInfoData(): void {
-        this.clientInfo$ = this.monobankService.getClientInfo().pipe(delay(2000));
+        this.clientInfo$ = this.monobankService
+            .getClientInfo()
+            .pipe(delay(2000));
     }
 
     private initCategoryGroupsData(): void {
@@ -55,12 +62,10 @@ export class DashboardComponent implements OnInit {
     private initTransactionsDataObserver(): void {
         const firstMonthDay = this.getFirstMonthDay(new Date());
 
-        this.monobankService.getTransactions(
-            firstMonthDay,
-            Date.now()
-        )
+        this.monobankService
+            .getTransactions(firstMonthDay, Date.now())
             .pipe(first())
-            .subscribe(transactions => {
+            .subscribe((transactions) => {
                 this.transactions = transactions;
                 this.cdr.markForCheck();
             });

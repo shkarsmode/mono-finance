@@ -22,18 +22,21 @@
     <div style="display: flex; gap: 20px; margin-top: 20px">
         <div>
             <app-chart 
-                [transactions]="transactions"
+                [transactions]="transactions | transactionsFilter: searchTransactionsValue"
                 [label]="'Montly Income'"
                 [type]="ChartType.Income">
             </app-chart>
             
             <app-chart 
-                [transactions]="transactions"
+                [transactions]="transactions | transactionsFilter: searchTransactionsValue"
                 [label]="'Montly Expenses'"
                 [type]="ChartType.Expenses">
             </app-chart>
         </div>
 
-        <app-transactions [transactions]="transactions"></app-transactions>
+        <app-transactions 
+            [transactions]="transactions | transactionsFilter: searchTransactionsValue"
+            (searchTransactions)="onSearchTransaction($event)">
+        </app-transactions>
     </div>
 }

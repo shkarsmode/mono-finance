@@ -1,3 +1,4 @@
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -8,6 +9,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { AngularSvgIconModule } from 'angular-svg-icon';
 import { DialogAddCategoryComponent } from './modals';
@@ -32,7 +34,9 @@ import { SidebarWidgetComponent } from './view';
         MatIconModule,
         MatButtonModule,
         MatChipsModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+        MatTooltipModule,
+        DragDropModule,
     ],
     exports: [SidebarWidgetComponent],
 })

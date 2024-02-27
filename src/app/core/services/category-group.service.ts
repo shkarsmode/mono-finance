@@ -27,6 +27,14 @@ export class CategoryGroupService {
         );
     }
 
+    public changeOrdering(groups: ICategoryGroup[]): void {
+        const updatedGroups = groups.map(group => ({ ...group, amount: 0 }))
+        this.localStorageService.set(
+            LocalStorage.MyCategoryGroups,
+            updatedGroups
+        );
+    }
+
     public set(group: ICategoryGroup): void {
         const groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups

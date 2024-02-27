@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { ITransaction } from '@core/interfaces';
 
 @Component({
@@ -9,4 +9,10 @@ import { ITransaction } from '@core/interfaces';
 })
 export class TransactionsComponent {
     @Input() public transactions: ITransaction[] | null;
+    @Input() public searchValue: string = '';
+    @Output() public searchTransactions: EventEmitter<string> = new EventEmitter();
+
+    public onInputEvent(event: Event): void {
+        this.searchTransactions.emit((event.target as HTMLInputElement).value);
+    }
 }

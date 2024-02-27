@@ -7,9 +7,17 @@
     </svg-icon>
 </div>
 
-<ul class="content__groups">
+<ul
+    class="content__groups"
+    (cdkDropListDropped)="dragAndDrop($event)"
+    cdkDropList>
     @for (group of groups; track group.title) {
-        <li class="content__groups-item groups-item">
+        <li 
+            class="content__groups-item groups-item"
+            [matTooltip]="'Keys: ' + (group.keys | json)"
+            matTooltipHideDelay="300"
+            matTooltipShowDelay="300"
+            cdkDrag>
             <div>
                 <span class="groups-item__emoji emoji">{{ group.emoji }}</span>
                 <span class="groups-item__text">{{ group.title }}</span>

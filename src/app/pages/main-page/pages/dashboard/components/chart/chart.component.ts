@@ -11,7 +11,7 @@ import { ITransaction } from '@core/interfaces';
 })
 export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     @Input() public label: string;
-    @Input() public transactions: ITransaction[];
+    @Input() public transactions: ITransaction[] | null;
     @Input() public type: ChartType = ChartType.Income;
 
     @ViewChild('chart') public chart: ElementRef;
@@ -28,7 +28,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     private update(): void {
         this.chartFactoryInstance.update(
-            this.transactions,
+            this.transactions ?? [],
             this.label,
             this.type
         );
@@ -36,7 +36,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     private init(): void {
         this.chartFactoryInstance = new ChartFactory(
-            this.transactions,
+            this.transactions ?? [],
             this.chart.nativeElement,
             this.label,
             this.type

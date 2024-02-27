@@ -28,6 +28,10 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         this.initCategoryGroupsData();
     }
 
+    public changeGroupsOrdering(groups: ICategoryGroup[]): void {
+        this.categoryGroupService.changeOrdering(groups);
+    }
+
     public initCategoryGroupsData(): void {
         this.groups$ = this.categoryGroupService.categoryGroups$;
     }

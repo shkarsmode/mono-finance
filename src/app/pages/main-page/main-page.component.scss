@@ -15,4 +15,6 @@ app-sidebar-widget {
     margin-left: 300px;
     margin-top: 61px;
     padding: 20px;
+    overflow-y: scroll;
+    height: calc(100% - 61px);
 }

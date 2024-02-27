@@ -3,6 +3,7 @@ import { NgModule } from '@angular/core';
 
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AngularSvgIconModule } from 'angular-svg-icon';
+import { SharedModule } from '../../../../shared/shared.module';
 import { MaskedCardPipe } from '../../pipes';
 import { CardComponent, ChartComponent, TransactionsComponent } from './components';
 import { DashboardComponent } from './dashboard.component';
@@ -22,6 +23,7 @@ import { DashboardRoutingModule } from './dashboard.routing';
         DashboardRoutingModule,
         AngularSvgIconModule,
         MatProgressSpinnerModule,
+        SharedModule,
     ],
 })
 export class DashboardModule {}

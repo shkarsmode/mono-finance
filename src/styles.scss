@@ -20,6 +20,7 @@ body {
 html,
 body {
     height: 100%;
+    overflow: hidden;
 }
 
 mat-snack-bar-container {
@@ -30,4 +31,37 @@ mat-snack-bar-container {
     .mdc-button__label {
         font-size: 30px;
     }
+}
+
+mat-tooltip-component {
+    pointer-events: none;
+}
+
+body>li.mat-mdc-tooltip-trigger {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    font-family: "Montserrat", sans-serif;
+    background-color: #eae9e9c1;
+    padding: 10px;
+    border-radius: 5px;
+    text-decoration: none;
+
+    svg-icon,
+    svg {
+        max-width: 22px;
+        max-height: 22px;
+        margin-right: 10px;
+    }
+
+    .groups-item__emoji {
+        font-size: 25px;
+        margin-right: 10px;
+    }
+}
+
+.cdk-drag-animating {
+    transition:
+        background-color .3s ease-in-out,
+        transform 250ms cubic-bezier(0, 0, 0.2, 1) !important;
 }
