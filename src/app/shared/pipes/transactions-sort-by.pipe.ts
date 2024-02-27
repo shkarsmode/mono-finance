@@ -12,12 +12,17 @@ export class TransactionsSortByPipe implements PipeTransform {
         direction: 'asc' | 'desc' = 'asc'
     ): ITransaction[] {
         if (!transactions) return [];
-        if (sortBy === TransactionSortBy.Date) {
+
+        if (
+            sortBy === TransactionSortBy.Amount ||
+            sortBy === TransactionSortBy.Date
+        ) {
             return transactions.sort((a, b) =>
-                direction === 'asc' ? a.time - b.time : b.time - a.time
+                direction === 'asc'
+                    ? a[sortBy] - b[sortBy]
+                    : b[sortBy] - a[sortBy]
             );
         }
-        
 
         return transactions.sort((a, b) =>
             direction === 'asc'

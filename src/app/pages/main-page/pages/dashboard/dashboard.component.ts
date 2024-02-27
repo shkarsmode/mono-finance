@@ -18,7 +18,7 @@ export class DashboardComponent implements OnInit {
     public transactions: ITransaction[] = [];
     public searchTransactionsValue: string = '';
     public sortTransactionsBy: TransactionSortBy = TransactionSortBy.Date;
-    public sortDirection: 'asc' | 'desc' = 'asc';
+    public sortDirection: 'asc' | 'desc' = 'desc';
 
     public readonly ChartType: typeof ChartType = ChartType;
     private readonly destroy$: Subject<void> = new Subject();

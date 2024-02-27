@@ -54,10 +54,8 @@
 <table class="transactions">
     <thead>
         <tr>
-            <th 
-                [class.sort-active]="sortByValue === SortBy.Payment"
-                (click)="onSortByEvent(SortBy.Payment)">
-                Payment
+            <th [class.sort-active]="sortByValue === SortBy.Payment">
+                <span (click)="onSortByEvent(SortBy.Payment)">Payment</span>
                 <svg-icon 
                     src="assets/svg/sort-up.svg" 
                     [class.rotate]="!isAscSortDirection">
@@ -65,16 +63,14 @@
             </th>
             <th
                 class="date-th"
-                [class.sort-active]="sortByValue === SortBy.Date"
-                (click)="onSortByEvent(SortBy.Date)">
-                Date
+                [class.sort-active]="sortByValue === SortBy.Date">
+                <span (click)="onSortByEvent(SortBy.Date)">Date</span>
                 <svg-icon 
                     src="assets/svg/sort-up.svg" 
                     [class.rotate]="!isAscSortDirection">
                 </svg-icon>
             </th>
-            <th
-                class="status-th">
+            <th class="status-th">
                 Status
                 <svg-icon 
                     src="assets/svg/sort-up.svg" 
@@ -82,8 +78,11 @@
                 </svg-icon>
             </th>
             <th
-                class="amount-th">
-                Amount
+                class="amount-th"
+                [class.sort-active]="sortByValue === SortBy.Amount" >
+                <span (click)="onSortByEvent(SortBy.Amount)">
+                    Amount
+                </span>
                 <svg-icon 
                     src="assets/svg/sort-up.svg" 
                     [class.rotate]="!isAscSortDirection">

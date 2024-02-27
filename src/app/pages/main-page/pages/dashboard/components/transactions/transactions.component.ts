@@ -37,7 +37,9 @@ export class TransactionsComponent {
     }
 
     public onSortByEvent(sortBy: TransactionSortBy): void {
-        this.isAscSortDirection = !this.isAscSortDirection; 
+        if (sortBy === this.sortByValue)
+            this.isAscSortDirection = !this.isAscSortDirection;
+        
         const direction = this.isAscSortDirection ? 'asc' : 'desc';
         this.sortBy.emit({ sortBy, direction });
     }
