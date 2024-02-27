@@ -107,6 +107,9 @@
                     class="amount"
                     [class.sent]="transaction.amount < 0">
                     {{ transaction.amount / 100 }} UAH
+                    @if (transaction.cashbackAmount > 0) {
+                        <span class="cashback">+{{ transaction.cashbackAmount / 100 }} UAH</span>
+                    }
                 </td>
             </tr>
         }

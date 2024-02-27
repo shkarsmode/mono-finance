@@ -96,6 +96,7 @@ table {
 
             &.sort-active {
                 font-weight: 600;
+
                 span {
                     color: rgba(128, 128, 128, 1);
                 }
@@ -140,6 +141,16 @@ table {
 .amount {
     font-weight: 600;
     color: green;
+
+    position: relative;
+
+    .cashback {
+        position: absolute;
+        top: 0px;
+        right: 0px;
+        color: green;
+        font-size: 12px;
+    }
 
     &.sent {
         color: red;

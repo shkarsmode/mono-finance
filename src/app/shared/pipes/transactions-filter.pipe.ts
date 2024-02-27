@@ -18,10 +18,10 @@ export class TransactionsFilterPipe implements PipeTransform {
             .split(',')
             .map((value) => value.trim());
 
-        return transactions.filter((transaction) => {
-            return searchValues.some((search) =>
+        return transactions.filter((transaction) => 
+            searchValues.some((search) =>
                 transaction.description.toLowerCase().includes(search)
-            );
-        });
+            )
+        );
     }
 }
