@@ -27,6 +27,17 @@ svg {
     }
 }
 
+.filters {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+
+    mat-form-field {
+        width: 100%;
+    }
+}
+
+
 .wrap-input {
     position: relative;
     display: flex;
@@ -34,6 +45,19 @@ svg {
     &__icon {
         @include abs-xy-pos(50%, 20px);
         @include tt-center;
+    }
+
+    &__clear {
+        position: absolute;
+        top: 62%;
+        right: 10px;
+        transform: rotate(45deg) translate(-50%, -50%);
+        cursor: pointer;
+        opacity: 0.7;
+
+        &:hover {
+            opacity: 1;
+        }
     }
 
     input {
@@ -46,12 +70,34 @@ svg {
 }
 
 table {
+
     thead {
         th {
             color: rgba(128, 128, 128, 0.4);
             font-weight: 500;
             text-transform: uppercase;
             padding-bottom: 10px;
+            transition: all .3s;
+            cursor: pointer;
+
+            svg-icon {
+                opacity: 0;
+                transition: all .3s;
+                display: inline-block;
+
+                &.rotate {
+                    transform: rotate(180deg);
+                }
+            }
+
+            &.sort-active {
+                font-weight: 600;
+                color: rgba(128, 128, 128, 1);
+
+                svg-icon {
+                    opacity: 1;
+                }
+            }
         }
 
         border-bottom: 1px solid rgba(128, 128, 128, 0.4);
@@ -92,4 +138,8 @@ table {
     &.sent {
         color: red;
     }
+}
+
+:host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
 }

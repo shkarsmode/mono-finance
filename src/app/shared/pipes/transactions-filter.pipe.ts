@@ -9,10 +9,19 @@ export class TransactionsFilterPipe implements PipeTransform {
         transactions: ITransaction[] | null, 
         searchValue: string
     ): ITransaction[] | null {
-        return transactions && transactions.filter((transaction) =>
-            transaction.description
-                .toLowerCase()
-                .includes(searchValue.toLocaleLowerCase())
-        );
+        if (!transactions || !searchValue) {
+            return transactions;
+        }
+
+        const searchValues = searchValue
+            .toLowerCase()
+            .split(',')
+            .map((value) => value.trim());
+
+        return transactions.filter((transaction) => {
+            return searchValues.some((search) =>
+                transaction.description.toLowerCase().includes(search)
+            );
+        });
     }
 }

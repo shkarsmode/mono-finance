@@ -65,3 +65,25 @@ body>li.mat-mdc-tooltip-trigger {
         background-color .3s ease-in-out,
         transform 250ms cubic-bezier(0, 0, 0.2, 1) !important;
 }
+
+.group-option .mdc-list-item__primary-text {
+    display: flex;
+    align-items: center;
+
+    div:first-child {
+        margin-right: 5px;
+        font-size: 25px;
+    }
+
+    div:last-child {
+        font-size: 14px;
+    }
+}
+
+.mdc-label {
+    font-family: $basic-font-family;
+}
+
+.mdc-checkbox__checkmark-path {
+    color: white;
+}

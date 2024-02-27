@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { ChartType } from '@core/enums';
+import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { Observable, Subject, delay, first, takeUntil } from 'rxjs';
@@ -17,6 +17,8 @@ export class DashboardComponent implements OnInit {
     public activeCardId$: Observable<string>;
     public transactions: ITransaction[] = [];
     public searchTransactionsValue: string = '';
+    public sortTransactionsBy: TransactionSortBy = TransactionSortBy.Date;
+    public sortDirection: 'asc' | 'desc' = 'asc';
 
     public readonly ChartType: typeof ChartType = ChartType;
     private readonly destroy$: Subject<void> = new Subject();
@@ -37,6 +39,18 @@ export class DashboardComponent implements OnInit {
 
     public onSearchTransaction(searchValue: string): void {
         this.searchTransactionsValue = searchValue;
+    }
+
+    public onSelectValueChange(value: string[]): void {
+        this.searchTransactionsValue = value.join();
+    }
+
+    public onSortTransactionsBy(sort: {
+        sortBy: TransactionSortBy;
+        direction: 'asc' | 'desc';
+    }): void {
+        this.sortTransactionsBy = sort.sortBy;
+        this.sortDirection = sort.direction;
     }
 
     private initTransactionsUpdatesObserver(): void {

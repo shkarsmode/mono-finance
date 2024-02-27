@@ -11,7 +11,8 @@ import { ICategoryGroup } from '@core/interfaces';
 export class SidebarGroupsUiComponent {
     @Input() groups: ICategoryGroup[] | null;
     @Output() openGroup: EventEmitter<void> = new EventEmitter();
-    @Output() changeOrdering: EventEmitter<ICategoryGroup[]> = new EventEmitter();
+    @Output() changeOrdering: EventEmitter<ICategoryGroup[]> =
+        new EventEmitter();
 
     public open(): void {
         this.openGroup.emit();
@@ -25,7 +26,12 @@ export class SidebarGroupsUiComponent {
             event.previousIndex,
             event.currentIndex
         );
-        
+
+        this.changeOrdering.emit(this.groups);
+    }
+
+    public onDoubleGroupClick(groupToDelete: ICategoryGroup): void {
+        this.groups = this.groups?.filter((group) => group.title !== groupToDelete.title) ?? [];
         this.changeOrdering.emit(this.groups);
     }
 }

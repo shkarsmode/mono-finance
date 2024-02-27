@@ -12,3 +12,27 @@
         font-weight: 500;
     }
 }
+
+:host:hover {
+    .info {
+        opacity: 1;
+        width: 100%;
+        height: 23px;
+    }
+}
+
+.info {
+    background: lightpink;
+    padding: 5px;
+    color: white;
+    border-radius: 5px;
+    font-size: 13px;
+    display: inline-block;
+    width: fit-content;
+    opacity: 0;
+    height: 0;
+    width: 0%;
+    overflow: hidden;
+
+    transition: all .2s;
+}

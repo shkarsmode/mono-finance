@@ -10,17 +10,87 @@
         <input
             placeholder="Search"
             type="text"
+            #inputRef
+            [disabled]="isFilterByGroups"
             (input)="onInputEvent($event)">
+
+        @if (inputRef.value) {
+            <div
+                class="wrap-input__clear"
+                (click)="clearInputEvent()">
+                <svg-icon src="assets/svg/plus.svg"></svg-icon>
+            </div>
+        }
+        
     </div>
+</div>
+
+<div class="filters">
+    <mat-checkbox 
+        (change)="onFilterGroupsChange($event)"
+        [checked]="isFilterByGroups">
+        {{ isFilterByGroups ? '' : 'Filter by groups' }}
+    </mat-checkbox>
+    @if (isFilterByGroups) {
+        <mat-form-field>
+            <mat-label>Groups</mat-label>
+            <mat-select
+                (valueChange)="onSelectValueChange($event)"
+                multiple>
+                @for (group of groups; track group.title) {
+                    <mat-option
+                        class="group-option"
+                        [value]="group.keys.join()">
+                        <div>{{ group.emoji }}</div>
+                        <div>{{ group.title }}</div>
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    }
+    
 </div>
 
 <table class="transactions">
     <thead>
         <tr>
-            <th>Payment</th>
-            <th class="date-th">Date</th>
-            <th class="status-th">Status</th>
-            <th class="amount-th">Amount</th>
+            <th 
+                [class.sort-active]="sortByValue === SortBy.Payment"
+                (click)="onSortByEvent(SortBy.Payment)">
+                Payment
+                <svg-icon 
+                    src="assets/svg/sort-up.svg" 
+                    [class.rotate]="!isAscSortDirection">
+                </svg-icon>
+            </th>
+            <th
+                class="date-th"
+                [class.sort-active]="sortByValue === SortBy.Date"
+                (click)="onSortByEvent(SortBy.Date)">
+                Date
+                <svg-icon 
+                    src="assets/svg/sort-up.svg" 
+                    [class.rotate]="!isAscSortDirection">
+                </svg-icon>
+            </th>
+            <th
+                class="status-th"
+                (click)="onSortByEvent(SortBy.Date)">
+                Status
+                <svg-icon 
+                    src="assets/svg/sort-up.svg" 
+                    [class.rotate]="!isAscSortDirection">
+                </svg-icon>
+            </th>
+            <th
+                class="amount-th"
+                (click)="onSortByEvent(SortBy.Date)">
+                Amount
+                <svg-icon 
+                    src="assets/svg/sort-up.svg" 
+                    [class.rotate]="!isAscSortDirection">
+                </svg-icon>
+            </th>
         </tr>
     </thead>
     <tbody>

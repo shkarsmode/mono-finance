@@ -17,7 +17,9 @@
             [matTooltip]="'Keys: ' + (group.keys | json)"
             matTooltipHideDelay="300"
             matTooltipShowDelay="300"
-            cdkDrag>
+            matTooltipPosition="right"
+            cdkDrag
+            (dblclick)="onDoubleGroupClick(group)">
             <div>
                 <span class="groups-item__emoji emoji">{{ group.emoji }}</span>
                 <span class="groups-item__text">{{ group.title }}</span>
@@ -25,4 +27,5 @@
             <div class="groups-item__amount">{{  group.amount / 100}} UAH</div>
         </li>
     }
+    <div class="info">Double click to delete group</div>
 </ul>

@@ -35,8 +35,16 @@
         </div>
 
         <app-transactions 
-            [transactions]="transactions | transactionsFilter: searchTransactionsValue"
-            (searchTransactions)="onSearchTransaction($event)">
+            [groups]="groups$ | async"
+            [sortByValue]="sortTransactionsBy"
+            [transactions]="
+                transactions 
+                    | transactionsFilter: searchTransactionsValue
+                    | transactionsSortBy: sortTransactionsBy : sortDirection
+            "
+            (searchTransactions)="onSearchTransaction($event)"
+            (selectValueChange)="onSelectValueChange($event)"
+            (sortBy)="onSortTransactionsBy($event)">
         </app-transactions>
     </div>
 }

@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { AngularSvgIconModule } from 'angular-svg-icon';
 import { SharedModule } from '../../../../shared/shared.module';
 import { MaskedCardPipe } from '../../pipes';
@@ -24,6 +26,8 @@ import { DashboardRoutingModule } from './dashboard.routing';
         AngularSvgIconModule,
         MatProgressSpinnerModule,
         SharedModule,
+        MatSelectModule,
+        MatCheckboxModule,
     ],
 })
 export class DashboardModule {}
