@@ -74,7 +74,7 @@
         color="primary"
         mat-raised-button
         (click)="create()">
-        Add group
+        {{ data.editGroupData ? 'Update group' : 'Add group' }}
     </button>
 
 </form>

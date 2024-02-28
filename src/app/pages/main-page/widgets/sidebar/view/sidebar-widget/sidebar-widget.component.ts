@@ -36,12 +36,19 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         this.groups$ = this.categoryGroupService.categoryGroups$;
     }
 
-    public openModalToAddCategory(): void {
+    public onEditGroup(group: ICategoryGroup): void {
+        this.openModalToAddCategory(group);
+    }
+
+    public openModalToAddCategory(
+        editGroupData?: { keys: string[], emoji: string, title: string }
+    ): void {
         const transactionsDescriptionArray = this.transactionsDescriptionArray;
         this.dialog
             .open(DialogAddCategoryComponent, {
                 data: {
                     transactions: transactionsDescriptionArray,
+                    editGroupData,
                 },
             })
             .afterClosed()
@@ -60,7 +67,9 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
             this.monobankService.monobankTransactionKey
         );
 
-        return Array.from(new Set(transactions.map(transaction => transaction.description)));
+        return Array.from(
+            new Set(transactions.map((transaction) => transaction.description))
+        );
     }
 
     public ngOnDestroy(): void {

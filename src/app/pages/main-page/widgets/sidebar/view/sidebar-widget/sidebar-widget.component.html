@@ -1,5 +1,6 @@
 <app-sidebar-ui 
     [groups]="groups$ | async"
     (openModal)="openModalToAddCategory()"
+    (editGroup)="onEditGroup($event)"
     (changeGroupsOrdering)="changeGroupsOrdering($event)">
 </app-sidebar-ui>

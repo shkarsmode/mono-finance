@@ -13,9 +13,15 @@ export class SidebarGroupsUiComponent {
     @Output() openGroup: EventEmitter<void> = new EventEmitter();
     @Output() changeOrdering: EventEmitter<ICategoryGroup[]> =
         new EventEmitter();
+    @Output() editGroup: EventEmitter<ICategoryGroup> = new EventEmitter();
 
     public open(): void {
         this.openGroup.emit();
+    }
+
+    public onRightClick(group: ICategoryGroup): boolean {
+        this.editGroup.emit(group);
+        return false;
     }
 
     public dragAndDrop(event: CdkDragDrop<ICategoryGroup[]>) {
@@ -31,7 +37,10 @@ export class SidebarGroupsUiComponent {
     }
 
     public onDoubleGroupClick(groupToDelete: ICategoryGroup): void {
-        this.groups = this.groups?.filter((group) => group.title !== groupToDelete.title) ?? [];
+        this.groups =
+            this.groups?.filter(
+                (group) => group.title !== groupToDelete.title
+            ) ?? [];
         this.changeOrdering.emit(this.groups);
     }
 }

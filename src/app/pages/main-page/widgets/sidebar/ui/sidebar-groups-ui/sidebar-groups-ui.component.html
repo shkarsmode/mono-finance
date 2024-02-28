@@ -19,6 +19,7 @@
             matTooltipShowDelay="300"
             matTooltipPosition="right"
             cdkDrag
+            (contextmenu)="onRightClick(group)"
             (dblclick)="onDoubleGroupClick(group)">
             <div>
                 <span class="groups-item__emoji emoji">{{ group.emoji }}</span>

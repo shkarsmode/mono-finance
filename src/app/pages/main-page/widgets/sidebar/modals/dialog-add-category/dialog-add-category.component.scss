@@ -25,9 +25,11 @@ h2 {
 
 .emoji {
     font-size: 35px;
+    font-family: "Noto Color Emoji";
 }
 
 .choose-emoji {
+    font-family: "Noto Color Emoji";
     position: relative;
 
     display: flex;
@@ -92,6 +94,25 @@ button ::ng-deep span {
 }
 
 ::ng-deep .cdk-overlay-pane:has(.emoji) {
+    width: 500px !important;
+    min-height: 400px;
+
+    mat-option {
+        font-size: 27px;
+
+        mat-pseudo-checkbox {
+            display: none;
+        }
+    }
+
+    div[role="listbox"] {
+        width: 500px;
+        max-height: 400px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
     ::-webkit-scrollbar {
         width: 0px;
     }

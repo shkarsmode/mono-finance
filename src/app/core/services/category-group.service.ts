@@ -39,8 +39,9 @@ export class CategoryGroupService {
         const groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups
         ) as ICategoryGroup[];
+        const updatedGroups = groups.filter(oldGroup => oldGroup.title !== group.title);
         this.localStorageService.set(LocalStorage.MyCategoryGroups, [
-            ...groups,
+            ...updatedGroups,
             group,
         ]);
         this.processTransactionsBasedOnGroups();

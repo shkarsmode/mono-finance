@@ -49,6 +49,7 @@
     <app-sidebar-groups-ui 
         [groups]="groups"
         (openGroup)="openGroup()"
+        (editGroup)="onEditGroup($event)"
         (changeOrdering)="onChangeGroupsOrdering($event)">
     </app-sidebar-groups-ui>
 </div>
