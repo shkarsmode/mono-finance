@@ -62,7 +62,9 @@
             (optionSelected)="selected($event)"
             #auto="matAutocomplete">
             @for (fruit of filteredKeys | async; track fruit) {
-                <mat-option [value]="fruit">{{fruit}}</mat-option>
+                @if (!keys.includes(fruit)) {
+                    <mat-option [value]="fruit">{{fruit}}</mat-option>
+                }
             }
         </mat-autocomplete>
     </mat-form-field>

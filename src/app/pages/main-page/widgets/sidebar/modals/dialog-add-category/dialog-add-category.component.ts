@@ -86,6 +86,7 @@ export class DialogAddCategoryComponent {
 
     private filter(value: string): string[] {
         const filterValue = value.toLowerCase();
+        console.log(this.allKeys);
 
         return this.allKeys.filter((key) =>
             key.toLowerCase().includes(filterValue)
