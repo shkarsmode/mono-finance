@@ -1,6 +1,8 @@
-<pre>
-    {{ data2 | json }}
-</pre>
-<pre>
-    {{ data | json }}
-</pre>
+@for (
+    currencyExchange of currencyExchangeData; 
+    track currencyExchange.currencyCodeA
+) {
+    <app-currency-exchange 
+        [exchange]="currencyExchange">
+    </app-currency-exchange>
+}

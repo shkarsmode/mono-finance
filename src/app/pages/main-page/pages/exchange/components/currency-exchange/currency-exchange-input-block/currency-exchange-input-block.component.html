@@ -1,0 +1,14 @@
+<div class="title">
+    <div class="type">{{ title }}</div>
+    <div class="wrap-name">
+        <div class="flag">{{ flag }}</div>
+        <div class="name">{{ name }}</div>
+    </div>
+</div>
+<div class="exchange">
+    <input
+        [value]="value"
+        (blur)="onBlurEvent($event)"
+        (input)="onInputValueChange($event)"
+        type="number">
+</div>

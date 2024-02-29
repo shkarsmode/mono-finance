@@ -1,0 +1,27 @@
+<app-currency-exchange-input-block
+    [(ngModel)]="sellValue"
+    [flag]="exchange.flagA"
+    [name]="exchange.currencyNameA"
+    (onInput)="onSellChangeRate()"
+    (onBlur)="onBlurEvent($event)"
+    title="Sell">
+</app-currency-exchange-input-block>
+
+<div class="exchange-wrap">
+    <div class="exchange-icon">
+        <svg-icon src="assets/svg/currency-exchange.svg"></svg-icon>
+    </div>
+    <div class="exchange-rate">
+        1 {{ exchange.currencyNameA }} = {{ exchange.rateSell || exchange.rateCross }} 
+        {{ exchange.currencyNameB }}
+    </div>
+</div>
+
+<app-currency-exchange-input-block
+    [(ngModel)]="buyValue"
+    [flag]="exchange.flagB"
+    [name]="exchange.currencyNameB"
+    (onInput)="onBuyChangeRate()"
+    (onBlur)="onBlurEvent($event)"
+    title="Buy">
+</app-currency-exchange-input-block>

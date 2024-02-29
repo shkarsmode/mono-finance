@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable, Subject, delay, first, takeUntil } from 'rxjs';
+import { Observable, Subject, first, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
@@ -11,14 +11,15 @@ import { Observable, Subject, delay, first, takeUntil } from 'rxjs';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
-    public groups$: Observable<ICategoryGroup[]>;
-    public clientInfo$: Observable<IAccountInfo>;
-    public transactions$: Observable<ITransaction[]>;
-    public activeCardId$: Observable<string>;
     public transactions: ITransaction[] = [];
     public searchTransactionsValue: string = '';
-    public sortTransactionsBy: TransactionSortBy = TransactionSortBy.Date;
     public sortDirection: 'asc' | 'desc' = 'desc';
+
+    public activeCardId$: Observable<string>;
+    public clientInfo$: Observable<IAccountInfo>;
+    public groups$: Observable<ICategoryGroup[]>;
+    public transactions$: Observable<ITransaction[]>;
+    public sortTransactionsBy: TransactionSortBy = TransactionSortBy.Date;
 
     public readonly ChartType: typeof ChartType = ChartType;
     private readonly destroy$: Subject<void> = new Subject();
@@ -66,7 +67,7 @@ export class DashboardComponent implements OnInit {
     private initAccountInfoData(): void {
         this.clientInfo$ = this.monobankService
             .getClientInfo()
-            .pipe(delay(2000));
+            .pipe();
     }
 
     private initCategoryGroupsData(): void {
