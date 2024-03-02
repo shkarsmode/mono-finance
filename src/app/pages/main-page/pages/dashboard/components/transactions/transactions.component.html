@@ -95,7 +95,10 @@
             transaction of transactions; 
             track transaction.id
         ) {
-            <tr>
+            <tr 
+				[matTooltip]="transaction.comment ?? ''"
+				matTooltipHideDelay="300"
+				matTooltipPosition="left">
                 <th>{{ transaction.description }}</th>
                 <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
                 @if (transaction.amount < 0) {

@@ -12,4 +12,5 @@ export interface ITransaction {
     readonly balance: number;
     readonly hold: boolean;
     readonly receiptId: string;
+	readonly comment?: string;
 }
