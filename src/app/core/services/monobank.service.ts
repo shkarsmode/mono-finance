@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
-import { MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
+import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 
@@ -19,15 +19,18 @@ export class MonobankService {
         private readonly router: Router,
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
-        @Inject(MONOBANK_API) private readonly monobankApi: string
+        @Inject(MONOBANK_API) private readonly monobankApi: string,
+        @Inject(BASE_PATH_API) private readonly basePathApi: string
     ) {
         this.updateActiveCardId();
     }
 
     public setActiveCardId(activeCardId: string): void {
-        const currentCardId = this.localStorageService.get(LocalStorage.MonobankActiveCardId);
+        const currentCardId = this.localStorageService.get(
+            LocalStorage.MonobankActiveCardId
+        );
         if (currentCardId === activeCardId) return;
-        
+
         this.localStorageService.set(
             LocalStorage.MonobankActiveCardId,
             activeCardId
@@ -48,23 +51,24 @@ export class MonobankService {
     }
 
     public getActualCurrency(): Observable<ICurrency[]> {
-        const currencyApiUrl = `${this.monobankApi}/bank/currency`;
+        const currencyApiUrl = `${this.basePathApi}/currency`;
+        return this.http.get<ICurrency[]>(currencyApiUrl);
 
-        if (this.shouldSendQuery(LocalStorage.MonobankCurrency)) {
-            return this.http.get<ICurrency[]>(currencyApiUrl).pipe(
-                catchError(() =>
-                    of(this.getLocalStorageData(LocalStorage.MonobankCurrency))
-                ),
-                tap((currency) =>
-                    this.updateLocalStorage(
-                        LocalStorage.MonobankCurrency,
-                        currency
-                    )
-                )
-            );
-        }
+        // if (this.shouldSendQuery(LocalStorage.MonobankCurrency)) {
+        //     return this.http.get<ICurrency[]>(currencyApiUrl).pipe(
+        //         catchError(() =>
+        //             of(this.getLocalStorageData(LocalStorage.MonobankCurrency))
+        //         ),
+        //         tap((currency) =>
+        //             this.updateLocalStorage(
+        //                 LocalStorage.MonobankCurrency,
+        //                 currency
+        //             )
+        //         )
+        //     );
+        // }
 
-        return of(this.getLocalStorageData(LocalStorage.MonobankCurrency));
+        // return of(this.getLocalStorageData(LocalStorage.MonobankCurrency));
     }
 
     public testAuthenticationAccess(): Observable<IAccountInfo | any> {

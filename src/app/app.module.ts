@@ -6,7 +6,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { ErrorInterceptor } from '@core/interceptors/error.interceptor';
 import { TokenInterceptor } from '@core/interceptors/token.interceptor';
-import { MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
+import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { AngularSvgIconModule } from 'angular-svg-icon';
 import { environment } from '../environments';
 import { AppComponent } from './app.component';
@@ -19,12 +19,16 @@ import { AppRoutingModule } from './app.routing';
         AppRoutingModule,
         AngularSvgIconModule.forRoot(),
         HttpClientModule,
-        MatSnackBarModule
+        MatSnackBarModule,
     ],
     providers: [
         {
             provide: MONOBANK_API,
             useValue: environment.monobankApi,
+        },
+        {
+            provide: BASE_PATH_API,
+            useValue: environment.basePathApi,
         },
         {
             provide: HTTP_INTERCEPTORS,
@@ -34,7 +38,7 @@ import { AppRoutingModule } from './app.routing';
         {
             provide: HTTP_INTERCEPTORS,
             useClass: ErrorInterceptor,
-            multi: true
+            multi: true,
         },
         provideAnimationsAsync(),
     ],
