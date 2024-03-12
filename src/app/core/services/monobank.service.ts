@@ -79,15 +79,9 @@ export class MonobankService {
     }
 
     public getClientInfo(): Observable<IAccountInfo | any> {
-        const clientInfoApiUrl = `${this.monobankApi}/personal/client-info`;
+        const clientInfoApiUrl = `${this.basePathApi}/api/users/my`;
 
-        if (this.shouldSendQuery(LocalStorage.MonobankClientInfo)) {
-            return this.http
-                .get<IAccountInfo>(clientInfoApiUrl)
-                .pipe(catchError((error) => this.handleClientInfoError(error)));
-        }
-
-        return of(this.getLocalStorageData(LocalStorage.MonobankClientInfo));
+        return this.http.get<IAccountInfo>(clientInfoApiUrl);
     }
 
     public get monobankTransactionKey(): LocalStorage {

@@ -4,7 +4,7 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { LocalStorage } from '@core/enums';
 import { IAccountInfo } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, Observable, first, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { MonobankService } from './monobank.service';
 
@@ -141,25 +141,25 @@ export class AuthService {
         return token;
     }
 
-    public processToken(token: string): void {
-        this.localStorageService.set(LocalStorage.MonobankToken, token);
-        this.monobankService
-            .testAuthenticationAccess()
-            .pipe(
-                first(),
-                tap((clientInfo: IAccountInfo | { error: string }) => {
-                    this.localStorageService.set(
-                        LocalStorage.MonobankClientInfo,
-                        clientInfo
-                    );
+    // public processToken(token: string): void {
+    //     this.localStorageService.set(LocalStorage.MonobankToken, token);
+    //     this.monobankService
+    //         .testAuthenticationAccess()
+    //         .pipe(
+    //             first(),
+    //             tap((clientInfo: IAccountInfo | { error: string }) => {
+    //                 this.localStorageService.set(
+    //                     LocalStorage.MonobankClientInfo,
+    //                     clientInfo
+    //                 );
 
-                    if ('error' in clientInfo) return;
+    //                 if ('error' in clientInfo) return;
 
-                    this.setDefaultCardBasedOnAmount(clientInfo);
-                })
-            )
-            .subscribe((res) => this.authData$.next(res));
-    }
+    //                 this.setDefaultCardBasedOnAmount(clientInfo);
+    //             })
+    //         )
+    //         .subscribe((res) => this.authData$.next(res));
+    // }
 
     private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
         let activeIndex = 0;
