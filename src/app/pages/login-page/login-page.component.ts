@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppRouteEnum } from '@core/enums';
-import { IAccountInfo } from '@core/interfaces';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, catchError, first } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -28,7 +27,6 @@ export class LoginPageComponent implements OnInit, OnDestroy {
 
     public ngOnInit(): void {
         this.initFormControl();
-        this.initAuthDataObserver();
     }
 
     private initFormControl(): void {
@@ -48,7 +46,16 @@ export class LoginPageComponent implements OnInit, OnDestroy {
         this.isLoading = true;
         this.errorMessage = '';
 
-        this.authService.processToken(this.token);
+        this.authService.login(this.formGroup.value).pipe(
+            first(),
+            catchError((error) => {
+                this.handleAuthDataErrorResponse(error);
+                throw new Error(error);
+            })
+        ).subscribe(response => {
+            console.log(response);
+            this.router.navigateByUrl(AppRouteEnum.Main);
+        });
     }
 
     // public onInputChange(event: any): void {
@@ -57,26 +64,24 @@ export class LoginPageComponent implements OnInit, OnDestroy {
     //     this.errorMessage = '';
     // }
 
-    private initAuthDataObserver(): void {
-        this.authService.authData$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(this.handleAuthDataResponse.bind(this));
-    }
+    // private initAuthDataObserver(): void {
+    //     this.authService.authData$
+    //         .pipe(takeUntil(this.destroy$))
+    //         .subscribe(this.handleAuthDataResponse.bind(this));
+    // }
 
-    private handleAuthDataResponse(
-        response: IAccountInfo | { error: string }
+    private handleAuthDataErrorResponse(
+        error: any
     ): void {
         this.isLoading = false;
         this.cdr.detectChanges();
 
-        if (!response) return;
-        if ('error' in response) {
-            this.errorMessage = response.error;
+        if (!error) return;
+        if ('error' in error) {
+            this.errorMessage = error.error;
             this.cdr.detectChanges();
             return;
         }
-
-        this.router.navigateByUrl(AppRouteEnum.Main);
     }
 
     public ngOnDestroy(): void {

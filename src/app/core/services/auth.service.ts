@@ -68,7 +68,18 @@ export class AuthService {
             );
     }
 
-    public login(token: string): void {
+    public login(
+        userAuthData: { email: string, password: string }
+    ): Observable<{ token: string }> {
+        return this.http.post<{ token: string }>(
+            `${this.basePathAPI}/auth/login`,
+            userAuthData
+        ).pipe(
+            tap((response) => this.setToken(response.token))
+        )
+    }
+
+    public setToken(token: string): void {
         localStorage.setItem('token', token);
         const id = this.getUserIdFromToken(token);
 
