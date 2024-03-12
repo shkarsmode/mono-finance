@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
-import { LocalStorage } from '@core/enums';
+import { AuthService } from '../services/auth.service';
 
 export const authGuard: CanActivateFn = (
     route: ActivatedRouteSnapshot,
@@ -13,8 +13,13 @@ export const authGuard: CanActivateFn = (
     providedIn: 'root',
 })
 export class AuthGuard {
+    constructor(
+        private readonly authService: AuthService
+    ) {}
+    
     public canActivate(router: Router): boolean {
-        const token = localStorage.getItem(LocalStorage.MonobankToken);
+        const token = this.authService.token;
+        
         if (token && token.length > 30) {
             return true;
         } else {
