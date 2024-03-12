@@ -1,20 +1,34 @@
 <div class="login-container">
-    <h2>Auth with Monobank token</h2>
-    <p>Input your token:</p>
+    <!-- <h2>Auth with Monobank token</h2> -->
+    <!-- <p>Input your token:</p> -->
+    <h2>Login form</h2>
 
-    <form>
-        <label for="token">Token:</label>
-        <input
+    <form [formGroup]="formGroup">
+        <div>
+            <label for="token">Email:</label>
+            <input
+                formControlName="email"
+                type="text">
+        </div>
+        <div>
+            <label for="token">Password:</label>
+            <input
+                formControlName="password"
+                type="password">
+        </div>
+        <!-- <label for="token">Token:</label> -->
+        <!-- <input
+            formControlName=""
             id="token"
             name="token"
             #token
             placeholder="Введите ваш токен"
             required
             type="text"
-            (input)="onInputChange($event)">
+            (input)="onInputChange($event)"> -->
         <button
-            (click)="submitToken()"
-            [disabled]="!isValid || isLoading"
+            (click)="login()"
+            [disabled]="(formGroup.invalid && formGroup.touched) || isLoading"
             type="button">
             Submit
         </button>
@@ -24,9 +38,9 @@
         }
     </form>
 
-    <a
+    <!-- <a
         href="https://api.monobank.ua/index.html"
         target="_blank">
         How to find Token?
-    </a>
+    </a> -->
 </div>

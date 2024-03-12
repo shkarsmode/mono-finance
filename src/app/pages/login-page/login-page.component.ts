@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppRouteEnum } from '@core/enums';
 import { IAccountInfo } from '@core/interfaces';
@@ -12,9 +13,9 @@ import { AuthService } from '../../core/services/auth.service';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPageComponent implements OnInit, OnDestroy {
+    public formGroup: FormGroup;
     public token: string = '';
     public errorMessage: string = '';
-    public isValid: boolean = false;
     public isLoading: boolean = false;
 
     private destroy$: Subject<void> = new Subject();
@@ -26,27 +27,35 @@ export class LoginPageComponent implements OnInit, OnDestroy {
     ) {}
 
     public ngOnInit(): void {
+        this.initFormControl();
         this.initAuthDataObserver();
     }
 
-    public submitToken(): void {
-        if (!this.token) {
-            this.isValid = false;
+    private initFormControl(): void {
+        this.formGroup = new FormGroup({
+            email: new FormControl('', { validators: [Validators.email] }),
+            password: new FormControl('', {
+                validators: [Validators.minLength(6)],
+            }),
+        });
+    }
+
+    public login(): void {
+        if (this.formGroup.invalid) {
             return;
         }
 
         this.isLoading = true;
-        this.isValid = false;
         this.errorMessage = '';
 
         this.authService.processToken(this.token);
     }
 
-    public onInputChange(event: any): void {
-        this.token = event.target.value
-        this.isValid = this.token.length > 5;
-        this.errorMessage = '';
-    }
+    // public onInputChange(event: any): void {
+    //     this.token = event.target.value
+    //     this.isValid = this.token.length > 5;
+    //     this.errorMessage = '';
+    // }
 
     private initAuthDataObserver(): void {
         this.authService.authData$

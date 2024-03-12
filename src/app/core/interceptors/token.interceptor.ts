@@ -1,18 +1,21 @@
 import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { LocalStorage } from '@core/enums';
+import { AuthService } from '@core/services/auth.service';
 
 
 @Injectable({
     providedIn: 'root',
 })
 export class TokenInterceptor implements HttpInterceptor {
+    constructor(private readonly authService: AuthService) {}
+
     public intercept(request: HttpRequest<any>, next: HttpHandler) {
-        const token = localStorage.getItem(LocalStorage.MonobankToken);
+        const token = this.authService.token;
+
         if (token) {
             request = request.clone({
                 setHeaders: {
-                    'X-Token': token,
+                    Authorization: `Bearer ${token}`,
                 },
             });
         }

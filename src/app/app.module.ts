@@ -4,6 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { ErrorInterceptor } from '@core/interceptors/error.interceptor';
 import { TokenInterceptor } from '@core/interceptors/token.interceptor';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
@@ -22,6 +23,8 @@ import { AppRoutingModule } from './app.routing';
         MatSnackBarModule,
     ],
     providers: [
+        JwtHelperService,
+        { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
         {
             provide: MONOBANK_API,
             useValue: environment.monobankApi,
