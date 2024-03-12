@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, of } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 
 @Injectable({
@@ -94,25 +94,26 @@ export class MonobankService {
         dateEnd: number
     ): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
-        const transactionsApiUrl = `${this.monobankApi}/personal/statement/${cardId}/${dateStart}/${dateEnd}`;
+        const transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}`;
+        return this.http.get<ITransaction[]>(transactionsApiUrl);
+        
+        // if (!cardId) return of({ error: 'Invalid token' });
 
-        if (!cardId) return of({ error: 'Invalid token' });
+        // if (this.shouldSendQuery(this.monobankTransactionKey)) {
+        //     return this.http.get<ITransaction[]>(transactionsApiUrl).pipe(
+        //         catchError(() =>
+        //             of(this.getLocalStorageData(this.monobankTransactionKey))
+        //         ),
+        //         tap((transactions) =>
+        //             this.updateLocalStorage(
+        //                 this.monobankTransactionKey,
+        //                 transactions
+        //             )
+        //         )
+        //     );
+        // }
 
-        if (this.shouldSendQuery(this.monobankTransactionKey)) {
-            return this.http.get<ITransaction[]>(transactionsApiUrl).pipe(
-                catchError(() =>
-                    of(this.getLocalStorageData(this.monobankTransactionKey))
-                ),
-                tap((transactions) =>
-                    this.updateLocalStorage(
-                        this.monobankTransactionKey,
-                        transactions
-                    )
-                )
-            );
-        }
-
-        return of(this.getLocalStorageData(this.monobankTransactionKey));
+        // return of(this.getLocalStorageData(this.monobankTransactionKey));
     }
 
     private shouldSendQuery(key: LocalStorage): boolean {
