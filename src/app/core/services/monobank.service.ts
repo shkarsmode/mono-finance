@@ -79,7 +79,7 @@ export class MonobankService {
     }
 
     public getClientInfo(): Observable<IAccountInfo | any> {
-        const clientInfoApiUrl = `${this.basePathApi}/api/users/my`;
+        const clientInfoApiUrl = `${this.basePathApi}/users/my`;
 
         return this.http.get<IAccountInfo>(clientInfoApiUrl);
     }
