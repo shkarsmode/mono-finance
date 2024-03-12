@@ -1,31 +1,24 @@
 <div class="login-container">
-    <!-- <h2>Auth with Monobank token</h2> -->
-    <!-- <p>Input your token:</p> -->
     <h2>Login form</h2>
 
-    <form [formGroup]="formGroup">
+    <form
+        [formGroup]="formGroup"
+        (submit)="login()">
         <div>
             <label for="token">Email:</label>
             <input
+                name="email"
                 formControlName="email"
                 type="text">
         </div>
         <div>
             <label for="token">Password:</label>
             <input
+                name="password"
                 formControlName="password"
                 type="password">
         </div>
-        <!-- <label for="token">Token:</label> -->
-        <!-- <input
-            formControlName=""
-            id="token"
-            name="token"
-            #token
-            placeholder="Введите ваш токен"
-            required
-            type="text"
-            (input)="onInputChange($event)"> -->
+        
         <button
             (click)="login()"
             [disabled]="(formGroup.invalid && formGroup.touched) || isLoading"
@@ -36,11 +29,21 @@
         @if (errorMessage) {
             <div class="error-message">{{ errorMessage }}</div>
         }
-    </form>
-
-    <!-- <a
-        href="https://api.monobank.ua/index.html"
-        target="_blank">
-        How to find Token?
-    </a> -->
+    </form>    
 </div>
+
+<!-- <label for="token">Token:</label> -->
+<!-- <input
+            formControlName=""
+            id="token"
+            name="token"
+            #token
+            placeholder="Введите ваш токен"
+            required
+            type="text"
+            (input)="onInputChange($event)"> -->
+            <!-- <a
+                    href="https://api.monobank.ua/index.html"
+                    target="_blank">
+                    How to find Token?
+                </a> -->

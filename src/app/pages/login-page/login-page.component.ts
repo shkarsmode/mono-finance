@@ -13,16 +13,15 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class LoginPageComponent implements OnInit, OnDestroy {
     public formGroup: FormGroup;
-    public token: string = '';
     public errorMessage: string = '';
     public isLoading: boolean = false;
 
     private destroy$: Subject<void> = new Subject();
 
     constructor(
-        private readonly authService: AuthService,
         private readonly router: Router,
-        private readonly cdr: ChangeDetectorRef
+        private readonly cdr: ChangeDetectorRef,
+        private readonly authService: AuthService,
     ) {}
 
     public ngOnInit(): void {
