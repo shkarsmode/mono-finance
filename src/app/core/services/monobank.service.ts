@@ -107,9 +107,14 @@ export class MonobankService {
             .get<IAccountInfo>(clientInfoApiUrl)
             .pipe(tap((clientInfo) => {
                 this.clientInfo$.next(clientInfo);
-                if (!localStorage.getItem(LocalStorage.MonobankActiveCardId)) {
+                const activeCardId = localStorage.getItem(
+                    LocalStorage.MonobankActiveCardId
+                );
+                if (!activeCardId) {
                     this.setDefaultCardBasedOnAmount(clientInfo);
                     this.getTransactions();
+                } else {
+                    this.activeCardId$.next(activeCardId);
                 }
             }));
     }
