@@ -25,6 +25,12 @@ export class ErrorInterceptor implements HttpInterceptor {
             catchError((error: any) => {
                 if (error.error.statusCode === 401) {
                     this.router.navigateByUrl('/login');
+                    this.snackBar.open(
+                        `You have to authorize`,
+                        '👀',
+                        { duration: 6000 }
+                    );
+                    return throwError(() => new Error('401'));
                 }
 
                 const params = this.removeBasePathUrl(error.url);
@@ -36,7 +42,7 @@ export class ErrorInterceptor implements HttpInterceptor {
                     { duration: 6000 }
                 );
 
-                return throwError(() => new Error('test'))
+                return throwError(() => new Error(error.error));
             })
         );
     }
