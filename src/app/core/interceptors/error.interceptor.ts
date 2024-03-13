@@ -6,6 +6,7 @@ import {
 import { Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { AuthService } from '@core/services/auth.service';
 import { catchError, throwError } from 'rxjs';
 
 @Injectable({
@@ -15,6 +16,7 @@ export class ErrorInterceptor implements HttpInterceptor {
     constructor(
         private readonly router: Router,
         private readonly snackBar: MatSnackBar,
+        private readonly authService: AuthService
     ) {}
 
     public intercept(
@@ -23,8 +25,11 @@ export class ErrorInterceptor implements HttpInterceptor {
     ) {
         return next.handle(request).pipe(
             catchError((error: any) => {
+                console.log(error.error);
+                console.log(error.error.statusCode);
                 if (error.error.statusCode === 401) {
                     this.router.navigateByUrl('/login');
+                    this.authService.logout();
                     this.snackBar.open(
                         `You have to authorize`,
                         '👀',
