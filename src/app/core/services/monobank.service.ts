@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, first, of, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 
 @Injectable({
@@ -46,7 +46,7 @@ export class MonobankService {
         if (!activeCardId) return;
 
         this.activeCardId$.next(activeCardId);
-        this.getTransactions();
+        this.getTransactions().pipe(first()).subscribe();
     }
 
     public get monobankActiveCardId(): string {
