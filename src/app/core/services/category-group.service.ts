@@ -81,7 +81,7 @@ export class CategoryGroupService {
                         .toLocaleLowerCase()
                         .includes(key.toLocaleLowerCase())
                 );
-                isFit && (group.amount += transaction.amount);
+                isFit && (group.amount += +transaction.amount);
             });
         });
 
