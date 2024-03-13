@@ -29,6 +29,7 @@ export class MonobankService {
         const currentCardId = this.localStorageService.get(
             LocalStorage.MonobankActiveCardId
         );
+        this.activeCardId$.next(activeCardId);
         if (currentCardId === activeCardId) return;
 
         this.localStorageService.set(
@@ -44,7 +45,6 @@ export class MonobankService {
         );
         if (!activeCardId) return;
 
-        this.activeCardId$.next(activeCardId);
         this.getTransactions().pipe(first()).subscribe();
     }
 
