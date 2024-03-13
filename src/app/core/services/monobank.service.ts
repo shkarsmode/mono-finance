@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, Observable, Subject, catchError, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, of, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 
 @Injectable({
@@ -14,7 +14,8 @@ export class MonobankService {
     public readonly transactionsUpdated$: Subject<void> = new Subject();
     public readonly activeCardId$: BehaviorSubject<string> =
         new BehaviorSubject<string>('');
-
+    public readonly currentTransactions$: Subject<ITransaction[]> = new Subject();
+    
     constructor(
         private readonly router: Router,
         private readonly http: HttpClient,
@@ -42,8 +43,10 @@ export class MonobankService {
         const activeCardId = this.localStorageService.get<string>(
             LocalStorage.MonobankActiveCardId
         );
-        activeCardId && this.activeCardId$.next(activeCardId);
-        this.transactionsUpdated$.next();
+        if (!activeCardId) return;
+
+        this.activeCardId$.next(activeCardId);
+        this.getTransactions();
     }
 
     public get monobankActiveCardId(): string {
@@ -90,30 +93,14 @@ export class MonobankService {
     }
 
     public getTransactions(
-        dateStart: number,
-        dateEnd: number
+        dateStart?: number,
+        dateEnd?: number
     ): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}`;
-        return this.http.get<ITransaction[]>(transactionsApiUrl);
-        
-        // if (!cardId) return of({ error: 'Invalid token' });
-
-        // if (this.shouldSendQuery(this.monobankTransactionKey)) {
-        //     return this.http.get<ITransaction[]>(transactionsApiUrl).pipe(
-        //         catchError(() =>
-        //             of(this.getLocalStorageData(this.monobankTransactionKey))
-        //         ),
-        //         tap((transactions) =>
-        //             this.updateLocalStorage(
-        //                 this.monobankTransactionKey,
-        //                 transactions
-        //             )
-        //         )
-        //     );
-        // }
-
-        // return of(this.getLocalStorageData(this.monobankTransactionKey));
+        return this.http
+            .get<ITransaction[]>(transactionsApiUrl)
+            .pipe(tap((transactions) => this.currentTransactions$.next(transactions)));
     }
 
     private shouldSendQuery(key: LocalStorage): boolean {

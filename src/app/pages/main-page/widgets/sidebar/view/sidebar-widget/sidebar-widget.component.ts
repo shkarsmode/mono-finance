@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { MatDialog } from '@angular/material/dialog';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { Observable, Subject, firstValueFrom, takeUntil } from 'rxjs';
 import { LocalStorageService } from '../../../../../../core/services/local-storage.service';
 import { DialogAddCategoryComponent } from '../../modals';
 @Component({
@@ -13,6 +13,7 @@ import { DialogAddCategoryComponent } from '../../modals';
 })
 export class SidebarWidgetComponent implements OnInit, OnDestroy {
     public groups$: Observable<ICategoryGroup[]>;
+    public currentTransactions$: Observable<ITransaction[]>;
 
     private destroy$: Subject<void> = new Subject();
 
@@ -25,7 +26,12 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
     ) {}
 
     public ngOnInit(): void {
+        this.initCurrentTransactions();
         this.initCategoryGroupsData();
+    }
+
+    private initCurrentTransactions(): void {
+        this.currentTransactions$ = this.monobankService.currentTransactions$.asObservable();
     }
 
     public changeGroupsOrdering(groups: ICategoryGroup[]): void {
@@ -40,10 +46,12 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         this.openModalToAddCategory(group);
     }
 
-    public openModalToAddCategory(
+    public async openModalToAddCategory(
         editGroupData?: { keys: string[], emoji: string, title: string }
-    ): void {
-        const transactionsDescriptionArray = this.transactionsDescriptionArray;
+    ): Promise<void> {
+        const transactionsDescriptionArray =
+            await this.getTransactionsDescriptionArray();
+
         this.dialog
             .open(DialogAddCategoryComponent, {
                 data: {
@@ -62,10 +70,8 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         this.categoryGroupService.set(group);
     }
 
-    private get transactionsDescriptionArray(): Array<string> {
-        const transactions: ITransaction[] = this.localStorageService.get(
-            this.monobankService.monobankTransactionKey
-        );
+    private async getTransactionsDescriptionArray(): Promise<Array<string>> {
+        const transactions: ITransaction[] = await firstValueFrom(this.currentTransactions$);
 
         return Array.from(
             new Set(transactions.map((transaction) => transaction.description))

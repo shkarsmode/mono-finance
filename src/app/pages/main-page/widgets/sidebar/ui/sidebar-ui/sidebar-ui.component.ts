@@ -10,6 +10,7 @@ import { ICategoryGroup } from '@core/interfaces';
 })
 export class SidebarUiComponent {
     @Input() groups: ICategoryGroup[] | null;
+
     @Output() openModal: EventEmitter<void> = new EventEmitter();
     @Output() editGroup: EventEmitter<ICategoryGroup> = new EventEmitter();
     @Output() changeGroupsOrdering: EventEmitter<ICategoryGroup[]> = new EventEmitter();

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { LocalStorage } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
-import { BehaviorSubject, first } from 'rxjs';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
 import { MonobankService } from './monobank.service';
 
@@ -9,7 +9,6 @@ import { MonobankService } from './monobank.service';
     providedIn: 'root',
 })
 export class CategoryGroupService {
-    private transactions: ITransaction[] = [];
     public readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
 
@@ -17,12 +16,12 @@ export class CategoryGroupService {
         private readonly monobankService: MonobankService,
         private readonly localStorageService: LocalStorageService
     ) {
-    this.init();
+        // this.init();
         this.initTransactionsUpdatesObserver();
     }
 
     private initTransactionsUpdatesObserver(): void {
-        this.monobankService.transactionsUpdated$.subscribe(
+        this.monobankService.currentTransactions$.subscribe(
             this.processTransactionsBasedOnGroups.bind(this)
         );
     }
@@ -35,7 +34,7 @@ export class CategoryGroupService {
         );
     }
 
-    public set(group: ICategoryGroup): void {
+    public async set(group: ICategoryGroup): Promise<void> {
         const groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups
         ) as ICategoryGroup[];
@@ -44,39 +43,37 @@ export class CategoryGroupService {
             ...updatedGroups,
             group,
         ]);
-        this.processTransactionsBasedOnGroups();
+        const transactions = await firstValueFrom(this.monobankService.currentTransactions$);
+        this.processTransactionsBasedOnGroups(transactions);
     }
 
-    public init(): void {
-        const firstMonthDay = new Date(new Date().setDate(1)).setUTCHours(
-            0,
-            0,
-            0,
-            0
-        );
+    // public init(): void {
+    //     const firstMonthDay = new Date(new Date().setDate(1)).setUTCHours(
+    //         0,
+    //         0,
+    //         0,
+    //         0
+    //     );
 
-        this.monobankService
-            .getTransactions(firstMonthDay, Date.now())
-            .pipe(first())
-            .subscribe((transactions) => {
-                if (transactions && !('error' in transactions)) {
-                    this.transactions = transactions;
-                    this.processTransactionsBasedOnGroups();
-                }
-            });
-    }
+    //     this.monobankService
+    //         .getTransactions(firstMonthDay, Date.now())
+    //         .pipe(first())
+    //         .subscribe((transactions) => {
+    //             if (transactions && !('error' in transactions)) {
+    //                 this.transactions = transactions;
+    //                 this.processTransactionsBasedOnGroups();
+    //             }
+    //         });
+    // }
 
-    private processTransactionsBasedOnGroups(): void {
-        const transactionKey = this.monobankService.monobankTransactionKey;
-        this.transactions = this.localStorageService.get(transactionKey);
-
+    private processTransactionsBasedOnGroups(transactions: ITransaction[]): void {
         let groups = this.localStorageService.get(
             LocalStorage.MyCategoryGroups
         ) as ICategoryGroup[];
 
         groups = this.getDefaultGroupsIfNotExist(groups);
 
-        this.transactions.forEach((transaction) => {
+        transactions.forEach((transaction) => {
             let isFit = false;
             groups.forEach((group) => {
                 isFit = group.keys.some((key) =>

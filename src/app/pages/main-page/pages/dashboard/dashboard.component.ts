@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable, Subject, first, takeUntil } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
@@ -34,8 +34,9 @@ export class DashboardComponent implements OnInit {
         this.initActiveCardId();
         this.initAccountInfoData();
         this.initCategoryGroupsData();
-        this.initTransactionsDataObserver();
-        this.initTransactionsUpdatesObserver();
+        this.initCurrentTransactionsObserver();
+        // this.initTransactionsDataObserver();
+        // this.initTransactionsUpdatesObserver();
     }
 
     public onSearchTransaction(searchValue: string): void {
@@ -54,10 +55,11 @@ export class DashboardComponent implements OnInit {
         this.sortDirection = sort.direction;
     }
 
-    private initTransactionsUpdatesObserver(): void {
-        this.monobankService.transactionsUpdated$
+    private initCurrentTransactionsObserver(): void {
+        this.transactions$ = this.monobankService.currentTransactions$;
+        this.transactions$
             .pipe(takeUntil(this.destroy$))
-            .subscribe(this.initTransactionsDataObserver.bind(this));
+            .subscribe(transactions => this.transactions = transactions);
     }
 
     public onCardClick(account: IAccount): void {
@@ -74,23 +76,7 @@ export class DashboardComponent implements OnInit {
         this.groups$ = this.categoryGroupService.categoryGroups$;
     }
 
-    private initTransactionsDataObserver(): void {
-        const firstMonthDay = this.getFirstMonthDay(new Date());
-
-        this.monobankService
-            .getTransactions(firstMonthDay, Date.now())
-            .pipe(first())
-            .subscribe((transactions) => {
-                this.transactions = transactions;
-                this.cdr.markForCheck();
-            });
-    }
-
     private initActiveCardId(): void {
         this.activeCardId$ = this.monobankService.activeCardId$;
-    }
-
-    private getFirstMonthDay(date: Date): number {
-        return new Date(date.setDate(1)).setUTCHours(0, 0, 0, 0);
     }
 }
