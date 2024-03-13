@@ -67,9 +67,7 @@ export class DashboardComponent implements OnInit {
     }
 
     private initAccountInfoData(): void {
-        this.clientInfo$ = this.monobankService
-            .getClientInfo()
-            .pipe();
+        this.clientInfo$ = this.monobankService.clientInfo$;
     }
 
     private initCategoryGroupsData(): void {

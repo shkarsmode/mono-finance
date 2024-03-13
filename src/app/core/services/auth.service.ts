@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { JwtHelperService } from '@auth0/angular-jwt';
-import { LocalStorage } from '@core/enums';
 import { IAccountInfo } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
@@ -160,24 +159,4 @@ export class AuthService {
     //         )
     //         .subscribe((res) => this.authData$.next(res));
     // }
-
-    private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
-        let activeIndex = 0;
-        clientInfo.accounts.forEach((account, index) => {
-            if (
-                clientInfo.accounts[activeIndex].balance -
-                    clientInfo.accounts[activeIndex].creditLimit <
-                account.balance - account.creditLimit
-            ) {
-                activeIndex = index;
-            }
-        });
-        const activeCardId = clientInfo.accounts[activeIndex].id;
-        this.monobankService.activeCardId$.next(activeCardId);
-
-        this.localStorageService.set(
-            LocalStorage.MonobankActiveCardId,
-            activeCardId
-        );
-    }
 }

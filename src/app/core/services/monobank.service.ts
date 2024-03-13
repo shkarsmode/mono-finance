@@ -11,20 +11,19 @@ import { LocalStorageService } from './local-storage.service';
     providedIn: 'root',
 })
 export class MonobankService {
-    public readonly transactionsUpdated$: Subject<void> = new Subject();
     public readonly activeCardId$: BehaviorSubject<string> =
         new BehaviorSubject<string>('');
-    public readonly currentTransactions$: Subject<ITransaction[]> = new Subject();
-    
+    public readonly currentTransactions$: Subject<ITransaction[]> =
+        new Subject();
+    public readonly clientInfo$: Subject<IAccountInfo> = new Subject();
+
     constructor(
         private readonly router: Router,
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
         @Inject(MONOBANK_API) private readonly monobankApi: string,
         @Inject(BASE_PATH_API) private readonly basePathApi: string
-    ) {
-        this.updateActiveCardId();
-    }
+    ) {}
 
     public setActiveCardId(activeCardId: string): void {
         const currentCardId = this.localStorageService.get(
@@ -47,6 +46,26 @@ export class MonobankService {
 
         this.activeCardId$.next(activeCardId);
         this.getTransactions().pipe(first()).subscribe();
+    }
+
+    private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
+        let activeIndex = 0;
+        clientInfo.accounts.forEach((account, index) => {
+            if (
+                clientInfo.accounts[activeIndex].balance -
+                    clientInfo.accounts[activeIndex].creditLimit <
+                account.balance - account.creditLimit
+            ) {
+                activeIndex = index;
+            }
+        });
+        const activeCardId = clientInfo.accounts[activeIndex].id;
+        this.activeCardId$.next(activeCardId);
+
+        this.localStorageService.set(
+            LocalStorage.MonobankActiveCardId,
+            activeCardId
+        );
     }
 
     public get monobankActiveCardId(): string {
@@ -84,7 +103,15 @@ export class MonobankService {
     public getClientInfo(): Observable<IAccountInfo | any> {
         const clientInfoApiUrl = `${this.basePathApi}/users/my`;
 
-        return this.http.get<IAccountInfo>(clientInfoApiUrl);
+        return this.http
+            .get<IAccountInfo>(clientInfoApiUrl)
+            .pipe(tap((clientInfo) => {
+                this.clientInfo$.next(clientInfo);
+                if (!localStorage.getItem(LocalStorage.MonobankActiveCardId)) {
+                    this.setDefaultCardBasedOnAmount(clientInfo);
+                    this.getTransactions();
+                }
+            }));
     }
 
     public get monobankTransactionKey(): LocalStorage {
@@ -100,7 +127,11 @@ export class MonobankService {
         const transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}`;
         return this.http
             .get<ITransaction[]>(transactionsApiUrl)
-            .pipe(tap((transactions) => this.currentTransactions$.next(transactions)));
+            .pipe(
+                tap((transactions) =>
+                    this.currentTransactions$.next(transactions)
+                )
+            );
     }
 
     private shouldSendQuery(key: LocalStorage): boolean {
