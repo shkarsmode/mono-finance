@@ -21,14 +21,17 @@ svg {
         opacity: 0.9;
         font-weight: 400;
         transition: all .3s;
+        cursor: pointer;
 
         &-active {
             font-weight: 500;
             opacity: 1;
+            cursor: default;
         }
 
         &-disabled {
             opacity: .2;
+            cursor: not-allowed;
         }
     }
 }

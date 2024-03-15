@@ -53,8 +53,8 @@ export class TransactionsComponent {
     }
 
     public onSelectMonth(month: number): void {
-        if (this.currentMonth < month) return;
-        
+        if (this.currentMonth < month || this.activeMonth === month) return;
+
         this.activeMonth = month;
         this.selectMonth.emit(month);
     }
