@@ -28,7 +28,7 @@ export class TransactionsComponent {
     @ViewChild('inputRef') public inputRef: ElementRef<HTMLInputElement>;
 
     public isFilterByGroups: boolean = false;
-    public isAscSortDirection: boolean = true;
+    public isAscSortDirection: boolean = false;
     public readonly SortBy: typeof TransactionSortBy = TransactionSortBy;
     public activeMonth: number = new Date().getMonth() + 1;
     public currentMonth: number = new Date().getMonth() + 1;
