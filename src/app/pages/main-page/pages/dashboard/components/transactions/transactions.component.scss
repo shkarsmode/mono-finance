@@ -26,6 +26,10 @@ svg {
             font-weight: 500;
             opacity: 1;
         }
+
+        &-disabled {
+            opacity: .2;
+        }
     }
 }
 

@@ -5,6 +5,7 @@
             <div 
                 class="month"
                 [class.month-active]="activeMonth === month.value"
+                [class.month-disabled]="currentMonth < month.value"
                 (click)="onSelectMonth(month.value)">
                 {{ month.name }}
             </div>

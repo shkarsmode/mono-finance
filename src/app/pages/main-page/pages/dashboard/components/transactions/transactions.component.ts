@@ -31,6 +31,7 @@ export class TransactionsComponent {
     public isAscSortDirection: boolean = true;
     public readonly SortBy: typeof TransactionSortBy = TransactionSortBy;
     public activeMonth: number = new Date().getMonth() + 1;
+    public currentMonth: number = new Date().getMonth() + 1;
 
     public readonly monthsMap = [
         { name: 'Jan', value: 1 },
@@ -52,6 +53,9 @@ export class TransactionsComponent {
     }
 
     public onSelectMonth(month: number): void {
+        if (this.currentMonth < month) return;
+        
+        this.activeMonth = month;
         this.selectMonth.emit(month);
     }
 
