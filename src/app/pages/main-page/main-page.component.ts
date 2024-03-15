@@ -25,7 +25,10 @@ export class MainPageComponent implements OnInit {
 
     private initTransactionsData(): void {
         if (localStorage.getItem(LocalStorage.MonobankActiveCardId)) {
-            this.monobankService.getTransactions().pipe(first()).subscribe();
+            this.monobankService
+                .getTransactions(this.monobankService.activeMonth)
+                .pipe(first())
+                .subscribe();
         }
     }
 }

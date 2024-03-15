@@ -40,6 +40,7 @@ export class DashboardComponent implements OnInit {
     }
 
     public onSelectMonth(month: number): void {
+        this.monobankService.activeMonth = month;
         this.monobankService.getTransactions(month)
             .pipe(first())
             .subscribe();

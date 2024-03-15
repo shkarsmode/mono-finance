@@ -16,8 +16,7 @@ export class MonobankService {
     public readonly currentTransactions$: BehaviorSubject<ITransaction[] | any> =
         new BehaviorSubject([]);
     public readonly clientInfo$: BehaviorSubject<IAccountInfo | any> = new BehaviorSubject({});
-
-    
+    public activeMonth: number = new Date().getMonth() + 1;
 
     constructor(
         private readonly router: Router,
@@ -47,7 +46,7 @@ export class MonobankService {
         );
         if (!activeCardId) return;
 
-        this.getTransactions().pipe(first()).subscribe();
+        this.getTransactions(this.activeMonth).pipe(first()).subscribe();
     }
 
     private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
@@ -114,7 +113,7 @@ export class MonobankService {
                 );
                 if (!activeCardId) {
                     this.setDefaultCardBasedOnAmount(clientInfo);
-                    this.getTransactions();
+                    this.getTransactions(this.activeMonth);
                 } else {
                     this.activeCardId$.next(activeCardId);
                 }
