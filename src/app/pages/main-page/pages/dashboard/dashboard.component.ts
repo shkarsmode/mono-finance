@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable, Subject, takeUntil } from 'rxjs';
+import { Observable, Subject, first, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-dashboard',
@@ -39,6 +39,12 @@ export class DashboardComponent implements OnInit {
         // this.initTransactionsUpdatesObserver();
     }
 
+    public onSelectMonth(month: number): void {
+        this.monobankService.getTransactions(month)
+            .pipe(first())
+            .subscribe();
+    }
+
     public onSearchTransaction(searchValue: string): void {
         this.searchTransactionsValue = searchValue;
     }
@@ -59,7 +65,7 @@ export class DashboardComponent implements OnInit {
         this.transactions$ = this.monobankService.currentTransactions$;
         this.transactions$
             .pipe(takeUntil(this.destroy$))
-            .subscribe(transactions => this.transactions = transactions);
+            .subscribe((transactions) => (this.transactions = transactions));
     }
 
     public onCardClick(account: IAccount): void {

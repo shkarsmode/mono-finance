@@ -1,3 +1,17 @@
+<div class="pick-month">
+    <h3>Pick month</h3>
+    <div class="months-wrap">
+        @for (month of monthsMap; track month.value) {
+            <div 
+                class="month"
+                [class.month-active]="activeMonth === month.value"
+                (click)="onSelectMonth(month.value)">
+                {{ month.name }}
+            </div>
+        }
+    </div>
+</div>
+
 <div class="top">
     <div>
         <svg-icon src="assets/svg/transactions.svg"></svg-icon>

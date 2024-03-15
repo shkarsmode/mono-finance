@@ -17,6 +17,8 @@ export class MonobankService {
         new BehaviorSubject([]);
     public readonly clientInfo$: BehaviorSubject<IAccountInfo | any> = new BehaviorSubject({});
 
+    
+
     constructor(
         private readonly router: Router,
         private readonly http: HttpClient,
@@ -125,11 +127,12 @@ export class MonobankService {
     }
 
     public getTransactions(
-        dateStart?: number,
-        dateEnd?: number
+        month?: number
     ): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
-        const transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}`;
+        const transactionsApiUrl = `
+            ${this.basePathApi}/transaction/${cardId}${month ?? '/' + month}
+        `;
         return this.http
             .get<ITransaction[]>(transactionsApiUrl)
             .pipe(

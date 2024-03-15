@@ -12,6 +12,23 @@ svg {
     height: 20px;
 }
 
+.months-wrap {
+    display: flex;
+    column-gap: 5px;
+    font-size: 13px;
+
+    .month {
+        opacity: 0.9;
+        font-weight: 400;
+        transition: all .3s;
+
+        &-active {
+            font-weight: 500;
+            opacity: 1;
+        }
+    }
+}
+
 .top {
     display: flex;
     justify-content: space-between;

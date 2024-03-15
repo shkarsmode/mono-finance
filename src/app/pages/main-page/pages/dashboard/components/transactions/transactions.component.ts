@@ -15,20 +15,44 @@ export class TransactionsComponent {
     @Input() public transactions: ITransaction[] | null;
     @Input() public sortByValue: TransactionSortBy;
 
-    @Output() public sortBy: EventEmitter<
-        { sortBy: TransactionSortBy, direction: 'asc' | 'desc'}
-    > = new EventEmitter();
-    @Output() public searchTransactions: EventEmitter<string> = new EventEmitter();
-    @Output() public selectValueChange: EventEmitter<string[]> = new EventEmitter();
+    @Output() public sortBy: EventEmitter<{
+        sortBy: TransactionSortBy;
+        direction: 'asc' | 'desc';
+    }> = new EventEmitter();
+    @Output() public searchTransactions: EventEmitter<string> =
+        new EventEmitter();
+    @Output() public selectValueChange: EventEmitter<string[]> =
+        new EventEmitter();
+    @Output() public selectMonth: EventEmitter<number> = new EventEmitter();
 
     @ViewChild('inputRef') public inputRef: ElementRef<HTMLInputElement>;
 
     public isFilterByGroups: boolean = false;
     public isAscSortDirection: boolean = true;
     public readonly SortBy: typeof TransactionSortBy = TransactionSortBy;
+    public activeMonth: number = new Date().getMonth() + 1;
+
+    public readonly monthsMap = [
+        { name: 'Jan', value: 1 },
+        { name: 'Feb', value: 2 },
+        { name: 'Mar', value: 3 },
+        { name: 'Apr', value: 4 },
+        { name: 'May', value: 5 },
+        { name: 'Jun', value: 6 },
+        { name: 'Jul', value: 7 },
+        { name: 'Aug', value: 8 },
+        { name: 'Sep', value: 9 },
+        { name: 'Oct', value: 10 },
+        { name: 'Nov', value: 11 },
+        { name: 'Dec', value: 12 },
+    ];
 
     public onInputEvent(event: Event): void {
         this.searchTransactions.emit((event.target as HTMLInputElement).value);
+    }
+
+    public onSelectMonth(month: number): void {
+        this.selectMonth.emit(month);
     }
 
     public clearInputEvent(): void {
@@ -39,7 +63,7 @@ export class TransactionsComponent {
     public onSortByEvent(sortBy: TransactionSortBy): void {
         if (sortBy === this.sortByValue)
             this.isAscSortDirection = !this.isAscSortDirection;
-        
+
         const direction = this.isAscSortDirection ? 'asc' : 'desc';
         this.sortBy.emit({ sortBy, direction });
     }
