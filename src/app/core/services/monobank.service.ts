@@ -130,7 +130,7 @@ export class MonobankService {
     ): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const transactionsApiUrl = `
-            ${this.basePathApi}/transaction/${cardId}${month ?? '/' + month}
+            ${this.basePathApi}/transaction/${cardId}/${month}
         `;
         return this.http
             .get<ITransaction[]>(transactionsApiUrl)
