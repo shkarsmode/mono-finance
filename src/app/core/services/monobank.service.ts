@@ -13,9 +13,11 @@ import { LocalStorageService } from './local-storage.service';
 export class MonobankService {
     public readonly activeCardId$: BehaviorSubject<string> =
         new BehaviorSubject<string>('');
-    public readonly currentTransactions$: BehaviorSubject<ITransaction[] | any> =
-        new BehaviorSubject([]);
-    public readonly clientInfo$: BehaviorSubject<IAccountInfo | any> = new BehaviorSubject({});
+    public readonly currentTransactions$: BehaviorSubject<
+        ITransaction[] | any
+    > = new BehaviorSubject([]);
+    public readonly clientInfo$: BehaviorSubject<IAccountInfo | any> =
+        new BehaviorSubject({});
     public activeMonth: number = new Date().getMonth() + 1;
 
     constructor(
@@ -104,9 +106,8 @@ export class MonobankService {
     public getClientInfo(): Observable<IAccountInfo | any> {
         const clientInfoApiUrl = `${this.basePathApi}/users/my`;
 
-        return this.http
-            .get<IAccountInfo>(clientInfoApiUrl)
-            .pipe(tap((clientInfo) => {
+        return this.http.get<IAccountInfo>(clientInfoApiUrl).pipe(
+            tap((clientInfo) => {
                 this.clientInfo$.next(clientInfo);
                 const activeCardId = localStorage.getItem(
                     LocalStorage.MonobankActiveCardId
@@ -117,7 +118,8 @@ export class MonobankService {
                 } else {
                     this.activeCardId$.next(activeCardId);
                 }
-            }));
+            })
+        );
     }
 
     public get monobankTransactionKey(): LocalStorage {
@@ -125,9 +127,7 @@ export class MonobankService {
             this.monobankActiveCardId) as LocalStorage;
     }
 
-    public getTransactions(
-        month?: number
-    ): Observable<ITransaction[] | any> {
+    public getTransactions(month?: number): Observable<ITransaction[] | any> {
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const transactionsApiUrl = `
             ${this.basePathApi}/transaction/${cardId}/${month}
@@ -136,7 +136,9 @@ export class MonobankService {
             .get<ITransaction[]>(transactionsApiUrl)
             .pipe(
                 tap((transactions) =>
-                    this.currentTransactions$.next(transactions)
+                    this.currentTransactions$.next(
+                        this.removeDuplicatedTransactionsById(transactions)
+                    )
                 )
             );
     }
@@ -175,6 +177,32 @@ export class MonobankService {
 
         this.updateLocalStorage(LocalStorage.MonobankClientInfo, clientInfo);
         return of(clientInfo);
+    }
+
+    private removeDuplicatedTransactionsById(
+        transactions: ITransaction[]
+    ): ITransaction[] {
+        const duplicatedElementsCount: { [key: string]: number } = {};
+
+        transactions.forEach((e) => {
+            duplicatedElementsCount[e.id] = duplicatedElementsCount[e.id] >= 0 ? 
+                duplicatedElementsCount[e.id] + 1 : 0;
+        });
+
+        const duplicatedElementsArr = Object.entries(duplicatedElementsCount)
+            .filter((el) => el[1])
+            .map((el) => el[0]);
+
+        duplicatedElementsArr.forEach(duplicated => {
+            const firstDuplicatedElementIndex = transactions.findIndex(
+                (transaction) => transaction?.id && transaction?.id === duplicated
+            );
+            console.log('Duplicated', duplicated);
+            transactions[firstDuplicatedElementIndex] = (undefined as any);
+        })
+
+
+        return transactions.filter((transaction) => !!transaction);
     }
 
     private getLocalStorageData(key: LocalStorage): any {
