@@ -115,7 +115,7 @@
 				matTooltipHideDelay="300"
 				matTooltipPosition="left">
                 <th>{{ transaction.description }}</th>
-                <td>{{ transaction.time * 1000 - 3600000 | date: 'MMM d, y • HH:mm' }}</td>
+                <td>{{ transaction.time * 1000 + 3600000 | date: 'MMM d, y • HH:mm' }}</td>
                 @if (transaction.amount < 0) {
                     <td>Sent</td>
                 } @else {
