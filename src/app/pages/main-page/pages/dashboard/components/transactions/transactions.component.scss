@@ -4,7 +4,7 @@
     @include block;
     display: flex;
     flex-direction: column;
-    width: 600px;
+    width: 715px;
 }
 
 svg {
@@ -162,6 +162,22 @@ table {
     }
 }
 
+
+.status-icon {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+
+    top: 7px;
+    left: 18px;
+    position: relative;
+
+    &.rotate {
+        transform: rotate(180deg) !important;
+        justify-content: flex-end;
+    }
+}
+
 .amount {
     font-weight: 600;
     color: green;
@@ -171,7 +187,7 @@ table {
     .cashback {
         position: absolute;
         top: 0px;
-        right: 0px;
+        right: 25px;
         color: green;
         font-size: 12px;
     }
@@ -183,4 +199,14 @@ table {
 
 :host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
     display: none;
+}
+
+.balance {
+    font-weight: 500;
+    filter: blur(5px);
+    transition: all .3s;
+
+    &:hover {
+        filter: blur(0px)
+    }
 }

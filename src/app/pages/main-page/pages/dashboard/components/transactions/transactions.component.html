@@ -85,7 +85,7 @@
                     [class.rotate]="!isAscSortDirection">
                 </svg-icon>
             </th>
-            <th class="status-th">
+            <th class="status-th" style="width: 80px;">
                 Status
                 <svg-icon 
                     src="assets/svg/sort-up.svg" 
@@ -103,6 +103,11 @@
                     [class.rotate]="!isAscSortDirection">
                 </svg-icon>
             </th>
+            <th class="amount-th">
+                <span>
+                    Balance
+                </span>
+            </th>
         </tr>
     </thead>
     <tbody>
@@ -116,11 +121,12 @@
 				matTooltipPosition="left">
                 <th>{{ transaction.description }}</th>
                 <td>{{ transaction.time * 1000 + 3600000 | date: 'MMM d, y • HH:mm' }}</td>
-                @if (transaction.amount < 0) {
-                    <td>Sent</td>
-                } @else {
-                    <td>Received</td>
-                }
+                    <svg-icon 
+                        class="status-icon"
+                        [style.fill]="transaction.amount < 0 ? '#b10000' : '#3fa211'"
+                        src="assets/svg/arrow-up.svg" 
+                        [class.rotate]="transaction.amount < 0">
+                    </svg-icon>
                 <td 
                     class="amount"
                     [class.sent]="transaction.amount < 0">
@@ -128,6 +134,9 @@
                     @if (transaction.cashbackAmount > 0) {
                         <span class="cashback">+{{ transaction.cashbackAmount / 100 }} UAH</span>
                     }
+                </td>
+                <td class="balance">
+                    {{ transaction.balance / 100 | number: '1.0-0' }}
                 </td>
             </tr>
         }
