@@ -105,7 +105,11 @@ export class CategoryGroupService {
 
         // groups = this.getDefaultGroupsIfNotExist(groups);
 
-        groups?.forEach((group: any) => group.amount = 0);
+        if (!groups) {
+            return;
+        }
+
+        groups.forEach((group: any) => group.amount = 0);
 
         transactions.forEach((transaction) => {
             let isFit = false;
