@@ -5,6 +5,7 @@ export interface IAccountInfo {
     permissions: string;
     accounts: IAccount[];
     jars: IJar[];
+    categoryGroups: any;
 }
 
 interface IJar {

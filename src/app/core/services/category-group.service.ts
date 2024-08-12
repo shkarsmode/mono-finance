@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { LocalStorage } from '@core/enums';
+import { HttpClient } from '@angular/common/http';
+import { Inject, Injectable } from '@angular/core';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
-import { BehaviorSubject, firstValueFrom } from 'rxjs';
-import { LocalStorageService } from './local-storage.service';
+import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
+import { BehaviorSubject, first, firstValueFrom } from 'rxjs';
 import { MonobankService } from './monobank.service';
 
 @Injectable({
@@ -13,37 +13,59 @@ export class CategoryGroupService {
         new BehaviorSubject(null);
 
     constructor(
+        private readonly http: HttpClient,
         private readonly monobankService: MonobankService,
-        private readonly localStorageService: LocalStorageService
+        @Inject(BASE_PATH_API) private readonly basePathApi: string,
     ) {
         // this.init();
+        this.monobankService.categoryGroups$ = this.categoryGroups$;
         this.initTransactionsUpdatesObserver();
     }
 
+    private updateCategories(categories: ICategoryGroup[]): void {
+        // const stringifiedCategories = JSON.stringify(categories);
+        this.categoryGroups$.next(categories);
+        this.http
+            .post<string>(
+                `${this.basePathApi}/users/update-categories`,
+                categories
+            )
+            .pipe(first())
+            .subscribe((affected) =>
+                console.log('Update Categories Affected: ', affected)
+            );
+    }
+
     private initTransactionsUpdatesObserver(): void {
-        this.monobankService.currentTransactions$.subscribe(
-            this.processTransactionsBasedOnGroups.bind(this)
-        );
+        this.monobankService.currentTransactions$
+            .subscribe(
+                this.processTransactionsBasedOnGroups.bind(this)
+            );
     }
 
     public changeOrdering(groups: ICategoryGroup[]): void {
-        const updatedGroups = groups.map(group => ({ ...group, amount: 0 }))
-        this.localStorageService.set(
-            LocalStorage.MyCategoryGroups,
-            updatedGroups
-        );
+        const updatedGroups = groups.map((group) => ({ ...group, amount: 0 }));
+        this.updateCategories(updatedGroups);
+        this.processTransactionsBasedOnGroups();
+        // this.localStorageService.set(
+        //     LocalStorage.MyCategoryGroups,
+        //     updatedGroups
+        // );
     }
 
     public async set(group: ICategoryGroup): Promise<void> {
-        const groups = this.localStorageService.get(
-            LocalStorage.MyCategoryGroups
-        ) as ICategoryGroup[];
-        const updatedGroups = groups.filter(oldGroup => oldGroup.title !== group.title);
-        this.localStorageService.set(LocalStorage.MyCategoryGroups, [
-            ...updatedGroups,
-            group,
-        ]);
-        const transactions = await firstValueFrom(this.monobankService.currentTransactions$);
+        const groups = await firstValueFrom(this.categoryGroups$);
+        const updatedGroups = groups.filter(
+            (oldGroup: any) => oldGroup.title !== group.title
+        );
+        this.updateCategories([...updatedGroups, group]);
+        // this.localStorageService.set(LocalStorage.MyCategoryGroups, [
+        //     ...updatedGroups,
+        //     group,
+        // ]);
+        const transactions = await firstValueFrom(
+            this.monobankService.currentTransactions$
+        );
         this.processTransactionsBasedOnGroups(transactions);
     }
 
@@ -66,17 +88,29 @@ export class CategoryGroupService {
     //         });
     // }
 
-    private processTransactionsBasedOnGroups(transactions: ITransaction[]): void {
-        let groups = this.localStorageService.get(
-            LocalStorage.MyCategoryGroups
-        ) as ICategoryGroup[];
+    public async processTransactionsBasedOnGroups(
+        transactions?: ITransaction[]
+    ): Promise<void> {
+        if (!transactions) {
+            transactions = (await firstValueFrom(
+                this.monobankService.currentTransactions$
+            )) as ITransaction[];
+        }
+        // let groups = this.localStorageService.get(
+        //     LocalStorage.MyCategoryGroups
+        // ) as ICategoryGroup[];
 
-        groups = this.getDefaultGroupsIfNotExist(groups);
+        let groups = this.categoryGroups$.getValue();
+        console.log(groups);
+
+        // groups = this.getDefaultGroupsIfNotExist(groups);
+
+        groups?.forEach((group: any) => group.amount = 0);
 
         transactions.forEach((transaction) => {
             let isFit = false;
-            groups.forEach((group) => {
-                isFit = group.keys.some((key) =>
+            groups.forEach((group: any) => {
+                isFit = group.keys.some((key: any) =>
                     transaction.description
                         .toLocaleLowerCase()
                         .includes(key.toLocaleLowerCase())
@@ -88,7 +122,9 @@ export class CategoryGroupService {
         this.categoryGroups$.next(groups);
     }
 
-    private getDefaultGroupsIfNotExist(groups: ICategoryGroup[]): ICategoryGroup[] {
+    private getDefaultGroupsIfNotExist(
+        groups: ICategoryGroup[]
+    ): ICategoryGroup[] {
         if (groups) return groups;
 
         const defaultGroups: ICategoryGroup[] = [
@@ -111,11 +147,13 @@ export class CategoryGroupService {
                 amount: 0,
             },
         ];
-        this.localStorageService.set(
-            LocalStorage.MyCategoryGroups,
-            defaultGroups
-        );
-        
+
+        this.updateCategories(defaultGroups);
+        // this.localStorageService.set(
+        //     LocalStorage.MyCategoryGroups,
+        //     defaultGroups
+        // );
+
         return defaultGroups;
     }
 }

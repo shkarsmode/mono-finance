@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
@@ -9,7 +9,7 @@ import { DialogAddCategoryComponent } from '../../modals';
     selector: 'app-sidebar-widget',
     templateUrl: './sidebar-widget.component.html',
     styleUrl: './sidebar-widget.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    // changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarWidgetComponent implements OnInit, OnDestroy {
     public groups$: Observable<ICategoryGroup[]>;
@@ -65,6 +65,7 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
     }
 
     private handleAfterCloseModal(group: ICategoryGroup): void {
+        console.log(group);
         if (!group) return;
 
         this.categoryGroupService.set(group);

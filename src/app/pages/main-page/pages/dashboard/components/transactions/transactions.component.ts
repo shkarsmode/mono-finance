@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { TransactionSortBy } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -7,7 +7,7 @@ import { ICategoryGroup, ITransaction } from '@core/interfaces';
     selector: 'app-transactions',
     templateUrl: './transactions.component.html',
     styleUrl: './transactions.component.scss',
-    changeDetection: ChangeDetectionStrategy.OnPush,
+    // changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsComponent {
     @Input() public searchValue: string = '';

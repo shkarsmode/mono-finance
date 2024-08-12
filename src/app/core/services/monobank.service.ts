@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
-import { IAccountInfo, ICurrency, ITransaction } from '@core/interfaces';
+import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { BehaviorSubject, Observable, catchError, first, of, tap } from 'rxjs';
 import { LocalStorageService } from './local-storage.service';
@@ -18,6 +18,8 @@ export class MonobankService {
     > = new BehaviorSubject([]);
     public readonly clientInfo$: BehaviorSubject<IAccountInfo | any> =
         new BehaviorSubject({});
+    public categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
+        new BehaviorSubject(null);
     public activeMonth: number = new Date().getMonth() + 1;
 
     constructor(
@@ -109,6 +111,11 @@ export class MonobankService {
         return this.http.get<IAccountInfo>(clientInfoApiUrl).pipe(
             tap((clientInfo) => {
                 this.clientInfo$.next(clientInfo);
+                console.log(clientInfo.categoryGroups);
+
+                if (clientInfo.categoryGroups) {
+                    this.categoryGroups$.next(clientInfo.categoryGroups);
+                }
                 const activeCardId = localStorage.getItem(
                     LocalStorage.MonobankActiveCardId
                 );
@@ -185,22 +192,24 @@ export class MonobankService {
         const duplicatedElementsCount: { [key: string]: number } = {};
 
         transactions.forEach((e) => {
-            duplicatedElementsCount[e.id] = duplicatedElementsCount[e.id] >= 0 ? 
-                duplicatedElementsCount[e.id] + 1 : 0;
+            duplicatedElementsCount[e.id] =
+                duplicatedElementsCount[e.id] >= 0
+                    ? duplicatedElementsCount[e.id] + 1
+                    : 0;
         });
 
         const duplicatedElementsArr = Object.entries(duplicatedElementsCount)
             .filter((el) => el[1])
             .map((el) => el[0]);
 
-        duplicatedElementsArr.forEach(duplicated => {
+        duplicatedElementsArr.forEach((duplicated) => {
             const firstDuplicatedElementIndex = transactions.findIndex(
-                (transaction) => transaction?.id && transaction?.id === duplicated
+                (transaction) =>
+                    transaction?.id && transaction?.id === duplicated
             );
             console.log('Duplicated', duplicated);
-            transactions[firstDuplicatedElementIndex] = (undefined as any);
-        })
-
+            transactions[firstDuplicatedElementIndex] = undefined as any;
+        });
 
         return transactions.filter((transaction) => !!transaction);
     }
