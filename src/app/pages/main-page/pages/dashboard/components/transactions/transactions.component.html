@@ -120,7 +120,7 @@
 				matTooltipHideDelay="300"
 				matTooltipPosition="left">
                 <th>{{ transaction.description }}</th>
-                <td>{{ transaction.time * 1000 + 3600000 | date: 'MMM d, y • HH:mm' }}</td>
+                <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
                     <svg-icon 
                         class="status-icon"
                         [style.fill]="transaction.amount < 0 ? '#b10000' : '#3fa211'"
