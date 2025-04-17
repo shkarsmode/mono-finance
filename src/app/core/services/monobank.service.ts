@@ -1,10 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { inject, Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, Observable, catchError, first, of, tap } from 'rxjs';
+import { BehaviorSubject, catchError, first, Observable, of, tap } from 'rxjs';
+import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
 
 @Injectable({
@@ -21,6 +22,9 @@ export class MonobankService {
     public categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
     public activeMonth: number = new Date().getMonth() + 1;
+    public activeYear: number = new Date().getFullYear() - 1;
+
+    public readonly loadingService: LoadingService = inject(LoadingService);
 
     constructor(
         private readonly router: Router,
@@ -134,11 +138,19 @@ export class MonobankService {
             this.monobankActiveCardId) as LocalStorage;
     }
 
-    public getTransactions(month?: number): Observable<ITransaction[] | any> {
+    public getTransactions(
+        month: number,
+        year?: number
+    ): Observable<ITransaction[] | any> {
+        this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
-        const transactionsApiUrl = `
+        let transactionsApiUrl = `
             ${this.basePathApi}/transaction/${cardId}/${month}
         `;
+        if (year) {
+            transactionsApiUrl += `/${+year}`;
+        }
+
         return this.http
             .get<ITransaction[]>(transactionsApiUrl)
             .pipe(
@@ -146,7 +158,8 @@ export class MonobankService {
                     this.currentTransactions$.next(
                         this.removeDuplicatedTransactionsById(transactions)
                     )
-                )
+                ),
+                tap(() => this.loadingService.loading$.next(false))
             );
     }
 

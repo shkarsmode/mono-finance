@@ -41,7 +41,20 @@ export class DashboardComponent implements OnInit {
 
     public onSelectMonth(month: number): void {
         this.monobankService.activeMonth = month;
-        this.monobankService.getTransactions(month)
+        this.monobankService
+            .getTransactions(month, this.monobankService.activeYear)
+            .pipe(first())
+            .subscribe();
+    }
+
+    public onSelectYear(year: number): void {
+        console.log(this.monobankService.activeYear, this.monobankService.activeMonth);
+        this.monobankService.activeYear = year;
+        this.monobankService
+            .getTransactions(
+                +this.monobankService.activeMonth,
+                year
+            )
             .pipe(first())
             .subscribe();
     }

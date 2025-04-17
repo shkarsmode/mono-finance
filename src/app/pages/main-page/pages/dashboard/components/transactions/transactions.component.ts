@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { TransactionSortBy } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -9,7 +9,7 @@ import { ICategoryGroup, ITransaction } from '@core/interfaces';
     styleUrl: './transactions.component.scss',
     // changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TransactionsComponent {
+export class TransactionsComponent implements OnInit {
     @Input() public searchValue: string = '';
     @Input() public groups: ICategoryGroup[] | null;
     @Input() public transactions: ITransaction[] | null;
@@ -24,6 +24,7 @@ export class TransactionsComponent {
     @Output() public selectValueChange: EventEmitter<string[]> =
         new EventEmitter();
     @Output() public selectMonth: EventEmitter<number> = new EventEmitter();
+    @Output() public selectYear: EventEmitter<number> = new EventEmitter();
 
     @ViewChild('inputRef') public inputRef: ElementRef<HTMLInputElement>;
 
@@ -32,6 +33,9 @@ export class TransactionsComponent {
     public readonly SortBy: typeof TransactionSortBy = TransactionSortBy;
     public activeMonth: number = new Date().getMonth() + 1;
     public currentMonth: number = new Date().getMonth() + 1;
+    public activeYear: number = new Date().getFullYear();
+    public currentYear: number = new Date().getFullYear();
+    public yearsMap: number[] = [];
 
     public readonly monthsMap = [
         { name: 'Jan', value: 1 },
@@ -48,15 +52,39 @@ export class TransactionsComponent {
         { name: 'Dec', value: 12 },
     ];
 
+    public ngOnInit(): void {
+        const numberOfYears = new Date().getFullYear() - 2017;
+        for (let i = 0; i <= numberOfYears; i++) {
+            this.yearsMap.push(2017 + i);
+        }
+    }
+
     public onInputEvent(event: Event): void {
         this.searchTransactions.emit((event.target as HTMLInputElement).value);
     }
 
     public onSelectMonth(month: number): void {
-        if (this.currentMonth < month || this.activeMonth === month) return;
+        if (
+            (this.currentMonth < month &&
+                this.currentYear === this.activeYear) ||
+            this.activeMonth === month
+        )
+            return;
 
         this.activeMonth = month;
         this.selectMonth.emit(month);
+    }
+
+    public onSelectYear(year: number): void {
+        if (this.activeYear === year) return;
+        this.activeYear = year;
+
+        if (this.currentYear === new Date().getFullYear()) {
+            this.activeMonth = this.currentMonth;
+            this.selectMonth.emit(this.activeMonth);
+        }
+        
+        this.selectYear.emit(year);
     }
 
     public clearInputEvent(): void {

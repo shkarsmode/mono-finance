@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { LoadingService } from '@core/services/loading.service';
 
 @Component({
     selector: 'app-root',
@@ -7,5 +8,5 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
-    title = 'finance-app';
+    public readonly loadingService: LoadingService = inject(LoadingService);
 }

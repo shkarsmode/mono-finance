@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -29,7 +30,8 @@ import { DashboardRoutingModule } from './dashboard.routing';
         SharedModule,
         MatSelectModule,
         MatCheckboxModule,
-		MatTooltipModule
+        MatTooltipModule,
+        MatBadgeModule,
     ],
 })
 export class DashboardModule {}

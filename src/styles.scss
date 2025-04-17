@@ -33,6 +33,12 @@ mat-snack-bar-container {
     }
 }
 
+.mat-badge-content {
+    color: white !important;
+    font-weight: 500 !important;
+    font-size: 10px !important;
+}
+
 mat-tooltip-component {
     pointer-events: none;
 }

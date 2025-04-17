@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
+import { inject, Inject, Injectable } from '@angular/core';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, first, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, first, firstValueFrom, tap } from 'rxjs';
+import { LoadingService } from './loading.service';
 import { MonobankService } from './monobank.service';
 
 @Injectable({
@@ -12,10 +13,12 @@ export class CategoryGroupService {
     public readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
 
+    public readonly loadingService: LoadingService = inject(LoadingService);
+
     constructor(
         private readonly http: HttpClient,
         private readonly monobankService: MonobankService,
-        @Inject(BASE_PATH_API) private readonly basePathApi: string,
+        @Inject(BASE_PATH_API) private readonly basePathApi: string
     ) {
         // this.init();
         this.monobankService.categoryGroups$ = this.categoryGroups$;
@@ -23,6 +26,7 @@ export class CategoryGroupService {
     }
 
     private updateCategories(categories: ICategoryGroup[]): void {
+        this.loadingService.loading$.next(true);
         // const stringifiedCategories = JSON.stringify(categories);
         this.categoryGroups$.next(categories);
         this.http
@@ -30,17 +34,18 @@ export class CategoryGroupService {
                 `${this.basePathApi}/users/update-categories`,
                 categories
             )
-            .pipe(first())
+            .pipe(first(), tap(() => {
+                this.loadingService.loading$.next(false);
+            }))
             .subscribe((affected) =>
                 console.log('Update Categories Affected: ', affected)
             );
     }
 
     private initTransactionsUpdatesObserver(): void {
-        this.monobankService.currentTransactions$
-            .subscribe(
-                this.processTransactionsBasedOnGroups.bind(this)
-            );
+        this.monobankService.currentTransactions$.subscribe(
+            this.processTransactionsBasedOnGroups.bind(this)
+        );
     }
 
     public changeOrdering(groups: ICategoryGroup[]): void {
@@ -109,7 +114,7 @@ export class CategoryGroupService {
             return;
         }
 
-        groups.forEach((group: any) => group.amount = 0);
+        groups.forEach((group: any) => (group.amount = 0));
 
         transactions.forEach((transaction) => {
             let isFit = false;

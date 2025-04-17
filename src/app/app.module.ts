@@ -13,6 +13,9 @@ import { environment } from '../environments';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app.routing';
 
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { LoadingService } from '@core/services/loading.service';
+
 @NgModule({
     declarations: [AppComponent],
     imports: [
@@ -21,9 +24,11 @@ import { AppRoutingModule } from './app.routing';
         AngularSvgIconModule.forRoot(),
         HttpClientModule,
         MatSnackBarModule,
+        MatProgressBarModule,
     ],
     providers: [
         JwtHelperService,
+        LoadingService,
         { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
         {
             provide: MONOBANK_API,
