@@ -23,6 +23,7 @@ export class DashboardComponent implements OnInit {
 
     public readonly ChartType: typeof ChartType = ChartType;
     private readonly destroy$: Subject<void> = new Subject();
+    private readonly cancelPreviousRequest$: Subject<void> = new Subject();
 
     constructor(
         private readonly cdr: ChangeDetectorRef,
@@ -41,24 +42,31 @@ export class DashboardComponent implements OnInit {
 
     public onSelectMonth(month: number): void {
         this.monobankService.activeMonth = month;
+        this.cancelPreviousRequest$.next();
         this.monobankService
             .getTransactions(month, this.monobankService.activeYear)
-            .pipe(first())
-            .subscribe();
+            .pipe(first(), takeUntil(this.cancelPreviousRequest$))
+            .subscribe({
+                next: (transactions) => {},
+                error: (err) => {
+                    console.error(err);
+                },
+            });
     }
 
     public onSelectYear(year: number): void {
-        console.log(this.monobankService.activeYear, this.monobankService.activeMonth);
         this.monobankService.activeYear = year;
+        this.cancelPreviousRequest$.next();
         this.monobankService
-            .getTransactions(
-                +this.monobankService.activeMonth,
-                year
-            )
-            .pipe(first())
-            .subscribe();
+            .getTransactions(this.monobankService.activeMonth, year)
+            .pipe(first(), takeUntil(this.cancelPreviousRequest$))
+            .subscribe({
+                next: (transactions) => {},
+                error: (err) => {
+                    console.error(err);
+                },
+            });
     }
-
     public onSearchTransaction(searchValue: string): void {
         this.searchTransactionsValue = searchValue;
     }
