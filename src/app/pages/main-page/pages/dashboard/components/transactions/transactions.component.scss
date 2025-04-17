@@ -5,6 +5,10 @@
     display: flex;
     flex-direction: column;
     width: 715px;
+
+    @media screen and (max-width: 1200px) {
+        width: 100%;
+    }
 }
 
 svg {
@@ -12,33 +16,47 @@ svg {
     height: 20px;
 }
 
-.year {
-    margin: 10px 0;
-}
-
+.year,
 .months-wrap {
-    display: flex;
-    column-gap: 5px;
-    font-size: 13px;
+    // margin: 10px 0;
+    width: 50%;
 
-    .month {
-        opacity: 0.9;
-        font-weight: 400;
-        transition: all .3s;
-        cursor: pointer;
-
-        &-active {
-            font-weight: 500;
-            opacity: 1;
-            cursor: default;
-        }
-
-        &-disabled {
-            opacity: .2;
-            cursor: not-allowed;
-        }
+    mat-form-field {
+        width: 100%;
     }
 }
+
+.pick-month {
+    display: flex;
+    justify-content: center;
+    flex-wrap: nowrap;
+    column-gap: 10px;
+    margin-bottom: 10px;
+}
+
+// .months-wrap {
+//     // display: flex;
+//     // column-gap: 5px;
+//     // font-size: 13px;
+
+//     // .month {
+//     //     opacity: 0.9;
+//     //     font-weight: 400;
+//     //     transition: all .3s;
+//     //     cursor: pointer;
+
+//     //     &-active {
+//     //         font-weight: 500;
+//     //         opacity: 1;
+//     //         cursor: default;
+//     //     }
+
+//     //     &-disabled {
+//     //         opacity: .2;
+//     //         cursor: not-allowed;
+//     //     }
+//     // }
+// }
 
 .top {
     display: flex;
@@ -49,8 +67,18 @@ svg {
         display: flex;
         align-items: center;
 
+        @media screen and (max-width: 1000px) {
+            display: none;
+        }
+
         svg {
             margin-right: 10px;
+        }
+    }
+
+    @media screen and (max-width: 1000px) {
+        .wrap-input, input {
+            width: 100%;
         }
     }
 }

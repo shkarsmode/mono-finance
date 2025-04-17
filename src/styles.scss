@@ -93,3 +93,10 @@ body>li.mat-mdc-tooltip-trigger {
 .mdc-checkbox__checkmark-path {
     color: white;
 }
+
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+    @media screen and (max-width: 700px) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}

@@ -1,16 +1,19 @@
 <div class="pick-month">
-    <h3>Pick month</h3>
-    <div class="months-wrap">
-        @for (month of monthsMap; track month.value) {
-            <div 
-                class="month"
-                [class.month-active]="activeMonth === month.value"
-                [class.month-disabled]="currentMonth < month.value && currentYear === activeYear"
-                (click)="onSelectMonth(month.value)">
-                {{ month.name }}
-            </div>
-        }
-    </div>
+    <mat-form-field class="months-wrap">
+        <mat-label>Month</mat-label>
+        <mat-select
+            [value]="monthsMap[activeMonth - 1].value"
+            (valueChange)="onSelectMonth($event)">
+            @for (month of monthsMap; track month.value) {
+                <mat-option
+                    [disabled]="currentMonth < month.value && currentYear === activeYear"
+                    [value]="month.value">
+                    {{ month.name }}
+                </mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+
     <div class="year">
         <mat-form-field>
             <mat-label>Year</mat-label>
@@ -100,13 +103,15 @@
                     [class.rotate]="!isAscSortDirection">
                 </svg-icon>
             </th>
-            <th class="status-th" style="width: 80px;">
-                Status
-                <svg-icon 
-                    src="assets/svg/sort-up.svg" 
-                    [class.rotate]="!isAscSortDirection">
-                </svg-icon>
-            </th>
+            @if (!isAchievedLessThan700px) {
+                <th class="status-th" style="width: 80px;">
+                    Status
+                    <svg-icon 
+                        src="assets/svg/sort-up.svg" 
+                        [class.rotate]="!isAscSortDirection">
+                    </svg-icon>
+                </th>
+            }
             <th
                 class="amount-th"
                 [class.sort-active]="sortByValue === SortBy.Amount" >
@@ -118,11 +123,13 @@
                     [class.rotate]="!isAscSortDirection">
                 </svg-icon>
             </th>
-            <th class="amount-th">
-                <span>
-                    Balance
-                </span>
-            </th>
+            @if (!isAchievedLessThan700px) {
+                <th class="amount-th">
+                    <span>
+                        Balance
+                    </span>
+                </th>
+            }
         </tr>
     </thead>
     <tbody>
@@ -135,13 +142,20 @@
 				matTooltipHideDelay="300"
 				matTooltipPosition="left">
                 <th>{{ transaction.description }}</th>
-                <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
+                
+                @if (isAchievedLessThan700px) {
+                    <td>{{ transaction.time * 1000 | date: 'd • hh:mm' }}</td>
+                } @else {
+                    <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
+                }
+                @if (!isAchievedLessThan700px) {
                     <svg-icon 
                         class="status-icon"
                         [style.fill]="transaction.amount < 0 ? '#b10000' : '#3fa211'"
                         src="assets/svg/arrow-up.svg" 
                         [class.rotate]="transaction.amount < 0">
                     </svg-icon>
+                }
                 <td 
                     class="amount"
                     [class.sent]="transaction.amount < 0">
@@ -150,9 +164,11 @@
                         <span class="cashback">+{{ transaction.cashbackAmount / 100 }} UAH</span>
                     }
                 </td>
-                <td class="balance">
-                    {{ transaction.balance / 100 | number: '1.0-0' }}
-                </td>
+                @if (!isAchievedLessThan700px) {
+                    <td class="balance">
+                        {{ transaction.balance / 100 | number: '1.0-0' }}
+                    </td>
+                }
             </tr>
         }
     </tbody>

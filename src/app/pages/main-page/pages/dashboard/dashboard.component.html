@@ -1,4 +1,4 @@
-<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+<div class="wrap-cards" style="display: flex; gap: 20px; flex-wrap: wrap;">
     @if ((clientInfo$ | async); as clientInfo) {
         @for (account of clientInfo.accounts; track account.id) {
             <app-card
@@ -19,7 +19,7 @@
 </div>
 
 @if (transactions) {
-    <div style="display: flex; gap: 20px; margin-top: 20px">
+    <div class="wrap-chart-transactions" style="display: flex; gap: 20px; margin-top: 20px">
         <div>
             <app-chart 
                 [transactions]="transactions | transactionsFilter: searchTransactionsValue"

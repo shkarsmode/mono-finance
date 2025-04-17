@@ -15,4 +15,6 @@ export class CardComponent {
 
     @HostListener('click')
     public onCardClick = () => this.onClick.emit(this.account);
+
+    public isAchievedLessThan700px: boolean = window.innerWidth < 700;
 }

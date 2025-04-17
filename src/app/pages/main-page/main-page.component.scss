@@ -13,8 +13,13 @@ app-sidebar-widget {
 
 .content {
     margin-left: 300px;
-    margin-top: 61px;
+    margin-top: 10px;
     padding: 20px;
     overflow-y: scroll;
     height: calc(100% - 61px);
+
+    @media screen and (max-width: 1000px) {
+        margin-left: 0px;
+        padding: 10px;
+    }
 }

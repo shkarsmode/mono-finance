@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckboxChange } from '@angular/material/checkbox';
 import { TransactionSortBy } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -36,20 +36,23 @@ export class TransactionsComponent implements OnInit {
     public activeYear: number = new Date().getFullYear();
     public currentYear: number = new Date().getFullYear();
     public yearsMap: number[] = [];
+    public isAchievedLessThan700px: boolean = window.innerWidth < 700;
+
+    private readonly cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
 
     public readonly monthsMap = [
-        { name: 'Jan', value: 1 },
-        { name: 'Feb', value: 2 },
-        { name: 'Mar', value: 3 },
-        { name: 'Apr', value: 4 },
+        { name: 'January', value: 1 },
+        { name: 'February', value: 2 },
+        { name: 'March', value: 3 },
+        { name: 'April', value: 4 },
         { name: 'May', value: 5 },
-        { name: 'Jun', value: 6 },
-        { name: 'Jul', value: 7 },
-        { name: 'Aug', value: 8 },
-        { name: 'Sep', value: 9 },
-        { name: 'Oct', value: 10 },
-        { name: 'Nov', value: 11 },
-        { name: 'Dec', value: 12 },
+        { name: 'June', value: 6 },
+        { name: 'July', value: 7 },
+        { name: 'August', value: 8 },
+        { name: 'September', value: 9 },
+        { name: 'October', value: 10 },
+        { name: 'November', value: 11 },
+        { name: 'December', value: 12 },
     ];
 
     public ngOnInit(): void {
@@ -64,6 +67,7 @@ export class TransactionsComponent implements OnInit {
     }
 
     public onSelectMonth(month: number): void {
+        console.log(month);
         if (
             (this.currentMonth < month &&
                 this.currentYear === this.activeYear) ||
@@ -73,6 +77,8 @@ export class TransactionsComponent implements OnInit {
 
         this.activeMonth = month;
         this.selectMonth.emit(month);
+
+        this.cdr.detectChanges();
     }
 
     public onSelectYear(year: number): void {
@@ -83,7 +89,7 @@ export class TransactionsComponent implements OnInit {
             this.activeMonth = this.currentMonth;
             this.selectMonth.emit(this.activeMonth);
         }
-        
+
         this.selectYear.emit(year);
     }
 

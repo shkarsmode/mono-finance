@@ -23,9 +23,15 @@
     </div>
 </div>
 
-<div class="card-number">
-    {{ (account ? account.maskedPan[0] : '4444444444444444') | maskedCard }}
-</div>
+@if (isAchievedLessThan700px) {
+    <div class="card-number">
+        {{ (account ? account.maskedPan[0].slice(-4) : '4444') }}
+    </div>
+} @else {
+    <div class="card-number">
+        {{ (account ? account.maskedPan[0] : '4444444444444444') | maskedCard }}
+    </div>
+}
 
 <div class="bottom">
     <div class="name">{{ name || 'John Lock'}}</div>

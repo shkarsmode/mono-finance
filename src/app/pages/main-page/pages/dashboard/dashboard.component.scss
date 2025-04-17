@@ -1,0 +1,13 @@
+.wrap-chart-transactions {
+    @media screen and (max-width: 1800px) {
+        flex-direction: column-reverse;
+    }
+}
+
+.wrap-cards {
+    @media screen and (max-width: 800px) {
+        gap: 5px !important;
+        flex-wrap: nowrap !important;
+        flex-direction: row !important;
+    }
+}

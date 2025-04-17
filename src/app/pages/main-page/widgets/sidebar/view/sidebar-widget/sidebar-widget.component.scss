@@ -1,3 +1,53 @@
 :host {
     height: 100%;
+    z-index: 2;
+
+    transition: all .3s;
+
+    @media screen and (max-width: 1000px) {
+        transform: translateX(-100%);
+    }
+
+    &.opened {
+        transform: translateX(0%);
+        box-shadow: 0px 0px 13px 10px rgb(95 95 95 / 10%);
+
+        .burger {
+            right: 15px;
+            top: 13px;
+            background-color: transparent;
+            padding: 0;
+            box-shadow: none;
+        }
+    }
+}
+
+.burger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: absolute;
+    display: none;
+    cursor: pointer;
+
+    right: -60px;
+    top: 15px;
+    background-color: white;
+    padding: 7px;
+    border-radius: 50%;
+    box-shadow: 0px 0px 13px 10px rgb(95 95 95 / 10%);
+
+    transition: all .3s;
+
+    @media screen and (max-width: 1000px) {
+        display: block;
+    }
+}
+
+mat-icon {
+    font-size: 32px;
+    height: auto;
+    width: auto;
+    margin-bottom: -2px;
 }

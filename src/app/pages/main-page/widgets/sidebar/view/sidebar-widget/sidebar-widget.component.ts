@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostBinding, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
@@ -17,6 +17,9 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
 
     private destroy$: Subject<void> = new Subject();
 
+    // is open sidebar
+    @HostBinding('class.opened') public isOpened: boolean = false;
+
     constructor(
         private readonly categoryGroupService: CategoryGroupService,
         private readonly localStorageService: LocalStorageService,
@@ -25,13 +28,19 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         private cdr: ChangeDetectorRef
     ) {}
 
+    public toggleMenu(): void {
+        this.isOpened = !this.isOpened;
+        this.cdr.detectChanges();
+    }
+
     public ngOnInit(): void {
         this.initCurrentTransactions();
         this.initCategoryGroupsData();
     }
 
     private initCurrentTransactions(): void {
-        this.currentTransactions$ = this.monobankService.currentTransactions$.asObservable();
+        this.currentTransactions$ =
+            this.monobankService.currentTransactions$.asObservable();
     }
 
     public changeGroupsOrdering(groups: ICategoryGroup[]): void {
@@ -46,9 +55,11 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
         this.openModalToAddCategory(group);
     }
 
-    public async openModalToAddCategory(
-        editGroupData?: { keys: string[], emoji: string, title: string }
-    ): Promise<void> {
+    public async openModalToAddCategory(editGroupData?: {
+        keys: string[];
+        emoji: string;
+        title: string;
+    }): Promise<void> {
         const transactionsDescriptionArray =
             await this.getTransactionsDescriptionArray();
 
@@ -72,7 +83,9 @@ export class SidebarWidgetComponent implements OnInit, OnDestroy {
     }
 
     private async getTransactionsDescriptionArray(): Promise<Array<string>> {
-        const transactions: ITransaction[] = await firstValueFrom(this.currentTransactions$);
+        const transactions: ITransaction[] = await firstValueFrom(
+            this.currentTransactions$
+        );
 
         return Array.from(
             new Set(transactions.map((transaction) => transaction.description))
