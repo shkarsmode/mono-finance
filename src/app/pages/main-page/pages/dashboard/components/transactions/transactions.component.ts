@@ -55,7 +55,7 @@ export class TransactionsComponent implements OnInit {
     public ngOnInit(): void {
         const numberOfYears = new Date().getFullYear() - 2017;
         for (let i = 0; i <= numberOfYears; i++) {
-            this.yearsMap.push(2017 + i);
+            this.yearsMap.push(2017 + (numberOfYears - i));
         }
     }
 
