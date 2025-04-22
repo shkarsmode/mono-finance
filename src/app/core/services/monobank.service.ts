@@ -22,7 +22,7 @@ export class MonobankService {
     public categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
         new BehaviorSubject(null);
     public activeMonth: number = new Date().getMonth() + 1;
-    public activeYear: number = new Date().getFullYear() - 1;
+    public activeYear: number = new Date().getFullYear();
 
     public readonly loadingService: LoadingService = inject(LoadingService);
 
