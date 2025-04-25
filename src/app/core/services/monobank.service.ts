@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Inject, Injectable } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
@@ -30,6 +31,7 @@ export class MonobankService {
         private readonly router: Router,
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
+        private readonly snackBar: MatSnackBar,
         @Inject(MONOBANK_API) private readonly monobankApi: string,
         @Inject(BASE_PATH_API) private readonly basePathApi: string
     ) {}
@@ -152,13 +154,20 @@ export class MonobankService {
         }
 
         return this.http
-            .get<ITransaction[]>(transactionsApiUrl)
+            .get<{ data: ITransaction[]; status: number; message: string }>(
+                transactionsApiUrl
+            )
             .pipe(
-                tap((transactions) =>
+                tap(({ data, status, message }) => {
+                    this.snackBar.open(message, '❌', {
+                        duration: 5000,
+                        horizontalPosition: 'center',
+                        verticalPosition: 'bottom',
+                    });
                     this.currentTransactions$.next(
-                        this.removeDuplicatedTransactionsById(transactions)
+                        this.removeDuplicatedTransactionsById(data)
                     )
-                ),
+                }),
                 tap(() => this.loadingService.loading$.next(false))
             );
     }

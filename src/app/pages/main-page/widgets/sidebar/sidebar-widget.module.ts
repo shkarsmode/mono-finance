@@ -9,6 +9,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { AngularSvgIconModule } from 'angular-svg-icon';
@@ -37,6 +38,7 @@ import { SidebarWidgetComponent } from './view';
         ReactiveFormsModule,
         MatTooltipModule,
         DragDropModule,
+        MatSnackBarModule,
     ],
     exports: [SidebarWidgetComponent],
 })
