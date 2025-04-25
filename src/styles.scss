@@ -100,3 +100,23 @@ body>li.mat-mdc-tooltip-trigger {
         max-width: 100% !important;
     }
 }
+
+.green-snackbar {
+    .mdc-snackbar__surface {
+        background-color: #4CAF50 !important;
+        color: #fff;
+        font-weight: 500;
+        font-size: 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .mdc-button__label {
+        font-size: 22px;
+    }
+
+    .mat-simple-snackbar-action {
+        color: #ffffff;
+        font-weight: bold;
+    }
+}

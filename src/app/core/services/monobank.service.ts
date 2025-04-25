@@ -159,10 +159,11 @@ export class MonobankService {
             )
             .pipe(
                 tap(({ data, status, message }) => {
-                    this.snackBar.open(message, '❌', {
+                    this.snackBar.open(message, '✅', {
                         duration: 5000,
-                        horizontalPosition: 'center',
-                        verticalPosition: 'bottom',
+                        horizontalPosition: 'right',
+                        verticalPosition: 'top',
+                        panelClass: ['green-snackbar'],
                     });
                     this.currentTransactions$.next(
                         this.removeDuplicatedTransactionsById(data)
