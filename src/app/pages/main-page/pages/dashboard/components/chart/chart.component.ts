@@ -27,6 +27,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     private update(): void {
+        console.log(this.transactions);
         this.chartFactoryInstance.update(
             this.transactions ?? [],
             this.label,

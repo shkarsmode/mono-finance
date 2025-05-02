@@ -26,8 +26,8 @@ export class ChartFactory {
     ) {}
 
     public update(
-        transactions: ITransaction[], 
-        label: string = this.label, 
+        transactions: ITransaction[],
+        label: string = this.label,
         type: ChartType = this.type
     ): void {
         this.transactions = transactions;
@@ -44,7 +44,7 @@ export class ChartFactory {
 
     private updateFields(): void {
         this.chart.data.labels = this.labels;
-        this.chart.data.datasets.forEach(dataset => {
+        this.chart.data.datasets.forEach((dataset) => {
             dataset.label = this.label;
             dataset.data = this.data;
             dataset.borderColor = CHART_COLORS_MAP[this.type];
@@ -104,24 +104,30 @@ export class ChartFactory {
     private groupDataByDay(
         data: ITransaction[]
     ): { day: string; totalAmount: number }[] {
-        const dailyData: { [day: string]: number[] } = {};
+        if (!data.length) return [];
+
+        const firstTxDate = moment.utc(data[0].time * 1000);
+        const year = firstTxDate.year();
+        const month = firstTxDate.month(); // 0-11
+        const daysInMonth = firstTxDate.daysInMonth();
+
+        const dailyTotals: Record<string, number> = {};
+        for (let day = 1; day <= daysInMonth; day++) {
+            const key = moment.utc([year, month, day]).format('YYYY-MM-DD');
+            dailyTotals[key] = 0;
+        }
 
         data.forEach((transaction) => {
-            const dayKey = moment.utc(transaction.time * 1000).format('MMM D');
-            if (!dailyData[dayKey]) {
-                dailyData[dayKey] = [];
-            }
-            dailyData[dayKey].push(-transaction.amount / 100);
+            const txDate = moment.utc(transaction.time * 1000);
+            if (txDate.year() !== year || txDate.month() !== month) return;
+
+            const key = txDate.format('YYYY-MM-DD');
+            dailyTotals[key] += -transaction.amount / 100;
         });
 
-        return Object.keys(dailyData)
-            .map((day) => ({
-                day,
-                totalAmount: dailyData[day].reduce(
-                    (sum, amount) => sum + amount,
-                    0
-                ),
-            }))
-            .reverse();
+        return Object.entries(dailyTotals).map(([key, totalAmount]) => ({
+            day: moment.utc(key).format('MMM D'),
+            totalAmount,
+        }));
     }
 }
