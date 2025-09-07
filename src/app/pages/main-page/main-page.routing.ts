@@ -22,7 +22,8 @@ export const routes: Routes = [
             {
                 path: MainPageRouteEnum.Exchange,
                 loadChildren: () => import('./pages').then((m) => m.ExchangeModule)
-            }
+            },
+            { path: 'analytics/mcc', loadComponent: () => import('../../features/analytics-mcc').then(m => m.MccAnalyticsComponent) },
         ],
     },
 ];

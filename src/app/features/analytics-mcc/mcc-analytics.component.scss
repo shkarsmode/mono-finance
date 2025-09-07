@@ -1,0 +1,325 @@
+/* ==== MCC Analytics – refreshed dark UI (drop-in) ==== */
+:host {
+    --bg: #0f1115;
+    --surface: #151922;
+    --surface-2: #10141c;
+    --card: #171b24;
+    --border: #262c36;
+    --muted: #aab0bb;
+    --text: #e8ebf0;
+    --accent: #6a5cff;
+    /* основной акцент */
+    --accent-2: #8a7fff;
+    --ok: #2ecc71;
+    --bad: #ff6b6b;
+
+    display: block;
+    color: var(--text);
+    background: transparent;
+}
+
+* {
+    color: white;
+}
+
+.wrap {
+    max-width: 1270px;
+    margin: 0 auto;
+    padding: 16px;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+    /* табличные цифры */
+}
+
+/* ---------- Toolbar / Filters ---------- */
+.toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    align-items: end;
+}
+
+.date {
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+
+    input {
+        background: var(--surface-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        border-radius: 10px;
+        outline: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+
+        &:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+        }
+    }
+}
+
+.mcc-input {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    input[type="text"] {
+        min-width: 240px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 10px;
+        outline: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+
+        &:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+        }
+    }
+}
+
+.chip {
+    background: linear-gradient(180deg, #1b1f2a, #171b24);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    line-height: 1;
+    transition: transform .08s ease, border-color .15s ease, background .2s ease;
+
+    &:hover {
+        border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+    }
+
+    &:active {
+        transform: translateY(1px) scale(0.98);
+    }
+}
+
+.btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, transform .08s ease;
+
+    &:hover {
+        border-color: color-mix(in oklab, var(--text) 20%, var(--border));
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &.primary {
+        background: linear-gradient(180deg, var(--accent-2), var(--accent));
+        border-color: var(--accent);
+        color: white;
+
+        &:hover {
+            filter: brightness(1.05);
+        }
+    }
+
+    &.sm {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    &.ghost {
+        background: transparent;
+    }
+}
+
+.right-tools {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    .search {
+        background: var(--surface-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        border-radius: 10px;
+        min-width: 260px;
+        outline: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+
+        &:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+        }
+    }
+}
+
+/* ---------- Totals cards ---------- */
+.totals {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 4px 0 14px;
+}
+
+.card {
+    background: linear-gradient(180deg, #121722, #10141c);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+
+    .k {
+        color: var(--muted);
+        font-size: 12px;
+    }
+
+    .v {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: .2px;
+    }
+}
+
+.pos {
+    color: var(--ok);
+}
+
+.neg {
+    color: var(--bad);
+}
+
+/* ---------- Table ---------- */
+.table-wrap {
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-2);
+}
+
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 14px;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, #0f131c, #0f1218);
+    color: var(--muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1e2430;
+    vertical-align: top;
+}
+
+tbody tr:nth-child(even) {
+    background: color-mix(in oklab, var(--surface-2) 92%, #ffffff 8%);
+}
+
+tbody tr:hover {
+    background: #151a24;
+}
+
+td.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* numeric columns alignment (keeps Label left) */
+tbody td:nth-child(1),
+tbody td:nth-child(3),
+tbody td:nth-child(4),
+tbody td:nth-child(5),
+tbody td:nth-child(6),
+tbody td:nth-child(7) {
+    text-align: right;
+}
+
+tbody td:nth-child(2) {
+    text-align: left;
+}
+
+/* Top merchants pills */
+.tops {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 300px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, #1a1f2a, #141923);
+    color: #cfd3da;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+    .toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .totals {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    thead th,
+    tbody td {
+        padding: 8px 10px;
+    }
+}
+
+@media (max-width: 560px) {
+    .totals {
+        grid-template-columns: 1fr;
+    }
+
+    .right-tools .search {
+        min-width: 0;
+        width: 100%;
+    }
+}

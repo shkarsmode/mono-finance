@@ -1,0 +1,82 @@
+
+<div class="wrap">
+  <header class="toolbar">
+    <div class="filters">
+      <label class="date">
+        <span>From</span>
+        <input type="date" [value]="from()" (change)="setFrom($event)" />
+      </label>
+      <label class="date">
+        <span>To</span>
+        <input type="date" [value]="to()" (change)="setTo($event)" />
+      </label>
+
+      <div class="mcc-input">
+        <span>MCC</span>
+        <div class="chips">
+          <button class="chip" *ngFor="let n of mccList()" (click)="mccRemove(n)" title="Remove">{{ n }}</button>
+          <input type="text" mcc placeholder="e.g. 5411 5499, 5814" [value]="mccInput()" (change)="mccChipAdd($event)" />
+          <!-- <button class="btn sm" (click)="mccChipAdd(mcc.value)">Add</button> -->
+          <button class="btn sm ghost" (click)="mccClear()" *ngIf="mccList().length">Clear</button>
+        </div>
+      </div>
+
+      <button class="btn primary" (click)="fetch()">Apply</button>
+    </div>
+
+    <div class="right-tools">
+      <input class="search" type="search" placeholder="Search MCC or merchant..." [value]="search()" (change)="setSearch($event)" />
+      <button class="btn" (click)="exportCsv()" title="Export current view to CSV">Export CSV</button>
+    </div>
+  </header>
+
+  <section class="totals" *ngIf="totals as t">
+    <div class="card">
+      <div class="k">Tx</div>
+      <div class="v">{{ t().txCount | number }}</div>
+    </div>
+    <div class="card">
+      <div class="k">Σ Spent</div>
+      <div class="v neg">{{ formatUAH(t().totalSpent) }}</div>
+    </div>
+    <div class="card">
+      <div class="k">Σ Income</div>
+      <div class="v pos">{{ formatUAH(t().totalIncome) }}</div>
+    </div>
+    <div class="card">
+      <div class="k">Net</div>
+      <div class="v" [class.neg]="t().net<0" [class.pos]="t().net>0">{{ formatUAH(t().net) }}</div>
+    </div>
+  </section>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th (click)="setSort('mcc')">MCC</th>
+          <th>Label</th>
+          <th (click)="setSort('txCount')">Tx</th>
+          <th (click)="setSort('totalSpent')">Σ Spent</th>
+          <th (click)="setSort('totalIncome')">Σ Income</th>
+          <th (click)="setSort('net')">Net</th>
+          <th (click)="setSort('avgAbs')">Avg</th>
+          <th>Top merchants</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of rows()">
+          <td class="mono">{{ r.mcc }}</td>
+          <td [title]="mccName(r.mcc)">{{ mccName(r.mcc) }}</td>
+          <td class="mono">{{ r.txCount }}</td>
+          <td class="mono neg">{{ formatUAH(r.totalSpent) }}</td>
+          <td class="mono pos">{{ formatUAH(r.totalIncome) }}</td>
+          <td class="mono" [class.neg]="r.net<0" [class.pos]="r.net>0">{{ formatUAH(r.net) }}</td>
+          <td class="mono">{{ formatUAH(r.avgAbs) }}</td>
+          <td class="tops">
+            <span *ngFor="let t of r.topMerchants" [title]="t.name + ' ' + formatUAH(t.total)" class="pill">{{ t.name }} ({{ t.total | number:'1.0-2' }})</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
