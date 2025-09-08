@@ -1,3 +1,33 @@
+@if (selectedTrendLabel) {
+    <section class="trend-panel">
+      <header class="trend-header">
+        <!-- <div class="title">
+            <strong>{{ selectedTrendLabel }}</strong>
+            <span class="muted">помесячная динамика</span>
+        </div> -->
+        <button class="btn btn-ghost sm" (click)="clearTrend()">Закрыть ×</button>
+      </header>
+    
+      <div class="trend-charts">
+        <div class="chart-card">
+          <app-chart
+            [label]="selectedTrendLabel"
+            [type]="ChartType.Expenses"
+            [mode]="'monthly'"
+            [monthly]="monthlyTrend"
+            [period]="period()"
+            [minorUnits]="false"
+            [currency]="'грн'">
+          </app-chart>
+        </div>
+      </div>
+    
+      <div class="loading" *ngIf="trendLoading">
+        <span class="spinner"></span> Строю график…
+      </div>
+    </section>
+}
+
 
 <div class="wrap">
   <header class="toolbar">
@@ -64,7 +94,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let r of rows()">
+        <tr *ngFor="let r of rows()" (click)="openTrendForMcc({ mcc: r.mcc, label: mccName(r.mcc) })">
           <td class="mono">{{ r.mcc }}</td>
           <td [title]="mccName(r.mcc)">{{ mccName(r.mcc) }}</td>
           <td class="mono">{{ r.txCount }}</td>

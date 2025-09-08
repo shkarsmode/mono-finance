@@ -9,7 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AngularSvgIconModule } from 'angular-svg-icon';
 import { SharedModule } from '../../../../shared/shared.module';
 import { MaskedCardPipe } from '../../pipes';
-import { CardComponent, ChartComponent, TransactionsComponent } from './components';
+import { CardComponent, TransactionsComponent } from './components';
 import { DashboardComponent } from './dashboard.component';
 import { DashboardRoutingModule } from './dashboard.routing';
 
@@ -18,7 +18,6 @@ import { DashboardRoutingModule } from './dashboard.routing';
     declarations: [
         DashboardComponent,
         TransactionsComponent,
-        ChartComponent,
         CardComponent,
         MaskedCardPipe,
     ],
@@ -32,6 +31,7 @@ import { DashboardRoutingModule } from './dashboard.routing';
         MatCheckboxModule,
         MatTooltipModule,
         MatBadgeModule,
+        SharedModule
     ],
 })
 export class DashboardModule {}

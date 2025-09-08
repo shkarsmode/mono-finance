@@ -1,7 +1,12 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, Input, OnChanges, OnDestroy, ViewChild } from '@angular/core';
+import {
+    AfterViewInit, ChangeDetectionStrategy, Component, ElementRef,
+    Input, OnChanges, OnDestroy, SimpleChanges, ViewChild
+} from '@angular/core';
 import { ChartType } from '@core/enums';
-import { ChartFactory } from '@core/helpers';
+import { ChartFactory, MonthlyAggregate } from '@core/helpers';
 import { ITransaction } from '@core/interfaces';
+
+type ChartMode = 'daily' | 'monthly';
 
 @Component({
     selector: 'app-chart',
@@ -11,40 +16,76 @@ import { ITransaction } from '@core/interfaces';
 })
 export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     @Input() public label: string;
-    @Input() public transactions: ITransaction[] | null;
+    @Input() public transactions: ITransaction[] | null = null;
+
+    /** Новый вход — месячные агрегаты */
+    @Input() public monthly: MonthlyAggregate[] | null = null;
+
+    /** Новый вход — режим */
+    @Input() public mode: ChartMode = 'daily';
+
+    /** Новый вход — подпорка для ровной оси (только для mode='monthly') */
+    @Input() public period?: { fromSec: number; toSec: number };
+
+    /** Новый вход — настройки формата */
+    @Input() public currency: string = 'грн';
+    @Input() public minorUnits = true; // true, если суммы в копейках
+
     @Input() public type: ChartType = ChartType.Income;
 
-    @ViewChild('chart') public chart: ElementRef;
-    
-    private chartFactoryInstance: ChartFactory;
-    
-    public ngOnChanges(): void {
-        if (this.chartFactoryInstance) this.update();
-    }
+    @ViewChild('chart', { static: true }) public chart!: ElementRef<HTMLCanvasElement>;
 
-    public ngAfterViewInit(): void {
+    private chartFactoryInstance!: ChartFactory;
+
+    ngAfterViewInit(): void {
         this.init();
     }
 
+    ngOnChanges(changes: SimpleChanges): void {
+        if (!this.chartFactoryInstance) return;
+        // Любые входы — апдейт
+        this.update();
+    }
+
     private update(): void {
+        const dataSource = this.mode === 'monthly'
+            ? (this.monthly ?? [])
+            : (this.transactions ?? []);
+
         this.chartFactoryInstance.update(
-            this.transactions ?? [],
+            dataSource,
             this.label,
-            this.type
+            this.type,
+            {
+                mode: this.mode,
+                currency: this.currency,
+                minorUnits: this.minorUnits,
+                period: this.period
+            }
         );
     }
 
     private init(): void {
+        const dataSource = this.mode === 'monthly'
+            ? (this.monthly ?? [])
+            : (this.transactions ?? []);
+
         this.chartFactoryInstance = new ChartFactory(
-            this.transactions ?? [],
+            dataSource,
             this.chart.nativeElement,
             this.label,
-            this.type
+            this.type,
+            {
+                mode: this.mode,
+                currency: this.currency,
+                minorUnits: this.minorUnits,
+                period: this.period
+            }
         );
         this.chartFactoryInstance.init();
     }
 
-    public ngOnDestroy(): void {
-        this.chartFactoryInstance.destroy();
+    ngOnDestroy(): void {
+        if (this.chartFactoryInstance) this.chartFactoryInstance.destroy();
     }
 }
