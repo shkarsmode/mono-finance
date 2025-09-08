@@ -11,3 +11,166 @@
         flex-direction: row !important;
     }
 }
+
+.btn.primary[disabled] {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+:host {
+    --btn-bg: #3a6df0;
+    --btn-bg-hover: #335fce;
+    --btn-bg-active: #2c53b6;
+    --btn-fg: #fff;
+    --btn-disabled-bg: #8ea7ff;
+    --btn-disabled-fg: #f2f4ff;
+
+    --ghost-fg: #c9d1d9;
+    --ghost-fg-hover: #e6edf3;
+
+    --border: rgba(255,255,255,0.12);
+    --text-muted: rgba(255,255,255,0.7);
+
+    --progress-track: rgba(255,255,255,0.08);
+    --progress-bar: #3a6df0;
+}
+
+/* ===== Toolbar layout ===== */
+.bulk-toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+/* ===== Buttons ===== */
+.btn {
+    --pad-y: 10px;
+    --pad-x: 14px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: var(--pad-y) var(--pad-x);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .06s ease, box-shadow .2s ease, background-color .15s ease, border-color .15s ease;
+    outline: none;
+
+    &:focus-visible {
+        box-shadow: 0 0 0 3px rgba(58, 109, 240, .35);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &[disabled],
+    &[aria-disabled="true"] {
+        cursor: not-allowed;
+        opacity: .9;
+    }
+}
+
+.btn-primary {
+    color: var(--btn-fg);
+    background-color: var(--btn-bg);
+    border-color: transparent;
+
+    &:hover:not([disabled]):not([aria-disabled="true"]) {
+        background-color: var(--btn-bg-hover);
+    }
+    &:active:not([disabled]):not([aria-disabled="true"]) {
+        background-color: var(--btn-bg-active);
+    }
+    &[disabled],
+    &[aria-disabled="true"] {
+        background-color: var(--btn-disabled-bg);
+        color: var(--btn-disabled-fg);
+    }
+}
+
+.btn-ghost {
+    color: var(--ghost-fg);
+    background: transparent;
+    border-color: var(--border);
+
+    &:hover {
+        color: var(--ghost-fg-hover);
+        border-color: var(--ghost-fg-hover);
+        background: rgba(255,255,255,0.04);
+    }
+}
+
+/* ===== Spinner ===== */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: var(--btn-fg);
+    animation: spin .8s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.btn-text {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* ===== Status & Progress ===== */
+.status {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+}
+
+.status-row {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.hint {
+    color: black;
+    font-size: 12px;
+}
+
+.progress {
+    position: relative;
+    width: 240px;
+    height: 8px;
+    background: var(--progress-track);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.progress .bar {
+    height: 100%;
+    width: 0%;
+    background: var(--progress-bar);
+    border-radius: inherit;
+    transition: width .25s ease;
+}
+
+/* ===== Responsive touch tweaks ===== */
+@media (max-width: 600px) {
+    .btn {
+        --pad-y: 9px;
+        --pad-x: 12px;
+    }
+    .progress { width: 100%; min-width: 180px; }
+}

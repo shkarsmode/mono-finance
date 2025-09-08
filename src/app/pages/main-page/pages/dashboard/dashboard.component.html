@@ -1,13 +1,16 @@
+<span style="margin-bottom: 5px; display: block;">only currencyCode 980</span>
 <div class="wrap-cards" style="display: flex; gap: 20px; flex-wrap: wrap;">
     @if ((clientInfo$ | async); as clientInfo) {
         @for (account of clientInfo.accounts; track account.id) {
-            <app-card
-                [class.active]="account.id === (activeCardId$ | async)"
-                [class.white]="account.type === 'white'"
-                [account]="account"
-                [name]="clientInfo.name"
-                (onClick)="onCardClick($event)">
-            </app-card>
+            @if (account.currencyCode === 980) {
+                <app-card
+                    [class.active]="account.id === (activeCardId$ | async)"
+                    [class.white]="account.type === 'white'"
+                    [account]="account"
+                    [name]="clientInfo.name"
+                    (onClick)="onCardClick($event)">
+                </app-card>
+            }
         }
     } @else {
         <app-card [class.skeleton]="true"></app-card>
@@ -17,6 +20,51 @@
         </app-card>
     }
 </div>
+
+<div class="bulk-toolbar">
+    <button
+        type="button"
+        class="btn btn-primary"
+        (click)="onLoadAllClick()"
+        [disabled]="isBulkLoading || rateLimitLeftSec > 0"
+        [attr.aria-busy]="isBulkLoading"
+        [attr.aria-disabled]="isBulkLoading || rateLimitLeftSec > 0">
+
+        <span class="spinner" *ngIf="isBulkLoading" aria-hidden="true"></span>
+
+        <span class="btn-text" *ngIf="isBulkLoading">
+            Гружу историю… ({{ processedMonths }} мес., пустые: {{ emptyStreak }}/{{ maxEmptyStreak }})
+        </span>
+        <span class="btn-text" *ngIf="!isBulkLoading && rateLimitLeftSec > 0">
+            Подождите {{ rateLimitLeftSec }} c
+        </span>
+        <span class="btn-text" *ngIf="!isBulkLoading && rateLimitLeftSec === 0">
+            Загрузить все транзакции (вниз от текущего)
+        </span>
+    </button>
+
+    <button
+        type="button"
+        class="btn btn-ghost"
+        (click)="onCancelLoadAll()"
+        *ngIf="isBulkLoading">
+        Отменить
+    </button>
+
+    <div class="status" role="status" aria-live="polite">
+        <ng-container *ngIf="isBulkLoading">
+            <div class="status-row">
+                <span>Обработано: {{ processedMonths }} мес.</span>
+                <span>Пустые: {{ emptyStreak }}/{{ maxEmptyStreak }}</span>
+            </div>
+            <div class="progress" aria-label="Прогресс загрузки">
+                <div class="bar" [style.width.%]="bulkProgressPercent"></div>
+            </div>
+        </ng-container>
+    </div>
+</div>
+
+
 
 @if (transactions) {
     <div class="wrap-chart-transactions" style="display: flex; gap: 20px; margin-top: 20px">
@@ -46,7 +94,8 @@
             (selectValueChange)="onSelectValueChange($event)"
             (sortBy)="onSortTransactionsBy($event)"
             (selectMonth)="onSelectMonth($event)"
-            (selectYear)="onSelectYear($event)">
+            (selectYear)="onSelectYear($event)"
+            #transactionsRef>
         </app-transactions>
     </div>
 }

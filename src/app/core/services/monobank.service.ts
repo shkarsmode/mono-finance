@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, catchError, first, Observable, of, tap } from 'rxjs';
+import { BehaviorSubject, catchError, first, mergeMap, Observable, of, retryWhen, scan, tap, timer } from 'rxjs';
 import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
 
@@ -27,6 +27,9 @@ export class MonobankService {
 
     public readonly loadingService: LoadingService = inject(LoadingService);
 
+    private readonly _rateLimitCooldown$ = new BehaviorSubject<number>(0);
+    public readonly rateLimitCooldown$ = this._rateLimitCooldown$.asObservable();
+
     constructor(
         private readonly router: Router,
         private readonly http: HttpClient,
@@ -35,6 +38,92 @@ export class MonobankService {
         @Inject(MONOBANK_API) private readonly monobankApi: string,
         @Inject(BASE_PATH_API) private readonly basePathApi: string
     ) {}
+
+    private startCooldown(seconds: number) {
+        this._rateLimitCooldown$.next(seconds);
+        if (seconds <= 0) return;
+        const interval = setInterval(() => {
+            const cur = this._rateLimitCooldown$.value;
+            const next = Math.max(0, cur - 1);
+            this._rateLimitCooldown$.next(next);
+            if (next === 0) clearInterval(interval);
+        }, 1000);
+    }
+
+    private parseRetryAfterSec(err: any): number {
+        // 1) HTTP заголовок Retry-After (число секунд или дата — дату игнорим)
+        let headerVal: any = undefined;
+        try {
+            headerVal = err?.headers?.get?.('Retry-After') ?? err?.headers?.['Retry-After'];
+        } catch { /* ignore */ }
+    
+        const asNum = Number(headerVal);
+        if (Number.isFinite(asNum) && asNum > 0) return asNum;
+    
+        // 2) Тело ошибки может содержать разные поля
+        const candidates = [
+            err?.error?.retryAfter,
+            err?.error?.retry_after,
+            err?.error?.retryAfterSec,
+            err?.error?.retry_after_sec,
+            err?.retryAfter,
+            err?.retry_after,
+        ].map(Number).filter(x => Number.isFinite(x) && x > 0);
+    
+        if (candidates.length) return candidates[0];
+    
+        // 3) Попробуем выдрать число из текста
+        const msg = String(
+            err?.error?.message ?? err?.message ?? ''
+        );
+        // e.g. "Too many requests to monobank api (2025 / 8)"
+        // тут нет секунд — падаем на дефолт
+        const numInMsg = msg.match(/\b(\d{1,5})\s*(?:sec|seconds|s)\b/i);
+        if (numInMsg) {
+            const n = Number(numInMsg[1]);
+            if (Number.isFinite(n) && n > 0) return n;
+        }
+    
+        // 4) дефолтный кулдаун
+        return 60;
+    }
+    
+    private isTooMany(err: HttpErrorResponse): boolean {
+        const msg = (err?.error?.message ?? err?.message ?? '').toString().toLowerCase();
+        return err?.status === 429 || msg.includes('too many');
+    }
+    
+    public getTransactionsWithRetry(month: number, year: number) {
+        return this.getTransactions(month, year).pipe(
+            retryWhen(errors =>
+                errors.pipe(
+                    scan((state, err: HttpErrorResponse) => {
+                        console.log(err);
+                        if (!this.isTooMany(err)) {
+                            // не 429 — пробрасываем
+                            throw err;
+                        }
+                        if (state.attempts >= 5) {
+                            // исчерпали лимит ретраев
+                            throw err;
+                        }
+                        const waitSec = this.parseRetryAfterSec(err);
+                        return { attempts: state.attempts + 1, waitSec };
+                    }, { attempts: 0, waitSec: 0 } as { attempts: number; waitSec: number }),
+                    tap(({ waitSec }) => this.startCooldown(waitSec)),
+                    mergeMap(({ waitSec }) => timer(waitSec * 1000))
+                )
+            )
+        );
+    }
+    
+    public mergeTransactions(incoming: ITransaction[]): void {
+        if (!incoming?.length) return;
+        const byId = new Map<string, ITransaction>();
+        for (const t of this.currentTransactions$.value) byId.set(t.id, t);
+        for (const t of incoming) byId.set(t.id, t);
+        this.currentTransactions$.next(Array.from(byId.values()));
+    }
 
     public setActiveCardId(activeCardId: string): void {
         const currentCardId = this.localStorageService.get(
