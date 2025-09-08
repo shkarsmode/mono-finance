@@ -1,7 +1,8 @@
-
+// mcc-analytics.component.ts
 import { ChangeDetectorRef, Component, computed, inject, signal } from '@angular/core';
 import { ChartType } from '@core/enums';
-import { MccAnalyticsService, MccRow, MonthlyPoint, TrendTarget } from './mcc-analytics.service';
+import { Subscription } from 'rxjs';
+import { MccAnalyticsService, MccRow, MonthlyPoint, TrendProgress, TrendTarget } from './mcc-analytics.service';
 import { MCC_LABELS, mccName } from './mcc-map';
 
 type SortKey = keyof Pick<MccRow, 'mcc' | 'txCount' | 'totalSpent' | 'totalIncome' | 'net' | 'avgAbs'>;
@@ -14,11 +15,12 @@ type SortKey = keyof Pick<MccRow, 'mcc' | 'txCount' | 'totalSpent' | 'totalIncom
 export class MccAnalyticsComponent {
     private api = inject(MccAnalyticsService);
     public readonly ChartType: typeof ChartType = ChartType;
+    private cdr = inject(ChangeDetectorRef);
 
-    from = signal<string>('2025-01-01');  // '2023-02-06' // yyyy-mm-dd
+    from = signal<string>('2023-02-06'); // '2023-02-06' // yyyy-mm-dd
     to = signal<string>('');
-    mccInput = signal<string>(''); // raw input token
-    mccList = signal<number[]>([]); // parsed MCC list
+    mccInput = signal<string>('');
+    mccList = signal<number[]>([]);
 
     search = signal<string>('');
     sortKey = signal<SortKey>('totalSpent');
@@ -45,117 +47,119 @@ export class MccAnalyticsComponent {
 
     totals = computed(() => this.data()?.totals || { totalSpent: 0, totalIncome: 0, net: 0, txCount: 0 });
 
-    private cdr = inject(ChangeDetectorRef);
+    // ==== Trend state (inline panel) ====
+    selectedTrendLabel = '';
+    expandedKey = signal<string | null>(null);   // 'mcc:5732' / 'merchant:xxx'
+    monthlyTrend: MonthlyPoint[] = [];
+    trendLoading = false;
+    trendPercent = signal(0);
+    trendCurrent = signal(0);
+    trendTotal = signal(0);
+    private trendSub?: Subscription;
 
     constructor() {
-        // Auto-fetch YTD on first load
         const now = new Date();
-        const ytd = new Date(now.getFullYear(), 0, 1);
-        // this.from.set(ytd.toISOString().slice(0, 10));
         this.to.set(now.toISOString().slice(0, 10));
         this.fetch();
     }
 
-    selectedTrendLabel = '';
-
-    public trendLoading = false;
-    public monthlyTrend: MonthlyPoint[] | any = [];
-
-    public clearTrend(): void {
-        this.selectedTrendLabel = '';
-        this.monthlyTrend = [];
-        this.trendLoading = false;
-        this.cdr.markForCheck();
-    }
-    
-
+    // период для ChartFactory (в секундах)
     public period = computed(() => {
-        const fromDate = this.from() ? new Date(this.from()) : null;
-        const toDate = this.to() ? new Date(this.to()) : null;
-      
-        return {
-          fromSec: fromDate ? Math.floor(fromDate.getTime() / 1000) : 0,
-          toSec: toDate ? Math.floor(toDate.getTime() / 1000) : 0
-        };
-      });
-    public async openTrend(target: TrendTarget) {
-        this.trendLoading = true; this.monthlyTrend = []; this.cdr.markForCheck();
+        const f = this.from(); const t = this.to();
+        const fromSec = f ? Math.floor(Date.parse(f) / 1000) : Math.floor(Date.now() / 1000);
+        const toSec = t ? Math.floor(Date.parse(t) / 1000) : Math.floor(Date.now() / 1000);
+        return { fromSec, toSec };
+    });
 
-        const fromISO = this.from(); // возьми из твоих датпикеров
-        const toISO = this.to();
-
-        
-        this.monthlyTrend = await this.api.getMonthlyTrendCompat(fromISO, toISO, target).toPromise();
-        console.log(this.monthlyTrend);
-
-        // zero-fill: на случай, если где-то нет месяца в ответе
-        this.monthlyTrend = this.zeroFill(fromISO, toISO, this.monthlyTrend);
-        console.log(this.monthlyTrend);
-        this.trendLoading = false;
-        this.cdr.markForCheck();
-    }
+    // ========= Table interactions =========
+    rowKey = (mcc: number) => `mcc:${mcc}`;
 
     openTrendForMcc(row: { mcc: number; label: string }) {
+        const key = this.rowKey(row.mcc);
+        // toggle
+        if (this.expandedKey() === key) { this.clearTrend(); return; }
+
         this.selectedTrendLabel = `MCC ${row.mcc} · ${row.label}`;
+        this.expandedKey.set(key);
         this.openTrend({ kind: 'mcc', key: row.mcc });
-      }
+    }
+
     openTrendForMerchant(name: string) {
+        const key = `merchant:${name}`;
+        if (this.expandedKey() === key) { this.clearTrend(); return; }
+
         this.selectedTrendLabel = name;
+        this.expandedKey.set(key);
         this.openTrend({ kind: 'merchant', key: name });
     }
 
-    private zeroFill(fromISO: string, toISO: string, rows: MonthlyPoint[]): MonthlyPoint[] {
-        const map = new Map<string, MonthlyPoint>();
-        for (const r of rows) map.set(`${r.year}-${r.month}`, r);
-
-        const filled: MonthlyPoint[] = [];
-        let y = new Date(fromISO).getFullYear();
-        let m = new Date(fromISO).getMonth() + 1;
-        const lastY = new Date(toISO).getFullYear();
-        const lastM = new Date(toISO).getMonth() + 1;
-
-        while (y < lastY || (y === lastY && m <= lastM)) {
-            const k = `${y}-${m}`;
-            filled.push(map.get(k) ?? { year: y, month: m, income: 0, expense: 0, tx: 0 });
-            m++; if (m > 12) { m = 1; y++; }
-        }
-        return filled;
+    public clearTrend(): void {
+        this.trendSub?.unsubscribe();
+        this.expandedKey.set(null);
+        this.selectedTrendLabel = '';
+        this.monthlyTrend = [];
+        this.trendLoading = false;
+        this.trendPercent.set(0);
+        this.trendCurrent.set(0);
+        this.trendTotal.set(0);
+        this.cdr.markForCheck();
     }
 
-    setFrom(event: any): void {
-        if (event.target.value)
-            this.from.set(event.target.value)
+    private openTrend(target: TrendTarget) {
+        this.trendSub?.unsubscribe();
+        this.trendLoading = true;
+        this.monthlyTrend = [];
+        this.trendPercent.set(0);
+        this.trendCurrent.set(0);
+        this.trendTotal.set(0);
+        this.cdr.markForCheck();
+
+        const fromISO = this.from();
+        const toISO = this.to();
+
+        this.trendSub = this.api.getMonthlyTrendProgress(fromISO, toISO, target).subscribe({
+            next: (pg: TrendProgress) => {
+                this.monthlyTrend = pg.points;
+                this.trendPercent.set(pg.percent);
+                this.trendCurrent.set(pg.current);
+                this.trendTotal.set(pg.total);
+                if (pg.done) this.trendLoading = false;
+                this.cdr.markForCheck();
+            },
+            error: (err) => {
+                console.error('Trend error', err);
+                this.trendLoading = false;
+                this.cdr.markForCheck();
+            },
+            complete: () => {
+                this.trendLoading = false;
+                this.cdr.markForCheck();
+            }
+        });
     }
 
-    setTo(event: any): void {
-        if (event.target.value)
-            this.to.set(event.target.value)
-    }
+    // ========= Filters / Fetch =========
+    setFrom(e: any) { if (e.target.value) this.from.set(e.target.value); }
+    setTo(e: any) { if (e.target.value) this.to.set(e.target.value); }
 
-    public setSearch(event: any) {
-        this.search.set(event.target.value)
-    }
+    setSearch(e: any) { this.search.set(e.target.value); }
 
-    mccChipAdd(event: any) {
-        const raw = event.target.value.trim();
+    mccChipAdd(e: any) {
+        const raw = e.target.value.trim();
         if (!raw) return;
         raw.split(/[ ,;]+/g).forEach((tok: any) => {
             const n = Number(tok);
             if (!Number.isFinite(n)) return;
             if (!this.mccList().includes(n)) this.mccList.set([...this.mccList(), n]);
         });
-        // this.mccInput.set('');
     }
-    mccRemove(n: number) {
-        this.mccList.set(this.mccList().filter(x => x !== n));
-    }
+    mccRemove(n: number) { this.mccList.set(this.mccList().filter(x => x !== n)); }
     mccClear() { this.mccList.set([]); }
 
     async fetch() {
         const from = this.from() || undefined;
         const to = this.to() || undefined;
         const mccCsv = this.mccList().length ? this.mccList().join(',') : undefined;
-        console.log(from, to);
         await this.api.fetch(from, to, mccCsv);
     }
 

@@ -331,3 +331,83 @@ tbody td:nth-child(2) {
         width: 100%;
     }
 }
+
+/* mcc-analytics.component.scss — добавь в конец */
+
+.row { cursor: pointer; }
+.row:hover { background: #151a24; }
+
+.trend-row > td {
+  padding: 0 !important;
+  background: transparent;
+  border-bottom: none;
+}
+
+.trend-inline {
+  --pad: 14px;
+  margin: 0 8px 10px;
+  padding: var(--pad);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #121722, #10141c);
+  overflow: hidden;
+
+  /* анимация выпадения */
+  max-height: 600px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: max-height .35s ease, opacity .25s ease, transform .25s ease;
+}
+
+.trend-inline.loading { /* лёгкая подсветка во время загрузки */
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 15%, transparent);
+}
+
+.trend-inline__header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+  .muted { color: var(--muted); font-size: 13px; }
+  .spacer { flex: 1; }
+}
+
+.progress {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: #0f141d;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 8px 0 12px;
+}
+.progress .bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), #3a6df0);
+  transition: width .25s ease;
+}
+.progress__text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* мерчант-пиллы как кнопки */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 300px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #1a1f2a, #141923);
+  color: #cfd3da;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform .08s ease, border-color .15s ease, background .2s ease;
+}
+.pill:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+.pill:active { transform: translateY(1px) scale(.98); }

@@ -1,36 +1,5 @@
-@if (selectedTrendLabel) {
-    <section class="trend-panel">
-      <header class="trend-header">
-        <!-- <div class="title">
-            <strong>{{ selectedTrendLabel }}</strong>
-            <span class="muted">помесячная динамика</span>
-        </div> -->
-        <button class="btn btn-ghost sm" (click)="clearTrend()">Закрыть ×</button>
-      </header>
-    
-      <div class="trend-charts">
-        <div class="chart-card">
-          <app-chart
-            [label]="selectedTrendLabel"
-            [type]="ChartType.Expenses"
-            [mode]="'monthly'"
-            [monthly]="monthlyTrend"
-            [period]="period()"
-            [minorUnits]="false"
-            [currency]="'грн'">
-          </app-chart>
-        </div>
-      </div>
-    
-      <div class="loading" *ngIf="trendLoading">
-        <span class="spinner"></span> Строю график…
-      </div>
-    </section>
-}
-
-
-<div class="wrap">
-  <header class="toolbar">
+<!-- mcc-analytics.component.html (фрагмент таблицы) -->
+<header class="toolbar">
     <div class="filters">
       <label class="date">
         <span>From</span>
@@ -59,27 +28,7 @@
       <button class="btn" (click)="exportCsv()" title="Export current view to CSV">Export CSV</button>
     </div>
   </header>
-
-  <section class="totals" *ngIf="totals as t">
-    <div class="card">
-      <div class="k">Tx</div>
-      <div class="v">{{ t().txCount | number }}</div>
-    </div>
-    <div class="card">
-      <div class="k">Σ Spent</div>
-      <div class="v neg">{{ formatUAH(t().totalSpent) }}</div>
-    </div>
-    <div class="card">
-      <div class="k">Σ Income</div>
-      <div class="v pos">{{ formatUAH(t().totalIncome) }}</div>
-    </div>
-    <div class="card">
-      <div class="k">Net</div>
-      <div class="v" [class.neg]="t().net<0" [class.pos]="t().net>0">{{ formatUAH(t().net) }}</div>
-    </div>
-  </section>
-
-  <div class="table-wrap">
+<div class="table-wrap">
     <table>
       <thead>
         <tr>
@@ -94,19 +43,71 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let r of rows()" (click)="openTrendForMcc({ mcc: r.mcc, label: mccName(r.mcc) })">
-          <td class="mono">{{ r.mcc }}</td>
-          <td [title]="mccName(r.mcc)">{{ mccName(r.mcc) }}</td>
-          <td class="mono">{{ r.txCount }}</td>
-          <td class="mono neg">{{ formatUAH(r.totalSpent) }}</td>
-          <td class="mono pos">{{ formatUAH(r.totalIncome) }}</td>
-          <td class="mono" [class.neg]="r.net<0" [class.pos]="r.net>0">{{ formatUAH(r.net) }}</td>
-          <td class="mono">{{ formatUAH(r.avgAbs) }}</td>
-          <td class="tops">
-            <span *ngFor="let t of r.topMerchants" [title]="t.name + ' ' + formatUAH(t.total)" class="pill">{{ t.name }} ({{ t.total | number:'1.0-2' }})</span>
-          </td>
-        </tr>
+        <ng-container *ngFor="let r of rows(); let i = index">
+          <!-- основная строка -->
+          <tr class="row" (click)="openTrendForMcc({ mcc: r.mcc, label: mccName(r.mcc) })">
+            <td class="mono">{{ r.mcc }}</td>
+            <td [title]="mccName(r.mcc)">{{ mccName(r.mcc) }}</td>
+            <td class="mono">{{ r.txCount }}</td>
+            <td class="mono neg">{{ formatUAH(r.totalSpent) }}</td>
+            <td class="mono pos">{{ formatUAH(r.totalIncome) }}</td>
+            <td class="mono" [class.neg]="r.net<0" [class.pos]="r.net>0">{{ formatUAH(r.net) }}</td>
+            <td class="mono">{{ formatUAH(r.avgAbs) }}</td>
+            <td class="tops">
+              <button class="pill" *ngFor="let t of r.topMerchants"
+                      (click)="$event.stopPropagation(); openTrendForMerchant(t.name)"
+                      [title]="t.name + ' ' + (t.total | number:'1.0-2')">
+                {{ t.name }} ({{ t.total | number:'1.0-2' }})
+              </button>
+            </td>
+          </tr>
+  
+          <!-- выпадающая панель сразу под строкой -->
+          <tr class="trend-row" *ngIf="expandedKey() === ('mcc:' + r.mcc)">
+            <td colspan="8">
+              <div class="trend-inline" [class.loading]="trendLoading">
+                <div class="trend-inline__header">
+                  <strong>{{ selectedTrendLabel }}</strong>
+                  <span class="muted">помесячная динамика</span>
+                  <div class="spacer"></div>
+                  <button class="btn sm ghost" (click)="clearTrend()">Закрыть ×</button>
+                </div>
+  
+                <!-- прогресс -->
+                <div class="progress" *ngIf="trendLoading">
+                  <div class="bar" [style.width.%]="trendPercent()"></div>
+                  <div class="progress__text">
+                    {{ trendCurrent() }}/{{ trendTotal() }} ({{ trendPercent() | number:'1.0-0' }}%)
+                  </div>
+                </div>
+  
+                <div style="display: flex;">
+                    <!-- сам график -->
+                    <app-chart
+                        [label]="selectedTrendLabel"
+                        [type]="ChartType.Expenses"
+                        [mode]="'monthly'"
+                        [monthly]="monthlyTrend"
+                        [period]="period()"
+                        [minorUnits]="false"
+                        [currency]="'грн'">
+                    </app-chart>
+
+                    <app-chart
+                        [label]="selectedTrendLabel"
+                        [type]="ChartType.Income"
+                        [mode]="'monthly'"
+                        [monthly]="monthlyTrend"
+                        [period]="period()"
+                        [minorUnits]="false"
+                        [currency]="'грн'">
+                    </app-chart>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
   </div>
-</div>
+  
