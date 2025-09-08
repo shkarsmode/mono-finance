@@ -148,7 +148,7 @@ export class MccAnalyticsService {
     let m = from.getMonth() + 1;
     while (y < to.getFullYear() || (y === to.getFullYear() && m <= (to.getMonth() + 1))) {
       const monthStart = new Date(y, m - 1, 1);
-      const monthEnd = new Date(y, m, 0); // последний день
+      const monthEnd = new Date(y, m); // последний день
       const fromStr = monthStart.toISOString().slice(0, 10);
       const toStr   = monthEnd.toISOString().slice(0, 10);
       res.push({ y, m, fromISO: fromStr, toISO: toStr });
