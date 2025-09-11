@@ -28,6 +28,12 @@
       <button class="btn" (click)="exportCsv()" title="Export current view to CSV">Export CSV</button>
     </div>
   </header>
+
+  <div class="card" style="max-width: 310px; margin-bottom: 12px;">
+    <div class="k">Tx</div>
+    <div class="v">{{ totals().txCount | number }}</div>
+  </div>
+
 <div class="table-wrap">
     <table>
       <thead>
