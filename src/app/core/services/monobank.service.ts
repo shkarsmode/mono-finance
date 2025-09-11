@@ -37,7 +37,7 @@ export class MonobankService {
         private readonly snackBar: MatSnackBar,
         @Inject(MONOBANK_API) private readonly monobankApi: string,
         @Inject(BASE_PATH_API) private readonly basePathApi: string
-    ) {}
+    ) { }
 
     private startCooldown(seconds: number) {
         this._rateLimitCooldown$.next(seconds);
@@ -150,7 +150,8 @@ export class MonobankService {
 
     private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
         let activeIndex = 0;
-        clientInfo.accounts.forEach((account, index) => {
+        if (!clientInfo?.accounts) return;
+        clientInfo.accounts?.forEach((account, index) => {
             if (
                 clientInfo.accounts[activeIndex].balance -
                     clientInfo.accounts[activeIndex].creditLimit <
@@ -205,8 +206,8 @@ export class MonobankService {
 
         return this.http.get<IAccountInfo>(clientInfoApiUrl).pipe(
             tap((clientInfo) => {
+                console.log('clientInfo', clientInfo);
                 this.clientInfo$.next(clientInfo);
-                console.log(clientInfo.categoryGroups);
 
                 if (clientInfo.categoryGroups) {
                     this.categoryGroups$.next(clientInfo.categoryGroups);
@@ -215,6 +216,7 @@ export class MonobankService {
                     LocalStorage.MonobankActiveCardId
                 );
                 if (!activeCardId) {
+                    console.log(clientInfo)
                     this.setDefaultCardBasedOnAmount(clientInfo);
                     this.getTransactions(this.activeMonth);
                 } else {
