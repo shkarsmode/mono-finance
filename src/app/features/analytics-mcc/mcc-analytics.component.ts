@@ -65,6 +65,16 @@ export class MccAnalyticsComponent {
         this.fetch();
     }
 
+    public commonMax = computed(() => {
+        this.trendCurrent();
+        const max = Math.max(
+            0, 
+            ...this.monthlyTrend
+                .flatMap(p => [p.expense / 100, p.income / 100])
+        );
+        return Math.ceil(max * 1.05 / 1000) * 1000;
+    });
+
     // Period for charts (seconds)
     public period = computed(() => {
         const f = this.from(); const t = this.to();

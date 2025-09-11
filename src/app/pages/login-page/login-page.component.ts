@@ -52,7 +52,6 @@ export class LoginPageComponent implements OnInit, OnDestroy {
                 throw new Error(error);
             })
         ).subscribe(response => {
-            console.log(response);
             this.router.navigateByUrl(AppRouteEnum.Main);
         });
     }

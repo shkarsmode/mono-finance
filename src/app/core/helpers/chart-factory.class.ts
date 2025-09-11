@@ -23,6 +23,14 @@ const CHART_BG_COLORS_MAP = {
 
 type Mode = 'daily' | 'monthly';
 
+type ChartOptionsExt = {
+    mode?: Mode;
+    currency?: string;
+    minorUnits?: boolean;
+    period?: { fromSec: number; toSec: number };
+    yMax?: number; // <-- new
+};
+
 export class ChartFactory {
     private labels: string[] = [];
     private data: number[] = [];
@@ -31,26 +39,19 @@ export class ChartFactory {
     private mode: Mode;
     private currency: string;
     private minorUnits: boolean;
+    private yMax?: number;
 
     constructor(
-        /**
-         * data — либо массив транзакций (daily), либо агрегаты по месяцам (monthly)
-         */
         private dataSource: ITransaction[] | MonthlyAggregate[],
         private readonly canvas: HTMLCanvasElement,
         private label: string,
         private type: ChartType,
-        opts?: {
-            mode?: Mode;          // 'daily' | 'monthly'
-            currency?: string;    // 'грн', '$', 'UAH'
-            minorUnits?: boolean; // true если суммы в копейках/центах
-            period?: { fromSec: number; toSec: number }; // чтобы ровно выстроить месяцы
-        }
+        opts?: ChartOptionsExt
     ) {
         this.mode = opts?.mode ?? 'daily';
         this.currency = opts?.currency ?? 'грн';
         this.minorUnits = opts?.minorUnits ?? false;
-        // period (если monthly) используем в prepareDataToCreateMonthly
+        this.yMax = opts?.yMax; // <-- new
         if (opts?.period) (this as any)._period = opts.period;
     }
 
@@ -58,7 +59,7 @@ export class ChartFactory {
         dataSource: ITransaction[] | MonthlyAggregate[],
         label: string = this.label,
         type: ChartType = this.type,
-        opts?: Partial<{ mode: Mode; currency: string; minorUnits: boolean; period: { fromSec: number; toSec: number } }>
+        opts?: Partial<ChartOptionsExt>
     ): void {
         this.dataSource = dataSource;
         this.label = label;
@@ -67,7 +68,8 @@ export class ChartFactory {
         if (opts?.currency) this.currency = opts.currency;
         if (typeof opts?.minorUnits === 'boolean') this.minorUnits = opts.minorUnits;
         if (opts?.period) (this as any)._period = opts.period;
-
+        if (typeof opts?.yMax === 'number') this.yMax = opts.yMax; // <-- new
+    
         this.prepareDataToCreate();
         this.updateFields();
     }
@@ -114,6 +116,8 @@ export class ChartFactory {
                 },
                 scales: {
                     y: {
+                        beginAtZero: true,
+                        max: this.resolveYMax(), // <-- new
                         ticks: {
                             callback: (v) => this.fmt(Number(v)),
                         },
@@ -235,6 +239,22 @@ export class ChartFactory {
             (ds as any).borderColor = CHART_COLORS_MAP[this.type];
             (ds as any).backgroundColor = CHART_BG_COLORS_MAP[this.type];
         });
+    
+        const yScale = (this.chart.options.scales as any)?.y;
+        if (yScale) {
+            yScale.max = this.resolveYMax(); // <-- keep in sync
+            yScale.beginAtZero = true;
+        }
+    
         this.chart.update();
+    }
+
+    private resolveYMax(): number | undefined {
+        if (typeof this.yMax === 'number' && this.yMax > 0) {
+            return this.yMax;
+        }
+        const dataMax = this.data.length ? Math.max(...this.data) : 0;
+        if (!Number.isFinite(dataMax) || dataMax <= 0) return undefined;
+        return Math.ceil(dataMax * 1.05);
     }
 }

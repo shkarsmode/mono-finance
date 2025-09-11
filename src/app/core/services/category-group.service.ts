@@ -106,7 +106,7 @@ export class CategoryGroupService {
         // ) as ICategoryGroup[];
 
         let groups = this.categoryGroups$.getValue();
-        console.log(groups);
+        // console.log(groups);
 
         // groups = this.getDefaultGroupsIfNotExist(groups);
 

@@ -206,7 +206,7 @@ export class MonobankService {
 
         return this.http.get<IAccountInfo>(clientInfoApiUrl).pipe(
             tap((clientInfo) => {
-                console.log('clientInfo', clientInfo);
+                // console.log('clientInfo', clientInfo);
                 this.clientInfo$.next(clientInfo);
 
                 if (clientInfo.categoryGroups) {
@@ -216,7 +216,7 @@ export class MonobankService {
                     LocalStorage.MonobankActiveCardId
                 );
                 if (!activeCardId) {
-                    console.log(clientInfo)
+                    // console.log(clientInfo)
                     this.setDefaultCardBasedOnAmount(clientInfo);
                     this.getTransactions(this.activeMonth);
                 } else {

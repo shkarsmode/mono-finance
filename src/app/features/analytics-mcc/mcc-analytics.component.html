@@ -69,7 +69,7 @@
           </tr>
   
           <!-- выпадающая панель сразу под строкой -->
-          <tr class="trend-row" *ngIf="expandedKey() === ('mcc:' + r.mcc)">
+        <tr class="trend-row" *ngIf="expandedKey() === ('mcc:' + r.mcc)">
             <td colspan="8">
                 <div class="trend-inline" [class.loading]="trendLoading">
                     <div class="trend-inline__header">
@@ -109,7 +109,8 @@
                             [monthly]="monthlyTrend"
                             [period]="period()"
                             [minorUnits]="true"
-                            [currency]="'грн'">
+                            [currency]="'грн'"
+                            [yMax]="commonMax()">
                         </app-chart>
         
                         <app-chart
@@ -119,7 +120,8 @@
                             [monthly]="monthlyTrend"
                             [period]="period()"
                             [minorUnits]="true"
-                            [currency]="'грн'">
+                            [currency]="'грн'"
+                            [yMax]="commonMax()">
                         </app-chart>
                     </div>
                 </div>

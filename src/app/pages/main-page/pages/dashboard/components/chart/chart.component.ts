@@ -18,6 +18,8 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     @Input() public label: string;
     @Input() public transactions: ITransaction[] | null = null;
 
+    @Input() yMax?: number;
+
     /** Новый вход — месячные агрегаты */
     @Input() public monthly: MonthlyAggregate[] | null = null;
 
@@ -51,7 +53,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         const dataSource = this.mode === 'monthly'
             ? (this.monthly ?? [])
             : (this.transactions ?? []);
-
+    
         this.chartFactoryInstance.update(
             dataSource,
             this.label,
@@ -60,7 +62,8 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
                 mode: this.mode,
                 currency: this.currency,
                 minorUnits: this.minorUnits,
-                period: this.period
+                period: this.period,
+                yMax: this.yMax 
             }
         );
     }
@@ -69,7 +72,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
         const dataSource = this.mode === 'monthly'
             ? (this.monthly ?? [])
             : (this.transactions ?? []);
-
+    
         this.chartFactoryInstance = new ChartFactory(
             dataSource,
             this.chart.nativeElement,
@@ -79,7 +82,8 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
                 mode: this.mode,
                 currency: this.currency,
                 minorUnits: this.minorUnits,
-                period: this.period
+                period: this.period,
+                yMax: this.yMax
             }
         );
         this.chartFactoryInstance.init();

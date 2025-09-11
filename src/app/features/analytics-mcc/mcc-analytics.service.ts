@@ -125,14 +125,12 @@ export class MccAnalyticsService {
                 next: (event: HttpEvent<MonthlyPoint[]>) => {
                     if (event.type === HttpEventType.Sent) {
                         // Старт: запустим «мягкий» таймер заранее
-                        console.log('start')
                         startTimeBased();
                         return;
                     }
 
                     if (event.type === HttpEventType.DownloadProgress) {
                         // Реальный прогресс, если есть total
-                        console.log('event.total', event.total);
                         const total = (event.total ?? 0);
                         if (total > 0) {
                             const percent = Math.min(99, Math.max(1, Math.round((event.loaded / total) * 100)));
