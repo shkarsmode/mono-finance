@@ -71,47 +71,61 @@
           <!-- выпадающая панель сразу под строкой -->
           <tr class="trend-row" *ngIf="expandedKey() === ('mcc:' + r.mcc)">
             <td colspan="8">
-              <div class="trend-inline" [class.loading]="trendLoading">
-                <div class="trend-inline__header">
-                  <strong>{{ selectedTrendLabel }}</strong>
-                  <span class="muted">помесячная динамика</span>
-                  <div class="spacer"></div>
-                  <button class="btn sm ghost" (click)="clearTrend()">Закрыть ×</button>
+                <div class="trend-inline" [class.loading]="trendLoading">
+                    <div class="trend-inline__header">
+                        <strong>{{ selectedTrendLabel }}</strong>
+                        <span class="muted">помесячная динамика</span>
+                        <div class="spacer"></div>
+                        <button
+                            class="btn sm ghost"
+                            (click)="clearTrend()"
+                            type="button">Закрыть ×</button>
+                    </div>
+        
+                    <!-- прогресс -->
+                    <div
+                        class="progress"
+                        *ngIf="trendLoading"
+                        role="progressbar"
+                        [attr.aria-valuemin]="0"
+                        [attr.aria-valuemax]="100"
+                        [attr.aria-valuenow]="trendPercent()"
+                        aria-live="polite">
+                        <div class="bar" [style.width.%]="trendPercent()"></div>
+                        <div class="progress__text">
+                            {{ trendCurrent() }}/{{ trendTotal() }} ({{ trendPercent() | number:'1.0-0' }}%)
+                            <ng-container *ngIf="trendEtaMs() !== null && trendEtaMs()! > 0">
+                                · ~{{ (trendEtaMs()! / 1000) | number:'1.0-0' }}s left
+                            </ng-container>
+                        </div>
+                    </div>
+        
+                    <div style="display: flex;">
+                        <!-- сам график -->
+                        <app-chart
+                            [label]="selectedTrendLabel"
+                            [type]="ChartType.Expenses"
+                            [mode]="'monthly'"
+                            [monthly]="monthlyTrend"
+                            [period]="period()"
+                            [minorUnits]="true"
+                            [currency]="'грн'">
+                        </app-chart>
+        
+                        <app-chart
+                            [label]="selectedTrendLabel"
+                            [type]="ChartType.Income"
+                            [mode]="'monthly'"
+                            [monthly]="monthlyTrend"
+                            [period]="period()"
+                            [minorUnits]="true"
+                            [currency]="'грн'">
+                        </app-chart>
+                    </div>
                 </div>
-  
-                <!-- прогресс -->
-                <div class="progress" *ngIf="trendLoading">
-                  <div class="bar" [style.width.%]="trendPercent()"></div>
-                  <div class="progress__text">
-                    {{ trendCurrent() }}/{{ trendTotal() }} ({{ trendPercent() | number:'1.0-0' }}%)
-                  </div>
-                </div>
-  
-                <div style="display: flex;">
-                    <!-- сам график -->
-                    <app-chart
-                        [label]="selectedTrendLabel"
-                        [type]="ChartType.Expenses"
-                        [mode]="'monthly'"
-                        [monthly]="monthlyTrend"
-                        [period]="period()"
-                        [minorUnits]="false"
-                        [currency]="'грн'">
-                    </app-chart>
-
-                    <app-chart
-                        [label]="selectedTrendLabel"
-                        [type]="ChartType.Income"
-                        [mode]="'monthly'"
-                        [monthly]="monthlyTrend"
-                        [period]="period()"
-                        [minorUnits]="false"
-                        [currency]="'грн'">
-                    </app-chart>
-                </div>
-              </div>
             </td>
-          </tr>
+        </tr>
+        
         </ng-container>
       </tbody>
     </table>

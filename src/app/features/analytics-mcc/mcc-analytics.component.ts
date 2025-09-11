@@ -2,7 +2,7 @@
 import { ChangeDetectorRef, Component, computed, inject, signal } from '@angular/core';
 import { ChartType } from '@core/enums';
 import { Subscription } from 'rxjs';
-import { MccAnalyticsService, MccRow, MonthlyPoint, TrendProgress, TrendTarget } from './mcc-analytics.service';
+import { MccAnalyticsService, MccRow, MonthlyPoint, TrendTarget } from './mcc-analytics.service';
 import { MCC_LABELS, mccName } from './mcc-map';
 
 type SortKey = keyof Pick<MccRow, 'mcc' | 'txCount' | 'totalSpent' | 'totalIncome' | 'net' | 'avgAbs'>;
@@ -17,7 +17,7 @@ export class MccAnalyticsComponent {
     public readonly ChartType: typeof ChartType = ChartType;
     private cdr = inject(ChangeDetectorRef);
 
-    from = signal<string>('2023-02-06'); // '2023-02-06' // yyyy-mm-dd
+    from = signal<string>('2025-01-01'); // yyyy-mm-dd
     to = signal<string>('');
     mccInput = signal<string>('');
     mccList = signal<number[]>([]);
@@ -28,17 +28,17 @@ export class MccAnalyticsComponent {
 
     data = computed(() => this.api.last());
     rows = computed(() => {
-        const q = (this.search().trim() || '').toLowerCase();
-        const rows = (this.data()?.rows || []).filter(r => {
-            if (!q) return true;
+        const query = (this.search().trim() || '').toLowerCase();
+        const list = (this.data()?.rows || []).filter(r => {
+            if (!query) return true;
             const label = MCC_LABELS[r.mcc] || '';
             const merchants = r.topMerchants.map(x => x.name).join(' ');
             const hay = `${r.mcc} ${label} ${merchants}`.toLowerCase();
-            return hay.includes(q);
+            return hay.includes(query);
         });
         const key = this.sortKey();
         const dir = this.sortDir();
-        return [...rows].sort((a, b) => {
+        return [...list].sort((a, b) => {
             const av = a[key] as number;
             const bv = b[key] as number;
             return av === bv ? 0 : av > bv ? dir : -dir;
@@ -53,9 +53,11 @@ export class MccAnalyticsComponent {
     monthlyTrend: MonthlyPoint[] = [];
     trendLoading = false;
     trendPercent = signal(0);
-    trendCurrent = signal(0);
+    trendCurrent = signal(0); // kept for UI compatibility; equals total when loaded
     trendTotal = signal(0);
     private trendSub?: Subscription;
+
+    public trendEtaMs = signal<number | null>(null);
 
     constructor() {
         const now = new Date();
@@ -63,7 +65,7 @@ export class MccAnalyticsComponent {
         this.fetch();
     }
 
-    // период для ChartFactory (в секундах)
+    // Period for charts (seconds)
     public period = computed(() => {
         const f = this.from(); const t = this.to();
         const fromSec = f ? Math.floor(Date.parse(f) / 1000) : Math.floor(Date.now() / 1000);
@@ -76,9 +78,7 @@ export class MccAnalyticsComponent {
 
     openTrendForMcc(row: { mcc: number; label: string }) {
         const key = this.rowKey(row.mcc);
-        // toggle
         if (this.expandedKey() === key) { this.clearTrend(); return; }
-
         this.selectedTrendLabel = `MCC ${row.mcc} · ${row.label}`;
         this.expandedKey.set(key);
         this.openTrend({ kind: 'mcc', key: row.mcc });
@@ -87,7 +87,6 @@ export class MccAnalyticsComponent {
     openTrendForMerchant(name: string) {
         const key = `merchant:${name}`;
         if (this.expandedKey() === key) { this.clearTrend(); return; }
-
         this.selectedTrendLabel = name;
         this.expandedKey.set(key);
         this.openTrend({ kind: 'merchant', key: name });
@@ -102,33 +101,48 @@ export class MccAnalyticsComponent {
         this.trendPercent.set(0);
         this.trendCurrent.set(0);
         this.trendTotal.set(0);
+        this.trendEtaMs.set(null);
         this.cdr.markForCheck();
     }
-
+    
     private openTrend(target: TrendTarget) {
         this.trendSub?.unsubscribe();
+    
         this.trendLoading = true;
         this.monthlyTrend = [];
         this.trendPercent.set(0);
         this.trendCurrent.set(0);
         this.trendTotal.set(0);
+        this.trendEtaMs.set(null);
         this.cdr.markForCheck();
-
+    
         const fromISO = this.from();
         const toISO = this.to();
-
-        this.trendSub = this.api.getMonthlyTrendProgress(fromISO, toISO, target).subscribe({
-            next: (pg: TrendProgress) => {
-                this.monthlyTrend = pg.points;
-                this.trendPercent.set(pg.percent);
-                this.trendCurrent.set(pg.current);
-                this.trendTotal.set(pg.total);
-                if (pg.done) this.trendLoading = false;
+    
+        // если используешь версию с прогрессом
+        this.trendSub = this.api.getMonthlyTrendWithProgress(fromISO, toISO, target).subscribe({
+            next: (ev) => {
+                if (!ev.done) {
+                    this.trendPercent.set(Math.max(0, Math.min(100, ev.percent ?? 0)));
+                    this.trendEtaMs.set(ev.etaMs ?? null);
+                    this.cdr.markForCheck();
+                    return;
+                }
+                this.monthlyTrend = ev.points ?? [];
+                this.trendTotal.set(this.monthlyTrend.length);
+                this.trendCurrent.set(this.monthlyTrend.length);
+                this.trendPercent.set(100);
+                this.trendEtaMs.set(0);
+                this.trendLoading = false;
                 this.cdr.markForCheck();
             },
             error: (err) => {
                 console.error('Trend error', err);
                 this.trendLoading = false;
+                this.trendPercent.set(0);
+                this.trendCurrent.set(0);
+                this.trendTotal.set(0);
+                this.trendEtaMs.set(null);
                 this.cdr.markForCheck();
             },
             complete: () => {

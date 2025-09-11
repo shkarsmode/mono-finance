@@ -1,159 +1,182 @@
 // mcc-analytics.service.ts
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
 import { Inject, inject, Injectable, signal } from '@angular/core';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
-import { Observable } from 'rxjs';
+import { interval, Observable, Subject, Subscription } from 'rxjs';
 
 export interface MccRow {
-  mcc: number;
-  txCount: number;
-  totalSpent: number;
-  totalIncome: number;
-  net: number;
-  avgAbs: number;
-  topMerchants: { name: string; total: number }[];
+    mcc: number;
+    txCount: number;
+    totalSpent: number;
+    totalIncome: number;
+    net: number;
+    avgAbs: number;
+    topMerchants: { name: string; total: number }[];
 }
 export interface MccResponse {
-  params: { from?: string; to?: string; mccs?: number[] };
-  totals: { totalSpent: number; totalIncome: number; net: number; txCount: number };
-  rows: MccRow[];
+    params: { from?: string; to?: string; mccs?: number[] };
+    totals: { totalSpent: number; totalIncome: number; net: number; txCount: number };
+    rows: MccRow[];
 }
 
 export interface MonthlyPoint {
-  year: number;      // 2025
-  month: number;     // 1..12
-  income: number;    // положительное число (абсолют)
-  expense: number;   // положительное число (абсолют)
-  tx: number;
+    year: number;      // 2025
+    month: number;     // 1..12
+    income: number;    // positive abs
+    expense: number;   // positive abs
+    tx: number;
 }
 
 export type TrendTarget =
-  | { kind: 'mcc'; key: number }
-  | { kind: 'merchant'; key: string };
+    | { kind: 'mcc'; key: number }
+    | { kind: 'merchant'; key: string };
 
-export interface TrendProgress {
-  points: MonthlyPoint[];
-  current: number;         // обработано месяцев
-  total: number;           // всего месяцев
-  percent: number;         // 0..100
-  month?: { y: number; m: number };
-  done: boolean;
+export interface TrendProgressEvent {
+    percent: number;          // 0..100
+    etaMs?: number;           // осталось мс (оценка)
+    points?: MonthlyPoint[];  // появится на финале
+    done?: boolean;
+}
+
+/** Пер-эндпоинтовая EMA времён ответа для умного ETA. */
+const trendEmaStore = new Map<string, number>(); // key -> ms
+
+function updateEma(key: string, actualMs: number): void {
+    const alpha = 0.3;
+    const prev = trendEmaStore.get(key);
+    trendEmaStore.set(key, prev == null ? actualMs : prev * (1 - alpha) + actualMs * alpha);
+}
+
+function readEma(key: string, fallbackMs: number): number {
+    return trendEmaStore.get(key) ?? fallbackMs;
 }
 
 @Injectable({ providedIn: 'root' })
 export class MccAnalyticsService {
-  private http = inject(HttpClient);
-  @Inject(BASE_PATH_API) private readonly baseUrl: string = 'https://finance-back.vercel.app/api';
-  private tokenGetter = () => localStorage.getItem('token') || '';
+    private http = inject(HttpClient);
+    @Inject(BASE_PATH_API) private readonly baseUrl: string = 'https://finance-back.vercel.app/api';
+    private tokenGetter = () => localStorage.getItem('token') || '';
 
-  loading = signal(false);
-  last = signal<MccResponse | null>(null);
+    loading = signal(false);
+    last = signal<MccResponse | null>(null);
 
-  async fetch(from?: string, to?: string, mccCsv?: string) {
-    this.loading.set(true);
-    try {
-      let params = new HttpParams();
-      if (from) params = params.set('from', from);
-      if (to) params = params.set('to', to);
-      if (mccCsv) params = params.set('mcc', mccCsv);
+    async fetch(from?: string, to?: string, mccCsv?: string) {
+        this.loading.set(true);
+        try {
+            let params = new HttpParams();
+            if (from) params = params.set('from', from);
+            if (to) params = params.set('to', to);
+            if (mccCsv) params = params.set('mcc', mccCsv);
 
-      const res = await this.http.get<MccResponse>(
-        `${this.baseUrl}/analytics/mcc-table`,
-        { params, headers: { Authorization: `Bearer ${this.tokenGetter()}` } }
-      ).toPromise();
-
-      if (res) this.last.set(res);
-      return res;
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  /** Прогрессивная загрузка тренда: эмитит прогресс после каждого месяца. */
-  getMonthlyTrendProgress(fromISO: string, toISO: string, target: TrendTarget): Observable<TrendProgress> {
-    const months = this.enumerateMonths(fromISO, toISO);
-    const total = months.length;
-
-    return new Observable<TrendProgress>(subscriber => {
-      const points: MonthlyPoint[] = [];
-      let cancelled = false;
-
-      const run = async () => {
-        for (let i = 0; i < months.length; i++) {
-          if (cancelled) return; // завершение без ошибок
-
-          const it = months[i];
-
-          // повторы при 429 для конкретного месяца
-          let point: MonthlyPoint | null = null;
-          let attempts = 0;
-          while (!point) {
-            try {
-              const params: any = { from: it.fromISO, to: it.toISO };
-              if (target.kind === 'mcc') params.mcc = String(target.key);
-              else params.merchant = String(target.key);
-
-              const row = await this.http.get<MccResponse>(
+            const res = await this.http.get<MccResponse>(
                 `${this.baseUrl}/analytics/mcc-table`,
                 { params, headers: { Authorization: `Bearer ${this.tokenGetter()}` } }
-              ).toPromise();
+            ).toPromise();
 
-              const incomeAbs  = Math.abs(Number(row?.totals?.totalIncome ?? 0));
-              const spentAbs   = Math.abs(Number(row?.totals?.totalSpent ?? 0));
-              const tx         = Number(row?.totals?.txCount ?? 0);
-
-              point = { year: it.y, month: it.m, income: incomeAbs, expense: spentAbs, tx };
-            } catch (e: any) {
-              const tooMany = e?.status === 429 || String(e?.message ?? '').toLowerCase().includes('too many');
-              if (tooMany) {
-                attempts++;
-                const retryAfterHeader = Number(e?.headers?.get?.('Retry-After'));
-                const waitSec = Number.isFinite(retryAfterHeader) && retryAfterHeader > 0 ? retryAfterHeader : 60;
-                await new Promise(res => setTimeout(res, waitSec * 1000));
-                if (attempts <= 5) continue;
-              }
-              // любая другая ошибка — заполняем нулями и идём дальше
-              point = { year: it.y, month: it.m, income: 0, expense: 0, tx: 0 };
-            }
-          }
-
-          points.push(point);
-          const percent = Math.round(((i + 1) / total) * 100);
-
-          subscriber.next({
-            points: [...points],   // копия, чтобы change detection сработал
-            current: i + 1,
-            total,
-            percent,
-            month: { y: it.y, m: it.m },
-            done: i + 1 === total
-          });
+            if (res) this.last.set(res);
+            return res;
+        } finally {
+            this.loading.set(false);
         }
-        subscriber.complete();
-      };
-
-      run();
-
-      // отмена (закрытие)
-      return () => { cancelled = true; };
-    });
-  }
-
-  private enumerateMonths(fromISO: string, toISO: string): { y: number; m: number; fromISO: string; toISO: string }[] {
-    const from = new Date(fromISO);
-    const to = new Date(toISO);
-    const res: { y: number; m: number; fromISO: string; toISO: string }[] = [];
-
-    let y = from.getFullYear();
-    let m = from.getMonth() + 1;
-    while (y < to.getFullYear() || (y === to.getFullYear() && m <= (to.getMonth() + 1))) {
-      const monthStart = new Date(y, m - 1, 1);
-      const monthEnd = new Date(y, m); // последний день
-      const fromStr = monthStart.toISOString().slice(0, 10);
-      const toStr   = monthEnd.toISOString().slice(0, 10);
-      res.push({ y, m, fromISO: fromStr, toISO: toStr });
-      m++; if (m > 12) { m = 1; y++; }
     }
-    return res;
-  }
+
+    getMonthlyTrendWithProgress(fromISO: string, toISO: string, target: TrendTarget): Observable<TrendProgressEvent> {
+        const subject = new Subject<TrendProgressEvent>();
+
+        const params = new HttpParams()
+            .set('from', fromISO)
+            .set('to', toISO)
+            .set('kind', target.kind)
+            .set('key', String(target.key));
+
+
+        const headers = { Authorization: `Bearer ${this.tokenGetter()}` };
+
+        const progressKey = `${target.kind}:${target.key}:${fromISO}:${toISO}`;
+        const startTime = Date.now();
+
+        // Таймер для time-based ETA, если server не шлёт total
+        let timerSub: Subscription | undefined;
+        let usedTimeBased = false;
+        const expectedMsSeed = Math.max(1200, Math.min(1000 * 15, readEma(progressKey, 4000))); // 1.2s..15s
+        let expectedMs = expectedMsSeed;
+
+        const startTimeBased = () => {
+            if (timerSub) return;
+            usedTimeBased = true;
+            timerSub = interval(100).subscribe(() => {
+                const elapsed = Date.now() - startTime;
+                const ratio = Math.min(0.95, elapsed / expectedMs);
+                const percent = Math.max(5, Math.round(ratio * 100));
+                const etaMs = Math.max(0, Math.round(expectedMs - elapsed));
+                subject.next({ percent, etaMs });
+            });
+        };
+
+        const stopTimeBased = () => {
+            timerSub?.unsubscribe();
+            timerSub = undefined;
+        };
+
+        const httpSub = this.http.request<MonthlyPoint[]>(
+            'GET', `${this.baseUrl}/analytics/monthly-trend`, { headers, reportProgress: true, observe: 'events', params }
+        )
+            .subscribe({
+                next: (event: HttpEvent<MonthlyPoint[]>) => {
+                    if (event.type === HttpEventType.Sent) {
+                        // Старт: запустим «мягкий» таймер заранее
+                        console.log('start')
+                        startTimeBased();
+                        return;
+                    }
+
+                    if (event.type === HttpEventType.DownloadProgress) {
+                        // Реальный прогресс, если есть total
+                        console.log('event.total', event.total);
+                        const total = (event.total ?? 0);
+                        if (total > 0) {
+                            const percent = Math.min(99, Math.max(1, Math.round((event.loaded / total) * 100)));
+                            const elapsed = Date.now() - startTime;
+                            // Грубая оценка на основе текущей скорости
+                            const speed = event.loaded / Math.max(1, elapsed / 1000); // bytes per sec
+                            const remaining = Math.max(0, total - event.loaded);
+                            const etaMs = speed > 0 ? Math.round((remaining / speed) * 1000) : undefined;
+                            // Перекрываем time-based, если есть real total
+                            stopTimeBased();
+                            subject.next({ percent, etaMs });
+                        } else {
+                            // Нет total — оставляем time-based
+                            startTimeBased();
+                        }
+                        return;
+                    }
+
+                    if (event.type === HttpEventType.Response) {
+                        stopTimeBased();
+                        const durationMs = Date.now() - startTime;
+
+                        // Апдейтим EMA, если мы были в time-based или просто хотим улучшить будущую оценку
+                        updateEma(progressKey, durationMs);
+
+                        const points = event.body || [];
+                        subject.next({ percent: 100, etaMs: 0, points, done: true });
+                        subject.complete();
+                        return;
+                    }
+                },
+                error: (err) => {
+                    stopTimeBased();
+                    subject.error(err);
+                }
+            });
+
+        return new Observable<TrendProgressEvent>((observer) => {
+            const sub = subject.subscribe(observer);
+            return () => {
+                sub.unsubscribe();
+                httpSub.unsubscribe();
+                stopTimeBased();
+            };
+        });
+    }
 }

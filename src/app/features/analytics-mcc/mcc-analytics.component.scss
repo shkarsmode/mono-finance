@@ -411,3 +411,32 @@ tbody td:nth-child(2) {
 }
 .pill:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
 .pill:active { transform: translateY(1px) scale(.98); }
+
+.progress {
+    position: relative;
+    height: 10px;
+    border-radius: 9999px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin: 8px 0 12px;
+
+    .bar {
+        height: 100%;
+        width: 0%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #6aa0ff, #4cd6a9);
+        transition: width 120ms ease-out;
+    }
+
+    .progress__text {
+        margin-top: 6px;
+        font-size: 12px;
+        opacity: 0.75;
+        user-select: none;
+    }
+}
+
+.trend-inline.loading {
+    pointer-events: none;
+    opacity: 0.98;
+}
