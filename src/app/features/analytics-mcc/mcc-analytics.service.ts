@@ -54,7 +54,7 @@ function readEma(key: string, fallbackMs: number): number {
 @Injectable({ providedIn: 'root' })
 export class MccAnalyticsService {
     private http = inject(HttpClient);
-    @Inject(BASE_PATH_API) private readonly baseUrl: string = 'https://finance-back.vercel.app/api';
+    @Inject(BASE_PATH_API) private readonly baseUrl: string = 'https://api.91.98.164.192.nip.io/api';
     private tokenGetter = () => localStorage.getItem('token') || '';
 
     loading = signal(false);
