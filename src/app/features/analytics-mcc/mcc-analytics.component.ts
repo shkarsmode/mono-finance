@@ -1,7 +1,9 @@
 // mcc-analytics.component.ts
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, computed, inject, signal } from '@angular/core';
 import { ChartType } from '@core/enums';
 import { Subscription } from 'rxjs';
+import { ChartComponent } from '../../pages/main-page/pages/dashboard/components/chart/chart.component';
 import { MccAnalyticsService, MccRow, MonthlyPoint, TrendTarget } from './mcc-analytics.service';
 import { MCC_LABELS, mccName } from './mcc-map';
 
@@ -9,10 +11,12 @@ type SortKey = keyof Pick<MccRow, 'mcc' | 'txCount' | 'totalSpent' | 'totalIncom
 
 @Component({
     selector: 'app-mcc-analytics',
+    standalone: true,
+    imports: [DecimalPipe, ChartComponent],
     templateUrl: './mcc-analytics.component.html',
     styleUrls: ['./mcc-analytics.component.scss']
 })
-export class MccAnalyticsComponent {
+export default class MccAnalyticsComponent {
     private api = inject(MccAnalyticsService);
     public readonly ChartType: typeof ChartType = ChartType;
     private cdr = inject(ChangeDetectorRef);

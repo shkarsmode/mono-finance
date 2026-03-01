@@ -1,224 +1,158 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
+import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { Observable, Subject, first, lastValueFrom, takeUntil } from 'rxjs';
-import { TransactionsComponent } from './components';
+import { first, lastValueFrom, Observable, Subject } from 'rxjs';
+import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
+import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
+import { CardComponent, ChartComponent, TransactionsComponent } from './components';
 
 @Component({
     selector: 'app-dashboard',
+    standalone: true,
+    imports: [
+        AsyncPipe, DatePipe, DecimalPipe,
+        CardComponent, ChartComponent, TransactionsComponent,
+        TransactionsFilterPipe, TransactionsSortByPipe,
+    ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
-    public transactions: ITransaction[] = [];
-    public searchTransactionsValue: string = '';
-    public sortDirection: 'asc' | 'desc' = 'desc';
+export default class DashboardComponent implements OnInit {
+    private readonly monobankService = inject(MonobankService);
+    private readonly categoryGroupService = inject(CategoryGroupService);
+    private readonly destroyRef = inject(DestroyRef);
 
-    public activeCardId$: Observable<string>;
-    public clientInfo$: Observable<IAccountInfo>;
-    public groups$: Observable<ICategoryGroup[]>;
-    public transactions$: Observable<ITransaction[]>;
-    public sortTransactionsBy: TransactionSortBy = TransactionSortBy.Date;
+    readonly transactions = signal<ITransaction[]>([]);
+    readonly searchValue = signal('');
+    readonly sortDirection = signal<'asc' | 'desc'>('desc');
+    readonly sortBy = signal<TransactionSortBy>(TransactionSortBy.Date);
+    readonly isBulkLoading = signal(false);
+    readonly processedMonths = signal(0);
+    readonly emptyStreak = signal(0);
+    readonly rateLimitLeftSec = signal(0);
+    readonly maxEmptyStreak = 2;
 
-    public readonly ChartType: typeof ChartType = ChartType;
-    private readonly destroy$: Subject<void> = new Subject();
-    private readonly cancelPreviousRequest$: Subject<void> = new Subject();
+    activeCardId$!: Observable<string>;
+    clientInfo$!: Observable<IAccountInfo>;
+    groups$!: Observable<ICategoryGroup[]>;
+    transactions$!: Observable<ITransaction[]>;
+    readonly ChartType = ChartType;
 
-    public isSyncingAll = false;
-    public rateLimitLeftSec = 0;
-    public processedMonths = 0;
-    public emptyStreak = 0;
-    public maxEmptyStreak = 2;  
     private cancelBulkRequested = false;
+    private readonly cancelPreviousRequest$ = new Subject<void>();
 
-    public isBulkLoading = false;
-    public retryAttempt = 0;
-    public bulkProgress = { done: 0, total: 0 };
-    private readonly cancelBulk$ = new Subject<void>();
+    @ViewChild('transactionsRef') transactionsRef!: TransactionsComponent;
 
-    @ViewChild('transactionsRef') public transactionsRef: TransactionsComponent
+    ngOnInit(): void {
+        this.activeCardId$ = this.monobankService.activeCardId$;
+        this.clientInfo$ = this.monobankService.clientInfo$;
+        this.groups$ = this.categoryGroupService.categoryGroups$;
+        this.transactions$ = this.monobankService.currentTransactions$;
 
-    constructor(
-        private readonly cdr: ChangeDetectorRef,
-        private readonly monobankService: MonobankService,
-        private readonly categoryGroupService: CategoryGroupService
-    ) {}
-
-    public ngOnInit(): void {
-        this.initActiveCardId();
-        this.initAccountInfoData();
-        this.initCategoryGroupsData();
-        this.initCurrentTransactionsObserver();
-        // this.initTransactionsDataObserver();
-        // this.initTransactionsUpdatesObserver();
+        this.transactions$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(t => this.transactions.set(t));
 
         this.monobankService.rateLimitCooldown$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(sec => {
-                if (sec > 0 && this.isBulkLoading) this.retryAttempt++; // грубая эвристика
-                this.rateLimitLeftSec = sec;
-                this.cdr.markForCheck();
-            });
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(sec => this.rateLimitLeftSec.set(sec));
     }
 
-    public delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    onCardClick(account: IAccount): void {
+        this.monobankService.setActiveCardId(account.id);
     }
 
-    public async onLoadAllClick(): Promise<void> {
-        if (this.isBulkLoading || this.rateLimitLeftSec > 0) return;
+    onSelectMonth(month: number): void {
+        this.monobankService.activeMonth = month;
+        this.cancelPreviousRequest$.next();
+        this.monobankService
+            .getTransactions(month, this.monobankService.activeYear)
+            .pipe(first(), takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+    }
 
-        this.isBulkLoading = true;
+    onSelectYear(year: number): void {
+        this.monobankService.activeYear = year;
+        this.cancelPreviousRequest$.next();
+        this.monobankService
+            .getTransactions(this.monobankService.activeMonth, year)
+            .pipe(first(), takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+    }
+
+    onSearchTransaction(value: string): void {
+        this.searchValue.set(value);
+    }
+
+    onSelectValueChange(value: string[]): void {
+        this.searchValue.set(value.join());
+    }
+
+    onSortTransactionsBy(sort: { sortBy: TransactionSortBy; direction: 'asc' | 'desc' }): void {
+        this.sortBy.set(sort.sortBy);
+        this.sortDirection.set(sort.direction);
+    }
+
+    get bulkProgressPercent(): number {
+        return Math.max(0, Math.min(100, Math.round(this.processedMonths() / 24 * 100)));
+    }
+
+    async onLoadAllClick(): Promise<void> {
+        if (this.isBulkLoading() || this.rateLimitLeftSec() > 0) return;
+
+        this.isBulkLoading.set(true);
         this.cancelBulkRequested = false;
-        this.processedMonths = 0;
-        this.emptyStreak = 0;
-        this.cdr.markForCheck();
+        this.processedMonths.set(0);
+        this.emptyStreak.set(0);
 
         try {
             let y = this.monobankService.activeYear;
             let m = this.monobankService.activeMonth;
 
-            const MAX_MONTHS = 240;
-            const MIN_YEAR   = 2015; 
-
             while (
                 !this.cancelBulkRequested &&
-                this.emptyStreak < this.maxEmptyStreak &&
-                this.processedMonths < MAX_MONTHS &&
-                y >= MIN_YEAR
+                this.emptyStreak() < this.maxEmptyStreak &&
+                this.processedMonths() < 240 &&
+                y >= 2015
             ) {
                 const trs = await lastValueFrom(
                     this.monobankService.getTransactions(m, y).pipe(first())
                 );
 
-                if (trs['status'] === 429) {
-                    await this.delay(60001);
+                if ((trs as any)['status'] === 429) {
+                    await new Promise(r => setTimeout(r, 60001));
                     continue;
                 }
 
-                if (trs['data']?.length) {
-                    this.emptyStreak = 0;
-                    this.monobankService.mergeTransactions(trs);
+                if ((trs as any)['data']?.length) {
+                    this.emptyStreak.set(0);
+                    this.monobankService.mergeTransactions(trs as any);
                 } else {
-                    this.emptyStreak += 1;
+                    this.emptyStreak.update(v => v + 1);
                 }
 
-                this.processedMonths += 1;
-                const prev = this.prevMonth(m, y);
-                m = prev.m; y = prev.y;
+                this.processedMonths.update(v => v + 1);
+                if (m > 1) { m--; } else { m = 12; y--; }
 
-                
-                this.transactionsRef.activeMonth = m;
-                this.transactionsRef.activeYear = y;
-                
+                if (this.transactionsRef) {
+                    this.transactionsRef.activeMonth = m;
+                    this.transactionsRef.activeYear = y;
+                }
                 this.monobankService.activeMonth = m;
                 this.monobankService.activeYear = y;
-
-                this.cdr.markForCheck();
             }
         } catch (err) {
-            console.error('Bulk descending load failed:', err);
+            console.error('Bulk load failed:', err);
         } finally {
-            this.isBulkLoading = false;
-            this.cdr.markForCheck();
+            this.isBulkLoading.set(false);
         }
     }
 
-    private prevMonth(m: number, y: number): { m: number; y: number } {
-        if (m > 1) return { m: m - 1, y };
-        return { m: 12, y: y - 1 };
-    }
-
-    public get bulkProgressPercent(): number {
-        return Math.max(0, Math.min(100, Math.round(this.processedMonths / 24 * 100)));
-    }
-
-    private buildMonthRange(fromYear: number): { m: number; y: number }[] {
-        const now = new Date();
-        const toYear = now.getFullYear();
-        const toMonth = now.getMonth() + 1; // 1..12
-
-        const out: { m: number; y: number }[] = [];
-        for (let y = fromYear; y <= toYear; y++) {
-            const startM = (y === fromYear) ? 1 : 1;
-            const endM   = (y === toYear) ? toMonth : 12;
-            for (let m = startM; m <= endM; m++) {
-                out.push({ m, y });
-            }
-        }
-        return out;
-    }
-
-    public onCancelLoadAll(): void {
-        if (!this.isBulkLoading) return;
-        this.cancelBulk$.next();
-    }
-
-    public onSelectMonth(month: number): void {
-        this.monobankService.activeMonth = month;
-        this.cancelPreviousRequest$.next();
-        this.monobankService
-            .getTransactions(month, this.monobankService.activeYear)
-            .pipe(first(), takeUntil(this.cancelPreviousRequest$))
-            .subscribe({
-                next: (transactions) => {},
-                error: (err) => {
-                    console.error(err);
-                },
-            });
-    }
-
-    public onSelectYear(year: number): void {
-        this.monobankService.activeYear = year;
-        this.cancelPreviousRequest$.next();
-        this.monobankService
-            .getTransactions(this.monobankService.activeMonth, year)
-            .pipe(first(), takeUntil(this.cancelPreviousRequest$))
-            .subscribe({
-                next: (transactions) => {},
-                error: (err) => {
-                    console.error(err);
-                },
-            });
-    }
-    public onSearchTransaction(searchValue: string): void {
-        this.searchTransactionsValue = searchValue;
-    }
-
-    public onSelectValueChange(value: string[]): void {
-        this.searchTransactionsValue = value.join();
-    }
-
-    public onSortTransactionsBy(sort: {
-        sortBy: TransactionSortBy;
-        direction: 'asc' | 'desc';
-    }): void {
-        this.sortTransactionsBy = sort.sortBy;
-        this.sortDirection = sort.direction;
-    }
-
-    private initCurrentTransactionsObserver(): void {
-        this.transactions$ = this.monobankService.currentTransactions$;
-        this.transactions$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe((transactions) => (this.transactions = transactions));
-    }
-
-    public onCardClick(account: IAccount): void {
-        this.monobankService.setActiveCardId(account.id);
-    }
-
-    private initAccountInfoData(): void {
-        this.clientInfo$ = this.monobankService.clientInfo$;
-    }
-
-    private initCategoryGroupsData(): void {
-        this.groups$ = this.categoryGroupService.categoryGroups$;
-    }
-
-    private initActiveCardId(): void {
-        this.activeCardId$ = this.monobankService.activeCardId$;
+    onCancelLoadAll(): void {
+        this.cancelBulkRequested = true;
     }
 }

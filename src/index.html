@@ -1,19 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="utf-8">
-    <title>FinanceApp</title>
+    <title>Finance App</title>
     <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Personal finance dashboard — Monobank integration">
+    <meta name="theme-color" content="#4361ee">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Font preloads (local woff2) -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/SpaceGrotesk-Regular.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/SpaceGrotesk-Medium.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="assets/fonts/SpaceGrotesk-SemiBold.woff2">
+
+    <!-- Material Icons (only icon font from CDN) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <script>
+        // Restore saved theme before first paint
+        (function() {
+            var t = localStorage.getItem('finance-theme');
+            if (t === 'dark' || t === 'light') {
+                document.documentElement.setAttribute('data-theme', t);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 
 <body>
     <app-root></app-root>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 
 </html>

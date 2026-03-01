@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output, forwardRef, inject } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 @Component({
     selector: 'app-currency-exchange-input-block',
+    standalone: true,
     templateUrl: './currency-exchange-input-block.component.html',
     styleUrl: './currency-exchange-input-block.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,46 +15,41 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         },
     ],
 })
-export class CurrencyExchangeInputBlockComponent
-    implements ControlValueAccessor
-{
-    @Input() public flag: string;
-    @Input() public name: string;
-    @Input() public title: string;
+export class CurrencyExchangeInputBlockComponent implements ControlValueAccessor {
+    @Input() flag = '';
+    @Input() name = '';
+    @Input() title = '';
 
-    @Output() public onBlur: EventEmitter<FocusEvent> = new EventEmitter();
-    @Output() public onInput: EventEmitter<void> = new EventEmitter();
+    @Output() onBlur = new EventEmitter<FocusEvent>();
+    @Output() onInput = new EventEmitter<void>();
 
-    public value: string | undefined;
-    
-    private onChange: (value: string) => void;
-    private onTouched: (value: string) => void;
+    value = '';
 
-    constructor(
-        private readonly changeDetector: ChangeDetectorRef
-    ) {}
+    private onChange: (value: string) => void = () => {};
+    private onTouched: () => void = () => {};
+    private readonly cdr = inject(ChangeDetectorRef);
 
-    public onInputEvent = () => this.onInput.emit();
-    public onBlurEvent = (event: FocusEvent) => this.onBlur.emit(event);
+    onBlurEvent(event: FocusEvent): void {
+        this.onTouched();
+        this.onBlur.emit(event);
+    }
 
-    public onInputValueChange(event: Event): void {
-        const targetDivElement = event.target as HTMLInputElement;
-        const value = targetDivElement.value;
-
+    onInputValueChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
         this.onChange(value);
-        this.onInputEvent();
+        this.onInput.emit();
     }
 
-    public writeValue(value: string): void {
-        this.value = value ? value : '';
-        this.changeDetector.detectChanges();
+    writeValue(value: string): void {
+        this.value = value ?? '';
+        this.cdr.detectChanges();
     }
 
-    public registerOnChange(fn: (value: string) => void): void {
+    registerOnChange(fn: (value: string) => void): void {
         this.onChange = fn;
     }
 
-    public registerOnTouched(fn: (value: string) => void): void {
+    registerOnTouched(fn: () => void): void {
         this.onTouched = fn;
     }
 }

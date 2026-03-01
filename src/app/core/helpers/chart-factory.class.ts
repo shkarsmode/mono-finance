@@ -1,7 +1,24 @@
 import { ChartType } from '@core/enums';
 import { ITransaction } from '@core/interfaces';
 import Chart from 'chart.js/auto';
-import moment from 'moment';
+
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] as const;
+
+function formatMonthYear(year: number, month: number): string {
+    return `${SHORT_MONTHS[month - 1]} ${year}`;
+}
+
+function formatMonthDay(date: Date): string {
+    return `${SHORT_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`;
+}
+
+function formatDateKey(date: Date): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+function daysInMonth(year: number, month: number): number {
+    return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
 
 export interface MonthlyAggregate {
     year: number;   // 2025
@@ -181,7 +198,7 @@ export class ChartFactory {
             const income = a ? this.normalizeUnit(a.income) : 0;
             const expense = a ? Math.abs(this.normalizeUnit(a.expense)) : 0; // всегда модуль
 
-            labels.push(moment.utc([y, m - 1, 1]).format('MMM YYYY'));
+            labels.push(formatMonthYear(y, m));
             vals.push(this.type === ChartType.Income ? income : expense);
 
             if (m < 12) m++; else { m = 1; y++; }
@@ -194,30 +211,29 @@ export class ChartFactory {
     private groupDataByDay(data: ITransaction[]): { day: string; totalAmount: number }[] {
         if (!data.length) return [];
 
-        // берём месяц первого tx (как у тебя)
-        const first = moment.utc(Number((data[0] as any).time) * 1000);
-        const year = first.year();
-        const month = first.month(); // 0..11
-        const days = first.daysInMonth();
+        const first = new Date(Number((data[0] as any).time) * 1000);
+        const year = first.getUTCFullYear();
+        const month = first.getUTCMonth(); // 0..11
+        const days = daysInMonth(year, month + 1);
 
         const totals: Record<string, number> = {};
         for (let d = 1; d <= days; d++) {
-            const key = moment.utc([year, month, d]).format('YYYY-MM-DD');
-            totals[key] = 0;
+            const dt = new Date(Date.UTC(year, month, d));
+            totals[formatDateKey(dt)] = 0;
         }
 
         data.forEach(t => {
             const ts = Number((t as any).time);
-            const dt = moment.utc(ts * 1000);
-            if (dt.year() !== year || dt.month() !== month) return;
-            const key = dt.format('YYYY-MM-DD');
+            const dt = new Date(ts * 1000);
+            if (dt.getUTCFullYear() !== year || dt.getUTCMonth() !== month) return;
+            const key = formatDateKey(dt);
 
             const amount = this.normalizeUnit((t as any).amount);
-            totals[key] += Math.abs(amount); // всегда позитив
+            totals[key] += Math.abs(amount);
         });
 
         return Object.entries(totals).map(([k, totalAmount]) => ({
-            day: moment.utc(k).format('MMM D'),
+            day: formatMonthDay(new Date(k + 'T00:00:00Z')),
             totalAmount,
         }));
     }

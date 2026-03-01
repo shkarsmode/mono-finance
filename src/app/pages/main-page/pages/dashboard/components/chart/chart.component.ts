@@ -10,6 +10,7 @@ type ChartMode = 'daily' | 'monthly';
 
 @Component({
     selector: 'app-chart',
+    standalone: true,
     templateUrl: './chart.component.html',
     styleUrl: './chart.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

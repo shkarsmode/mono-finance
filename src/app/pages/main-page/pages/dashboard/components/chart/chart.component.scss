@@ -1,8 +1,14 @@
 .wrap-chart {
-    width: 700px;
-    height: 300px;
+    width: 100%;
+    max-width: 700px;
+    aspect-ratio: 2;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
 
-    @media screen and (max-width: 1200px) {
-        width: 100%;
+    canvas {
+        width: 100% !important;
+        height: 100% !important;
     }
 }

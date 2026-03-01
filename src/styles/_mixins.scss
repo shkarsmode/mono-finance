@@ -1,0 +1,75 @@
+// Shared SCSS mixins
+
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@mixin flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+@mixin text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@mixin skeleton-pulse {
+    background: linear-gradient(
+        90deg,
+        var(--color-skeleton) 25%,
+        var(--color-skeleton-shine) 50%,
+        var(--color-skeleton) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@mixin card-base {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-1);
+}
+
+@mixin hover-lift {
+    transition: transform var(--duration-normal) var(--ease-default),
+                box-shadow var(--duration-normal) var(--ease-default);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-3);
+    }
+}
+
+@mixin focus-ring {
+    &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+}
+
+@mixin responsive($breakpoint) {
+    @if $breakpoint == mobile {
+        @media (max-width: 767px) { @content; }
+    } @else if $breakpoint == tablet {
+        @media (max-width: 1023px) { @content; }
+    } @else if $breakpoint == desktop {
+        @media (min-width: 1024px) { @content; }
+    }
+}

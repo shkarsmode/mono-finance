@@ -14,49 +14,42 @@
         </mat-select>
     </mat-form-field>
 
-    <div class="year">
-        <mat-form-field>
-            <mat-label>Year</mat-label>
-            <mat-select
-                (valueChange)="onSelectYear($event)"
-                [value]="activeYear">
-                @for (year of yearsMap; track year) {
-                    <mat-option [value]="year">{{ year }}</mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
-    </div>
+    <mat-form-field class="year">
+        <mat-label>Year</mat-label>
+        <mat-select
+            (valueChange)="onSelectYear($event)"
+            [value]="activeYear">
+            @for (year of yearsMap; track year) {
+                <mat-option [value]="year">{{ year }}</mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
 </div>
 
 <div class="top">
-    <div>
-        <svg-icon src="assets/svg/transactions.svg"></svg-icon>
+    <div class="top__title">
+        <span class="material-icons-round">receipt_long</span>
         Transactions
     </div>
     <div class="wrap-input">
-        <div class="wrap-input__icon">
-            <svg-icon src="assets/svg/search.svg"></svg-icon>
-        </div>
+        <span class="wrap-input__icon material-icons-round">search</span>
         <input
-            placeholder="Search"
+            class="wrap-input__field"
+            placeholder="Search transactions…"
             type="text"
             #inputRef
             [disabled]="isFilterByGroups"
-            (input)="onInputEvent($event)">
-
+            (input)="onInputEvent($event)" />
         @if (inputRef.value) {
-            <div
-                class="wrap-input__clear"
-                (click)="clearInputEvent()">
-                <svg-icon src="assets/svg/plus.svg"></svg-icon>
-            </div>
+            <button class="wrap-input__clear" (click)="clearInputEvent()">
+                <span class="material-icons-round">close</span>
+            </button>
         }
-        
     </div>
 </div>
 
 <div class="filters">
-    <mat-checkbox 
+    <mat-checkbox
         (change)="onFilterGroupsChange($event)"
         [checked]="isFilterByGroups">
         {{ isFilterByGroups ? '' : 'Filter by groups' }}
@@ -64,112 +57,78 @@
     @if (isFilterByGroups) {
         <mat-form-field>
             <mat-label>Groups</mat-label>
-            <mat-select
-                (valueChange)="onSelectValueChange($event)"
-                multiple>
+            <mat-select (valueChange)="onSelectValueChange($event)" multiple>
                 @for (group of groups; track group.title) {
-                    <mat-option
-                        class="group-option"
-                        [value]="group.keys.join()">
-                        <div>{{ group.emoji }}</div>
-                        <div>{{ group.title }}</div>
+                    <mat-option [value]="group.keys.join()">
+                        <span>{{ group.emoji }}</span>
+                        <span>{{ group.title }}</span>
                     </mat-option>
                 }
             </mat-select>
         </mat-form-field>
     }
-    
 </div>
 
-<table class="transactions">
-    <thead>
-        <tr>
-            <th [class.sort-active]="sortByValue === SortBy.Payment">
-                <span
-                    (click)="onSortByEvent(SortBy.Payment)"
-                    [matBadge]="transactions?.length"
-                    matBadgeOverlap="false">Payment</span>
-                <svg-icon 
-                    src="assets/svg/sort-up.svg" 
-                    [class.rotate]="!isAscSortDirection">
-                </svg-icon>
-            </th>
-            <th
-                class="date-th"
-                [class.sort-active]="sortByValue === SortBy.Date">
-                <span (click)="onSortByEvent(SortBy.Date)">Date</span>
-                <svg-icon 
-                    src="assets/svg/sort-up.svg" 
-                    [class.rotate]="!isAscSortDirection">
-                </svg-icon>
-            </th>
-            @if (!isAchievedLessThan700px) {
-                <th class="status-th" style="width: 80px;">
-                    Status
-                    <svg-icon 
-                        src="assets/svg/sort-up.svg" 
-                        [class.rotate]="!isAscSortDirection">
-                    </svg-icon>
+<div class="table-wrap">
+    <table class="transactions">
+        <thead>
+            <tr>
+                <th [class.sort-active]="sortByValue === SortBy.Payment">
+                    <span (click)="onSortByEvent(SortBy.Payment)"
+                          [matBadge]="transactions?.length"
+                          matBadgeOverlap="false">Payment</span>
+                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
                 </th>
-            }
-            <th
-                class="amount-th"
-                [class.sort-active]="sortByValue === SortBy.Amount" >
-                <span (click)="onSortByEvent(SortBy.Amount)">
-                    Amount
-                </span>
-                <svg-icon 
-                    src="assets/svg/sort-up.svg" 
-                    [class.rotate]="!isAscSortDirection">
-                </svg-icon>
-            </th>
-            @if (!isAchievedLessThan700px) {
-                <th class="amount-th">
-                    <span>
-                        Balance
-                    </span>
+                <th class="date-th" [class.sort-active]="sortByValue === SortBy.Date">
+                    <span (click)="onSortByEvent(SortBy.Date)">Date</span>
+                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
                 </th>
-            }
-        </tr>
-    </thead>
-    <tbody>
-        @for (
-            transaction of transactions; 
-            track transaction.id
-        ) {
-            <tr 
-				[matTooltip]="transaction.comment ?? ''"
-				matTooltipHideDelay="300"
-				matTooltipPosition="left">
-                <th>{{ transaction.description }}</th>
-                
-                @if (isAchievedLessThan700px) {
-                    <td>{{ transaction.time * 1000 | date: 'd • hh:mm' }}</td>
-                } @else {
-                    <td>{{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}</td>
+                @if (!isSmallScreen) {
+                    <th class="status-th">Status</th>
                 }
-                @if (!isAchievedLessThan700px) {
-                    <svg-icon 
-                        class="status-icon"
-                        [style.fill]="transaction.amount < 0 ? '#b10000' : '#3fa211'"
-                        src="assets/svg/arrow-up.svg" 
-                        [class.rotate]="transaction.amount < 0">
-                    </svg-icon>
-                }
-                <td 
-                    class="amount"
-                    [class.sent]="transaction.amount < 0">
-                    {{ transaction.amount / 100 }} UAH
-                    @if (transaction.cashbackAmount > 0) {
-                        <span class="cashback">+{{ transaction.cashbackAmount / 100 }} UAH</span>
-                    }
-                </td>
-                @if (!isAchievedLessThan700px) {
-                    <td class="balance">
-                        {{ transaction.balance / 100 | number: '1.0-0' }}
-                    </td>
+                <th class="amount-th" [class.sort-active]="sortByValue === SortBy.Amount">
+                    <span (click)="onSortByEvent(SortBy.Amount)">Amount</span>
+                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
+                </th>
+                @if (!isSmallScreen) {
+                    <th class="amount-th">Balance</th>
                 }
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @for (transaction of transactions; track transaction.id) {
+                <tr [matTooltip]="transaction.comment ?? ''"
+                    matTooltipPosition="left">
+                    <td class="desc-cell">{{ transaction.description }}</td>
+                    <td class="date-cell">
+                        @if (isSmallScreen) {
+                            {{ transaction.time * 1000 | date: 'd • HH:mm' }}
+                        } @else {
+                            {{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}
+                        }
+                    </td>
+                    @if (!isSmallScreen) {
+                        <td class="status-cell">
+                            <span class="material-icons-round status-arrow"
+                                  [class.income]="transaction.amount >= 0"
+                                  [class.expense]="transaction.amount < 0">
+                                {{ transaction.amount >= 0 ? 'arrow_upward' : 'arrow_downward' }}
+                            </span>
+                        </td>
+                    }
+                    <td class="amount-cell" [class.sent]="transaction.amount < 0">
+                        {{ transaction.amount / 100 }} UAH
+                        @if (transaction.cashbackAmount > 0) {
+                            <span class="cashback">+{{ transaction.cashbackAmount / 100 }}</span>
+                        }
+                    </td>
+                    @if (!isSmallScreen) {
+                        <td class="balance-cell">
+                            {{ transaction.balance / 100 | number: '1.0-0' }}
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

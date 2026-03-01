@@ -4,6 +4,7 @@ import { ITransaction } from '@core/interfaces';
 
 @Pipe({
     name: 'transactionsSortBy',
+    standalone: true,
 })
 export class TransactionsSortByPipe implements PipeTransform {
     public transform(

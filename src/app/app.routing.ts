@@ -1,30 +1,43 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { AppRouteEnum } from '@core/enums';
+import { Routes } from '@angular/router';
 import { authGuard } from '@core/helpers';
 
-const routes: Routes = [
+export const routes: Routes = [
     {
-        path: AppRouteEnum.Login,
-        loadChildren: () => import('./pages').then((m) => m.LoginPageModule),
+        path: 'login',
+        loadComponent: () =>
+            import('./pages/login-page/login-page.component'),
     },
     {
-        path: AppRouteEnum.Main,
+        path: '',
         canActivate: [authGuard],
-        loadChildren: () => import('./pages').then((m) => m.MainPageModule),
+        loadComponent: () =>
+            import('./pages/main-page/main-page.component').then(m => m.MainPageComponent),
+        children: [
+            {
+                path: '',
+                pathMatch: 'full',
+                redirectTo: 'dashboard',
+            },
+            {
+                path: 'dashboard',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/dashboard/dashboard.component'),
+            },
+            {
+                path: 'exchange',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/exchange/exchange.component'),
+            },
+            {
+                path: 'analytics/mcc',
+                loadComponent: () =>
+                    import('./features/analytics-mcc/mcc-analytics.component'),
+            },
+        ],
     },
     {
         path: '**',
-        redirectTo: AppRouteEnum.Main,
+        redirectTo: '',
     },
 ];
 
-@NgModule({
-    imports: [
-        RouterModule.forRoot(routes, {
-            enableViewTransitions: true
-        }),
-    ],
-    exports: [RouterModule],
-})
-export class AppRoutingModule {}

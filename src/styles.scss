@@ -1,97 +1,32 @@
-/* You can add global styles to this file, and also import other style files */
-@import 'assets/scss/reset.scss';
-@import 'assets/scss/variables.scss';
-@import '@angular/material/prebuilt-themes/indigo-pink.css';
-
-* {
-    font-family: $basic-font-family;
-    color: $text-color;
-}
-
-body {
-    background-color: #f7f8fa;
-    font-size: 14px;
-}
-
-.emoji {
-    font-family: $emoji-font-family;
-}
+// Global styles — Finance App
+@import 'styles/fonts';
+@import 'styles/tokens';
+@import 'styles/themes';
+@import 'styles/reset';
+@import 'styles/mixins';
 
 html,
 body {
     height: 100%;
     overflow: hidden;
+    font-family: var(--font-family-base);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    transition: background-color var(--duration-normal) var(--ease-default),
+                color var(--duration-normal) var(--ease-default);
 }
 
-mat-snack-bar-container {
+.emoji {
+    font-family: var(--font-family-emoji);
+}
+
+// ── Material overrides ──
+.mat-mdc-snack-bar-container {
     .mdc-snackbar__label {
-        white-space: pre-wrap
+        font-family: var(--font-family-base);
+        white-space: pre-wrap;
     }
-
-    .mdc-button__label {
-        font-size: 30px;
-    }
-}
-
-.mat-badge-content {
-    color: white !important;
-    font-weight: 500 !important;
-    font-size: 10px !important;
-}
-
-mat-tooltip-component {
-    pointer-events: none;
-}
-
-body>li.mat-mdc-tooltip-trigger {
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    font-family: "Montserrat", sans-serif;
-    background-color: #eae9e9c1;
-    padding: 10px;
-    border-radius: 5px;
-    text-decoration: none;
-
-    svg-icon,
-    svg {
-        max-width: 22px;
-        max-height: 22px;
-        margin-right: 10px;
-    }
-
-    .groups-item__emoji {
-        font-size: 25px;
-        margin-right: 10px;
-    }
-}
-
-.cdk-drag-animating {
-    transition:
-        background-color .3s ease-in-out,
-        transform 250ms cubic-bezier(0, 0, 0.2, 1) !important;
-}
-
-.group-option .mdc-list-item__primary-text {
-    display: flex;
-    align-items: center;
-
-    div:first-child {
-        margin-right: 5px;
-        font-size: 25px;
-    }
-
-    div:last-child {
-        font-size: 14px;
-    }
-}
-
-.mdc-label {
-    font-family: $basic-font-family;
-}
-
-.mdc-checkbox__checkmark-path {
-    color: white;
 }
 
 .cdk-overlay-pane.mat-mdc-dialog-panel {
@@ -101,22 +36,29 @@ body>li.mat-mdc-tooltip-trigger {
     }
 }
 
-.green-snackbar {
-    .mdc-snackbar__surface {
-        background-color: #4CAF50 !important;
-        color: #fff;
-        font-weight: 500;
-        font-size: 16px;
-        border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
+// ── Drag-drop animation ──
+.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
 
-    .mdc-button__label {
-        font-size: 22px;
-    }
+// ── Toast variants ──
+.toast-success .mdc-snackbar__surface {
+    background-color: var(--color-success) !important;
+    border-radius: var(--radius-sm) !important;
+}
 
-    .mat-simple-snackbar-action {
-        color: #ffffff;
-        font-weight: bold;
-    }
+.toast-error .mdc-snackbar__surface {
+    background-color: var(--color-error) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+// ── Global form field subscription wrapper fix ──
+.mat-mdc-form-field-subscript-wrapper {
+    display: none;
+}
+
+// ── Selection color ──
+::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-text);
 }

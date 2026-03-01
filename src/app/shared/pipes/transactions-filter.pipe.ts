@@ -3,6 +3,7 @@ import { ITransaction } from '@core/interfaces';
 
 @Pipe({
     name: 'transactionsFilter',
+    standalone: true,
 })
 export class TransactionsFilterPipe implements PipeTransform {
     public transform(

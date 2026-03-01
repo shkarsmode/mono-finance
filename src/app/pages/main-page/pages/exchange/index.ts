@@ -1,1 +1,1 @@
-export * from './exchange.module';
+export { default as ExchangeComponent } from './exchange.component';

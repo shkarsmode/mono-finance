@@ -1,0 +1,100 @@
+// Light Theme
+[data-theme="light"],
+:root {
+    --color-background: #f5f6f8;
+    --color-surface: #ffffff;
+    --color-surface-elevated: #ffffff;
+    --color-surface-hover: #f0f1f4;
+    --color-surface-active: #e8e9ee;
+
+    --color-text-primary: #0f1419;
+    --color-text-secondary: #5b6270;
+    --color-text-tertiary: #9199a6;
+    --color-text-inverse: #ffffff;
+
+    --color-border: #e4e6eb;
+    --color-border-strong: #ced1d8;
+    --color-divider: #edeef1;
+
+    --color-primary: #4361ee;
+    --color-primary-hover: #3651d4;
+    --color-primary-active: #2d44b5;
+    --color-primary-subtle: #eef1fd;
+    --color-primary-text: #ffffff;
+
+    --color-success: #10b981;
+    --color-success-subtle: #ecfdf5;
+    --color-success-text: #065f46;
+
+    --color-warn: #f59e0b;
+    --color-warn-subtle: #fffbeb;
+    --color-warn-text: #92400e;
+
+    --color-error: #ef4444;
+    --color-error-subtle: #fef2f2;
+    --color-error-text: #991b1b;
+
+    --color-income: #10b981;
+    --color-expense: #ef4444;
+
+    --color-card-dark-bg: linear-gradient(135deg, #0f1419 0%, #1e2530 100%);
+    --color-card-white-bg: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+    --color-card-dark-text: #c0c7d4;
+    --color-card-white-text: #0f1419;
+
+    --color-skeleton: #e4e6eb;
+    --color-skeleton-shine: #f5f6f8;
+
+    --color-scrollbar-track: transparent;
+    --color-scrollbar-thumb: #d0d3da;
+}
+
+// Dark Theme
+[data-theme="dark"] {
+    --color-background: #0b0e14;
+    --color-surface: #141820;
+    --color-surface-elevated: #1a1f2a;
+    --color-surface-hover: #1e2433;
+    --color-surface-active: #252c3d;
+
+    --color-text-primary: #e8ebf0;
+    --color-text-secondary: #9199a6;
+    --color-text-tertiary: #5b6270;
+    --color-text-inverse: #0f1419;
+
+    --color-border: #262c38;
+    --color-border-strong: #3a4150;
+    --color-divider: #1e222c;
+
+    --color-primary: #6a7cff;
+    --color-primary-hover: #7e8eff;
+    --color-primary-active: #5566e8;
+    --color-primary-subtle: rgba(106, 124, 255, 0.12);
+    --color-primary-text: #ffffff;
+
+    --color-success: #34d399;
+    --color-success-subtle: rgba(52, 211, 153, 0.12);
+    --color-success-text: #6ee7b7;
+
+    --color-warn: #fbbf24;
+    --color-warn-subtle: rgba(251, 191, 36, 0.12);
+    --color-warn-text: #fcd34d;
+
+    --color-error: #f87171;
+    --color-error-subtle: rgba(248, 113, 113, 0.12);
+    --color-error-text: #fca5a5;
+
+    --color-income: #34d399;
+    --color-expense: #f87171;
+
+    --color-card-dark-bg: linear-gradient(135deg, #1a1f2a 0%, #252c3d 100%);
+    --color-card-white-bg: linear-gradient(135deg, #1e2433 0%, #262c38 100%);
+    --color-card-dark-text: #c0c7d4;
+    --color-card-white-text: #e8ebf0;
+
+    --color-skeleton: #1e222c;
+    --color-skeleton-shine: #262c38;
+
+    --color-scrollbar-track: transparent;
+    --color-scrollbar-thumb: #3a4150;
+}

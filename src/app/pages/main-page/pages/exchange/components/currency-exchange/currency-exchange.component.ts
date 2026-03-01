@@ -1,59 +1,45 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    Input,
-    OnInit
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ICurrency } from '@core/interfaces';
+import { CurrencyExchangeInputBlockComponent } from './currency-exchange-input-block/currency-exchange-input-block.component';
 
 @Component({
     selector: 'app-currency-exchange',
+    standalone: true,
+    imports: [FormsModule, CurrencyExchangeInputBlockComponent],
     templateUrl: './currency-exchange.component.html',
     styleUrl: './currency-exchange.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CurrencyExchangeComponent implements OnInit {
-    @Input() public exchange: ICurrency;
+    @Input({ required: true }) exchange!: ICurrency;
 
-    public sellValue: string = '1.00';
-    public buyValue: string;
+    sellValue = '1.00';
+    buyValue = '';
 
-    constructor() {}
-
-    public ngOnInit(): void {
-        this.initFirstBuyValue();
-    }
-
-    private initFirstBuyValue(): void {
+    ngOnInit(): void {
         this.onSellChangeRate();
     }
 
-    public onBlurEvent(event: FocusEvent): void {
-        (event.target as HTMLInputElement).value =
-            (+(event.target as HTMLInputElement).value).toFixed(2);
+    onBlurEvent(event: FocusEvent): void {
+        const el = event.target as HTMLInputElement;
+        el.value = (+el.value).toFixed(2);
     }
 
-    public onSellChangeRate(): void {
-        this.buyValue = this.getFormattedCurrencyValue(
-            this.sellValue,
-            this.exchange.rateSell || this.exchange.rateCross
-        );
+    onSellChangeRate(): void {
+        this.buyValue = this.format(this.sellValue, this.rate, true);
     }
 
-    public onBuyChangeRate(): void {
-        this.sellValue = this.getFormattedCurrencyValue(
-            this.buyValue,
-            this.exchange.rateSell || this.exchange.rateCross,
-            false
-        );
+    onBuyChangeRate(): void {
+        this.sellValue = this.format(this.buyValue, this.rate, false);
     }
 
-    private getFormattedCurrencyValue(
-        value: string,
-        rate: string | number,
-        isMultiple: boolean = true
-    ): string {
-        const result = isMultiple ? +value * +rate : +value / +rate;
+    private get rate(): number {
+        return +(this.exchange.rateSell || this.exchange.rateCross);
+    }
+
+    private format(value: string, rate: number, multiply: boolean): string {
+        const result = multiply ? +value * rate : +value / rate;
         return result.toFixed(2);
     }
 }

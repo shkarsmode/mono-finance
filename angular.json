@@ -8,13 +8,14 @@
             "schematics": {
                 "@schematics/angular:component": {
                     "style": "scss",
-                    "standalone": false
+                    "standalone": true,
+                    "changeDetection": "OnPush"
                 },
                 "@schematics/angular:directive": {
-                    "standalone": false
+                    "standalone": true
                 },
                 "@schematics/angular:pipe": {
-                    "standalone": false
+                    "standalone": true
                 }
             },
             "root": "",
@@ -24,7 +25,9 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:application",
                     "options": {
-                        "outputPath": "dist/finance-app",
+                        "outputPath": {
+                            "base": "dist/finance-app"
+                        },
                         "index": "src/index.html",
                         "browser": "src/main.ts",
                         "polyfills": [
@@ -37,12 +40,12 @@
                             "src/assets"
                         ],
                         "styles": [
-                          "@angular/material/prebuilt-themes/deeppurple-amber.css",
-                          "src/styles.scss"
+                            "src/styles.scss"
                         ],
                         "stylePreprocessorOptions": {
                             "includePaths": [
-                                "src/assets/scss"
+                                "src/assets/scss",
+                                "src/styles"
                             ]
                         },
                         "scripts": []
@@ -52,13 +55,13 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "10mb",
-                                    "maximumError": "10mb"
+                                    "maximumWarning": "2mb",
+                                    "maximumError": "5mb"
                                 },
                                 {
                                     "type": "anyComponentStyle",
-                                    "maximumWarning": "10mb",
-                                    "maximumError": "10mb"
+                                    "maximumWarning": "10kb",
+                                    "maximumError": "50kb"
                                 }
                             ],
                             "outputHashing": "all"
@@ -68,10 +71,10 @@
                             "extractLicenses": false,
                             "sourceMap": true,
                             "fileReplacements": [
-                              {
-                                "replace": "src/environments/environment.ts",
-                                "with": "src/environments/environment.development.ts"
-                              }
+                                {
+                                    "replace": "src/environments/environment.ts",
+                                    "with": "src/environments/environment.development.ts"
+                                }
                             ]
                         }
                     },
@@ -94,31 +97,11 @@
                     "options": {
                         "buildTarget": "finance-app:build"
                     }
-                },
-                "test": {
-                    "builder": "@angular-devkit/build-angular:karma",
-                    "options": {
-                        "polyfills": [
-                            "zone.js",
-                            "zone.js/testing"
-                        ],
-                        "tsConfig": "tsconfig.spec.json",
-                        "inlineStyleLanguage": "scss",
-                        "assets": [
-                            "src/favicon.ico",
-                            "src/assets"
-                        ],
-                        "styles": [
-                          "@angular/material/prebuilt-themes/deeppurple-amber.css",
-                          "src/styles.scss"
-                        ],
-                        "scripts": []
-                    }
                 }
             }
         }
     },
     "cli": {
-      "analytics": false
+        "analytics": false
     }
 }

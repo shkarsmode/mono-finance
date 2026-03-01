@@ -5,7 +5,7 @@
         "forceConsistentCasingInFileNames": true,
         "strict": true,
         "noImplicitOverride": true,
-        "noPropertyAccessFromIndexSignature": true,
+        "noPropertyAccessFromIndexSignature": false,
         "strictPropertyInitialization": false,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
@@ -24,27 +24,11 @@
             "dom"
         ],
         "paths": {
-            "@core/*": [
-                "./src/app/core/*"
-            ],
-            "@core/services/*": [
-                "./src/app/core/services/*"
-            ]
-            // "@features/*": [
-            //     "src/app/showcase/features/*"
-            // ],
-            // "@features": [
-            //     "src/app/showcase/features"
-            // ],
-            // "@layouts/*": [
-            //     "src/app/showcase/layouts/*"
-            // ],
-            // "@layouts": [
-            //     "src/app/showcase/layouts"
-            // ],
-            // "@shared": [
-            //     "src/app/showcase/shared"
-            // ],
+            "@core/*": ["./src/app/core/*"],
+            "@shared/*": ["./src/app/shared/*"],
+            "@features/*": ["./src/app/features/*"],
+            "@env": ["./src/environments/index.ts"],
+            "@env/*": ["./src/environments/*"]
         }
     },
     "angularCompilerOptions": {

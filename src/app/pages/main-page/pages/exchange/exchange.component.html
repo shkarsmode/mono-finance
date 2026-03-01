@@ -1,8 +1,25 @@
-@for (
-    currencyExchange of currencyExchangeData; 
-    track currencyExchange.currencyCodeA
-) {
-    <app-currency-exchange 
-        [exchange]="currencyExchange">
-    </app-currency-exchange>
-}
+<div class="exchange-page">
+    <h2 class="page-title">
+        <span class="material-icons-round">currency_exchange</span>
+        Currency Exchange
+    </h2>
+
+    @if (isLoading()) {
+        <div class="skeleton-grid">
+            @for (i of [1, 2, 3, 4]; track i) {
+                <div class="skeleton-card"></div>
+            }
+        </div>
+    } @else {
+        <div class="exchange-grid">
+            @for (item of currencyData(); track item.currencyCodeA) {
+                <app-currency-exchange [exchange]="item" />
+            } @empty {
+                <div class="empty-state">
+                    <span class="material-icons-round">info</span>
+                    <p>No exchange data available</p>
+                </div>
+            }
+        </div>
+    }
+</div>

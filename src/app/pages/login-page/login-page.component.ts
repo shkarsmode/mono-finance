@@ -1,89 +1,60 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppRouteEnum } from '@core/enums';
-import { Subject, catchError, first } from 'rxjs';
+import { catchError, first } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
     selector: 'app-login-page',
+    standalone: true,
+    imports: [ReactiveFormsModule],
     templateUrl: './login-page.component.html',
     styleUrl: './login-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginPageComponent implements OnInit, OnDestroy {
-    public formGroup: FormGroup;
-    public errorMessage: string = '';
-    public isLoading: boolean = false;
+export default class LoginPageComponent {
+    private readonly router = inject(Router);
+    private readonly authService = inject(AuthService);
+    private readonly destroyRef = inject(DestroyRef);
 
-    private destroy$: Subject<void> = new Subject();
+    readonly errorMessage = signal('');
+    readonly isLoading = signal(false);
+    readonly showPassword = signal(false);
 
-    constructor(
-        private readonly router: Router,
-        private readonly cdr: ChangeDetectorRef,
-        private readonly authService: AuthService,
-    ) {}
+    readonly formGroup = new FormGroup({
+        email: new FormControl('', { validators: [Validators.required, Validators.email] }),
+        password: new FormControl('', { validators: [Validators.required, Validators.minLength(6)] }),
+    });
 
-    public ngOnInit(): void {
-        this.initFormControl();
+    togglePassword(): void {
+        this.showPassword.update(v => !v);
     }
 
-    private initFormControl(): void {
-        this.formGroup = new FormGroup({
-            email: new FormControl('', { validators: [Validators.email] }),
-            password: new FormControl('', {
-                validators: [Validators.minLength(6)],
-            }),
-        });
-    }
-
-    public login(): void {
+    login(): void {
         if (this.formGroup.invalid) {
+            this.formGroup.markAllAsTouched();
             return;
         }
 
-        this.isLoading = true;
-        this.errorMessage = '';
+        this.isLoading.set(true);
+        this.errorMessage.set('');
 
-        this.authService.login(this.formGroup.value).pipe(
+        this.authService.login(this.formGroup.value as { email: string; password: string }).pipe(
             first(),
+            takeUntilDestroyed(this.destroyRef),
             catchError((error) => {
-                this.handleAuthDataErrorResponse(error);
-                throw new Error(error);
+                this.isLoading.set(false);
+                if (error?.error) {
+                    this.errorMessage.set(typeof error.error === 'string' ? error.error : 'Login failed. Please try again.');
+                } else {
+                    this.errorMessage.set('Something went wrong. Please try again.');
+                }
+                throw error;
             })
-        ).subscribe(response => {
+        ).subscribe(() => {
             this.router.navigateByUrl(AppRouteEnum.Main);
         });
-    }
-
-    // public onInputChange(event: any): void {
-    //     this.token = event.target.value
-    //     this.isValid = this.token.length > 5;
-    //     this.errorMessage = '';
-    // }
-
-    // private initAuthDataObserver(): void {
-    //     this.authService.authData$
-    //         .pipe(takeUntil(this.destroy$))
-    //         .subscribe(this.handleAuthDataResponse.bind(this));
-    // }
-
-    private handleAuthDataErrorResponse(
-        error: any
-    ): void {
-        this.isLoading = false;
-        this.cdr.detectChanges();
-
-        if (!error) return;
-        if ('error' in error) {
-            this.errorMessage = error.error;
-            this.cdr.detectChanges();
-            return;
-        }
-    }
-
-    public ngOnDestroy(): void {
-        this.destroy$.next();
-        this.destroy$.complete();
     }
 }

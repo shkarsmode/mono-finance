@@ -1,51 +1,38 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { currencyCodesMap } from '@core/data';
-import { IAccountInfo, ICurrency } from '@core/interfaces';
+import { ICurrency } from '@core/interfaces';
 import { MonobankService } from '@core/services';
 import { take } from 'rxjs';
+import { CurrencyExchangeComponent } from './components/currency-exchange/currency-exchange.component';
 
 @Component({
     selector: 'app-exchange',
+    standalone: true,
+    imports: [CurrencyExchangeComponent],
     templateUrl: './exchange.component.html',
     styleUrl: './exchange.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ExchangeComponent implements OnInit {
-    public accountInfo: IAccountInfo;
-    public currencyExchangeData: ICurrency[];
-    public сurrencyCodesMap: {
-        [key: number]: { name: string; flag: string };
-    } = currencyCodesMap;
+export default class ExchangeComponent implements OnInit {
+    private readonly monobankService = inject(MonobankService);
 
-    constructor(
-        private readonly monobankService: MonobankService,
-        private readonly cdr: ChangeDetectorRef
-    ) {}
+    readonly currencyData = signal<ICurrency[]>([]);
+    readonly isLoading = signal(true);
+    private readonly codesMap = currencyCodesMap;
 
-    public ngOnInit(): void {
-        this.getCurrencyExchangeData();
-    }
-
-    private getCurrencyExchangeData(): void {
-        this.monobankService
-            .getActualCurrency()
-            .pipe(take(1))
-            .subscribe((currency) => {
-                this.currencyExchangeData = currency;
-                this.adjustNecessaryCurrencyExchange();
-                this.cdr.markForCheck();
-            });
-    }
-
-    private adjustNecessaryCurrencyExchange(): void {
-        this.currencyExchangeData = this.currencyExchangeData
-            .filter((exchange) => this.сurrencyCodesMap[exchange.currencyCodeA])
-            .map((exchange) => ({
-                ...exchange,
-                currencyNameA: this.сurrencyCodesMap[exchange.currencyCodeA].name,
-                currencyNameB: this.сurrencyCodesMap[exchange.currencyCodeB].name,
-                flagA: this.сurrencyCodesMap[exchange.currencyCodeA].flag,
-                flagB: this.сurrencyCodesMap[exchange.currencyCodeB].flag,
-            }));
+    ngOnInit(): void {
+        this.monobankService.getActualCurrency().pipe(take(1)).subscribe(data => {
+            const filtered = data
+                .filter(e => this.codesMap[e.currencyCodeA])
+                .map(e => ({
+                    ...e,
+                    currencyNameA: this.codesMap[e.currencyCodeA].name,
+                    currencyNameB: this.codesMap[e.currencyCodeB]?.name ?? 'UAH',
+                    flagA: this.codesMap[e.currencyCodeA].flag,
+                    flagB: this.codesMap[e.currencyCodeB]?.flag ?? '🇺🇦',
+                }));
+            this.currencyData.set(filtered);
+            this.isLoading.set(false);
+        });
     }
 }

@@ -1,6 +1,70 @@
-<!-- <app-header-widget></app-header-widget> -->
-<app-sidebar-widget></app-sidebar-widget>
+<!-- Overlay for mobile sidenav -->
+@if (sidenavOpen()) {
+    <div class="overlay" (click)="closeSidenav()"></div>
+}
 
-<div class="content">
-    <router-outlet></router-outlet>
+<!-- Side Navigation (desktop always visible, mobile slide-in) -->
+<aside class="sidenav" [class.sidenav--open]="sidenavOpen()">
+    <div class="sidenav__logo">
+        <span class="sidenav__logo-icon">💰</span>
+        <span class="sidenav__logo-text">Finance</span>
+    </div>
+
+    <nav class="sidenav__nav">
+        @for (item of navItems; track item.path) {
+            <a class="sidenav__link"
+                [routerLink]="item.path"
+                routerLinkActive="sidenav__link--active"
+                (click)="closeSidenav()">
+                <span class="material-icons-round">{{ item.icon }}</span>
+                <span>{{ item.label }}</span>
+            </a>
+        }
+    </nav>
+
+    <div class="sidenav__footer">
+        <button class="sidenav__theme-btn" (click)="toggleTheme()">
+            <span class="material-icons-round">
+                {{ isDark() ? 'light_mode' : 'dark_mode' }}
+            </span>
+            <span>{{ isDark() ? 'Light mode' : 'Dark mode' }}</span>
+        </button>
+    </div>
+</aside>
+
+<!-- Top Bar -->
+<div class="main-area">
+    <header class="topbar">
+        <button class="topbar__burger" (click)="toggleSidenav()">
+            <span class="material-icons-round">menu</span>
+        </button>
+
+        <div class="topbar__spacer"></div>
+
+        <button class="topbar__action" (click)="syncData()" [disabled]="isSyncing()">
+            <span class="material-icons-round" [class.spinning]="isSyncing()">sync</span>
+        </button>
+        <button class="topbar__action topbar__theme-desktop" (click)="toggleTheme()">
+            <span class="material-icons-round">
+                {{ isDark() ? 'light_mode' : 'dark_mode' }}
+            </span>
+        </button>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content">
+        <router-outlet></router-outlet>
+    </main>
 </div>
+
+<!-- Bottom Navigation (mobile only) -->
+<nav class="bottomnav">
+    @for (item of navItems; track item.path) {
+        <a class="bottomnav__item"
+            [routerLink]="item.path"
+            routerLinkActive="bottomnav__item--active">
+            <span class="material-icons-round">{{ item.icon }}</span>
+            <span class="bottomnav__label">{{ item.label }}</span>
+        </a>
+    }
+</nav>

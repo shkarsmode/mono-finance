@@ -1,94 +1,89 @@
-<span style="margin-bottom: 5px; display: block;">only currencyCode 980</span>
-<div class="wrap-cards" style="display: flex; gap: 20px; flex-wrap: wrap;">
-    @if ((clientInfo$ | async); as clientInfo) {
-        @for (account of clientInfo.accounts; track account.id) {
-            @if (account.currencyCode === 980) {
-                <app-card
-                    [class.active]="account.id === (activeCardId$ | async)"
-                    [class.white]="account.type === 'white'"
-                    [account]="account"
-                    [name]="clientInfo.name"
-                    (onClick)="onCardClick($event)">
-                </app-card>
+<!-- Cards Section -->
+<section class="cards-section">
+    <h2 class="section-title">Your Cards</h2>
+    <div class="cards-row">
+        @if ((clientInfo$ | async); as clientInfo) {
+            @for (account of clientInfo.accounts; track account.id) {
+                @if (account.currencyCode === 980) {
+                    <app-card
+                        [class.active]="account.id === (activeCardId$ | async)"
+                        [class.white]="account.type === 'white'"
+                        [account]="account"
+                        [name]="clientInfo.name"
+                        (onClick)="onCardClick($event)">
+                    </app-card>
+                }
             }
+        } @else {
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
         }
-    } @else {
-        <app-card [class.skeleton]="true"></app-card>
-        <app-card
-            [class.skeleton]="true"
-            [class.white]="true">
-        </app-card>
-    }
-</div>
-
-<div class="bulk-toolbar">
-    <button
-        type="button"
-        class="btn btn-primary"
-        (click)="onLoadAllClick()"
-        [disabled]="isBulkLoading || rateLimitLeftSec > 0"
-        [attr.aria-busy]="isBulkLoading"
-        [attr.aria-disabled]="isBulkLoading || rateLimitLeftSec > 0">
-
-        <span class="spinner" *ngIf="isBulkLoading" aria-hidden="true"></span>
-
-        <span class="btn-text" *ngIf="isBulkLoading">
-            Гружу историю… ({{ processedMonths }} мес., пустые: {{ emptyStreak }}/{{ maxEmptyStreak }})
-        </span>
-        <span class="btn-text" *ngIf="!isBulkLoading && rateLimitLeftSec > 0">
-            Подождите {{ rateLimitLeftSec }} c
-        </span>
-        <span class="btn-text" *ngIf="!isBulkLoading && rateLimitLeftSec === 0">
-            Загрузить все транзакции (вниз от текущего)
-        </span>
-    </button>
-
-    <button
-        type="button"
-        class="btn btn-ghost"
-        (click)="onCancelLoadAll()"
-        *ngIf="isBulkLoading">
-        Отменить
-    </button>
-
-    <div class="status" role="status" aria-live="polite">
-        <ng-container *ngIf="isBulkLoading">
-            <div class="status-row">
-                <span>Обработано: {{ processedMonths }} мес.</span>
-                <span>Пустые: {{ emptyStreak }}/{{ maxEmptyStreak }}</span>
-            </div>
-            <div class="progress" aria-label="Прогресс загрузки">
-                <div class="bar" [style.width.%]="bulkProgressPercent"></div>
-            </div>
-        </ng-container>
     </div>
-</div>
+</section>
 
+<!-- Bulk Load Toolbar -->
+<section class="bulk-section">
+    <button
+        class="bulk-btn"
+        type="button"
+        (click)="onLoadAllClick()"
+        [disabled]="isBulkLoading() || rateLimitLeftSec() > 0">
+        @if (isBulkLoading()) {
+            <span class="bulk-btn__spinner"></span>
+            Loading… {{ processedMonths() }} months (empty: {{ emptyStreak() }}/{{ maxEmptyStreak }})
+        } @else if (rateLimitLeftSec() > 0) {
+            Wait {{ rateLimitLeftSec() }}s
+        } @else {
+            <span class="material-icons-round">download</span>
+            Load all transactions
+        }
+    </button>
 
+    @if (isBulkLoading()) {
+        <button class="bulk-cancel" type="button" (click)="onCancelLoadAll()">
+            Cancel
+        </button>
+        <div class="bulk-progress">
+            <div class="bulk-progress__bar" [style.width.%]="bulkProgressPercent"></div>
+        </div>
+    }
+</section>
 
-@if (transactions) {
-    <div class="wrap-chart-transactions" style="display: flex; gap: 20px; margin-top: 20px">
-        <div>
-            <app-chart 
-                [transactions]="transactions | transactionsFilter: searchTransactionsValue"
-                [label]="'Montly Income'"
-                [type]="ChartType.Income">
-            </app-chart>
-            
-            <app-chart 
-                [transactions]="transactions | transactionsFilter: searchTransactionsValue"
-                [label]="'Montly Expenses'"
-                [type]="ChartType.Expenses">
-            </app-chart>
+<!-- Charts & Transactions -->
+@if (transactions().length) {
+    <div class="dashboard-grid">
+        <div class="charts-col">
+            @defer (on viewport) {
+                <app-chart
+                    [transactions]="transactions() | transactionsFilter: searchValue()"
+                    [label]="'Monthly Income'"
+                    [type]="ChartType.Income">
+                </app-chart>
+                <app-chart
+                    [transactions]="transactions() | transactionsFilter: searchValue()"
+                    [label]="'Monthly Expenses'"
+                    [type]="ChartType.Expenses">
+                </app-chart>
+            } @placeholder {
+                <div class="chart-placeholder">
+                    <span class="material-icons-round">bar_chart</span>
+                    <p>Scroll to load charts</p>
+                </div>
+            } @loading (minimum 300ms) {
+                <div class="chart-placeholder">
+                    <span class="material-icons-round">hourglass_empty</span>
+                    <p>Loading charts…</p>
+                </div>
+            }
         </div>
 
-        <app-transactions 
+        <app-transactions
             [groups]="groups$ | async"
-            [sortByValue]="sortTransactionsBy"
+            [sortByValue]="sortBy()"
             [transactions]="
-                transactions 
-                    | transactionsFilter: searchTransactionsValue
-                    | transactionsSortBy: sortTransactionsBy : sortDirection
+                transactions()
+                    | transactionsFilter: searchValue()
+                    | transactionsSortBy: sortBy() : sortDirection()
             "
             (searchTransactions)="onSearchTransaction($event)"
             (selectValueChange)="onSelectValueChange($event)"
@@ -97,5 +92,11 @@
             (selectYear)="onSelectYear($event)"
             #transactionsRef>
         </app-transactions>
+    </div>
+} @else {
+    <div class="empty-state">
+        <span class="material-icons-round">receipt_long</span>
+        <h3>No transactions yet</h3>
+        <p>Select a card to view transactions for the current month</p>
     </div>
 }

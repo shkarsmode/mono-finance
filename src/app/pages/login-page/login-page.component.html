@@ -1,49 +1,74 @@
-<div class="login-container">
-    <h2>Login form</h2>
-
-    <form
-        [formGroup]="formGroup"
-        (submit)="login()">
-        <div>
-            <label for="token">Email:</label>
-            <input
-                name="email"
-                formControlName="email"
-                type="text">
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-header">
+            <span class="login-logo material-icons-round">account_balance</span>
+            <h1 class="login-title">Finance</h1>
+            <p class="login-subtitle">Sign in to your account</p>
         </div>
-        <div>
-            <label for="token">Password:</label>
-            <input
-                name="password"
-                formControlName="password"
-                type="password">
-        </div>
-        
-        <button
-            (click)="login()"
-            [disabled]="(formGroup.invalid && formGroup.touched) || isLoading"
-            type="submit">
-            Submit
-        </button>
 
-        @if (errorMessage) {
-            <div class="error-message">{{ errorMessage }}</div>
-        }
-    </form>    
+        <form class="login-form" [formGroup]="formGroup" (ngSubmit)="login()">
+            <div class="field">
+                <label class="field__label" for="email">Email</label>
+                <div class="field__input-wrap">
+                    <span class="field__icon material-icons-round">mail</span>
+                    <input
+                        class="field__input"
+                        id="email"
+                        formControlName="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        autocomplete="email" />
+                </div>
+                @if (formGroup.get('email')?.touched && formGroup.get('email')?.hasError('email')) {
+                    <span class="field__error">Please enter a valid email</span>
+                }
+            </div>
+
+            <div class="field">
+                <label class="field__label" for="password">Password</label>
+                <div class="field__input-wrap">
+                    <span class="field__icon material-icons-round">lock</span>
+                    <input
+                        class="field__input"
+                        id="password"
+                        formControlName="password"
+                        [type]="showPassword() ? 'text' : 'password'"
+                        placeholder="••••••••"
+                        autocomplete="current-password" />
+                    <button
+                        class="field__toggle"
+                        type="button"
+                        (click)="togglePassword()"
+                        tabindex="-1">
+                        <span class="material-icons-round">
+                            {{ showPassword() ? 'visibility_off' : 'visibility' }}
+                        </span>
+                    </button>
+                </div>
+                @if (formGroup.get('password')?.touched && formGroup.get('password')?.hasError('minlength')) {
+                    <span class="field__error">Password must be at least 6 characters</span>
+                }
+            </div>
+
+            @if (errorMessage()) {
+                <div class="login-error">
+                    <span class="material-icons-round">error_outline</span>
+                    {{ errorMessage() }}
+                </div>
+            }
+
+            <button
+                class="login-btn"
+                type="submit"
+                [disabled]="isLoading()"
+                [class.login-btn--loading]="isLoading()">
+                @if (isLoading()) {
+                    <span class="login-btn__spinner"></span>
+                    Signing in…
+                } @else {
+                    Sign in
+                }
+            </button>
+        </form>
+    </div>
 </div>
-
-<!-- <label for="token">Token:</label> -->
-<!-- <input
-            formControlName=""
-            id="token"
-            name="token"
-            #token
-            placeholder="Введите ваш токен"
-            required
-            type="text"
-            (input)="onInputChange($event)"> -->
-            <!-- <a
-                    href="https://api.monobank.ua/index.html"
-                    target="_blank">
-                    How to find Token?
-                </a> -->

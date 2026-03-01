@@ -1,29 +1,18 @@
 <div class="top">
     <div class="title">
         <span class="bank-name">monobank</span>
-        <svg-icon 
-            class="divider"
-            src="assets/svg/divider.svg">
-        </svg-icon>
+        <span class="divider">|</span>
         <span class="additional-name">Universal Bank</span>
     </div>
-    <svg-icon 
-        class="pay-pass"
-        src="assets/svg/pay-pass.svg">
-    </svg-icon>
+    <span class="material-icons-round pay-pass">contactless</span>
 </div>
 
 <div class="center">
-    <svg-icon 
-        class="chip"
-        src="assets/svg/chip.svg">
-    </svg-icon>
-    <div class="world">
-        world
-    </div>
+    <span class="material-icons-round chip">sim_card</span>
+    <div class="world">world</div>
 </div>
 
-@if (isAchievedLessThan700px) {
+@if (isSmallScreen) {
     <div class="card-number">
         {{ (account ? account.maskedPan[0].slice(-4) : '4444') }}
     </div>
@@ -34,11 +23,6 @@
 }
 
 <div class="bottom">
-    <div class="name">{{ name || 'John Lock'}}</div>
-    <svg-icon  
-        class="mastercard"
-        src="assets/svg/mastercard.svg">
-    </svg-icon>
+    <div class="name">{{ name || 'Cardholder' }}</div>
+    <span class="material-icons-round mastercard-icon">credit_card</span>
 </div>
-
-<mat-spinner></mat-spinner>

@@ -1,27 +1,101 @@
-# FinanceApp
+# Mono Finance
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.1.2.
+Personal finance dashboard powered by the Monobank API.
 
-## Development server
+## Tech Stack
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+- **Angular 18** — standalone components, signals, `@if`/`@for`/`@defer` control flow, `OnPush` everywhere
+- **Angular Material 18** — selective imports (checkbox, select, tooltip, badge, form-field)
+- **Chart.js 4** — lazy-loaded inside `@defer(on viewport)` blocks
+- **RxJS 7** — HTTP layer; UI state via Angular signals
+- **SCSS** — CSS custom-property design tokens, light/dark theme
 
-## Code scaffolding
+## Quick Start
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```bash
+npm install --legacy-peer-deps
+npm start                     # dev server → http://localhost:4200
+```
 
-## Build
+## Production Build (Nginx-ready)
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm run build                 # → dist/finance-app/browser/
+```
 
-## Running unit tests
+The output is a fully static SPA. Serve with any static HTTP server.  
+Example **Nginx** config:
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+```nginx
+server {
+    listen 80;
+    root /var/www/finance-app/browser;
+    index index.html;
 
-## Running end-to-end tests
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+    location ~* \.(js|css|woff2|ico|png|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
 
-## Further help
+## Project Structure
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+```
+src/
+├── main.ts                    # bootstrapApplication (no NgModule)
+├── styles.scss                # global tokens, themes, fonts, reset
+├── styles/                    # design system partials
+│   ├── _tokens.scss
+│   ├── _themes.scss
+│   ├── _fonts.scss
+│   ├── _mixins.scss
+│   └── _reset.scss
+└── app/
+    ├── app.config.ts          # ApplicationConfig (providers, interceptors)
+    ├── app.routing.ts         # lazy loadComponent routes
+    ├── app.component.ts       # root (RouterOutlet + global progress bar)
+    ├── core/                  # guards, interceptors, services, interfaces, tokens
+    ├── features/
+    │   └── analytics-mcc/     # MCC analytics page
+    ├── pages/
+    │   ├── login-page/
+    │   └── main-page/         # sidenav + topbar + bottomnav shell
+    │       └── pages/
+    │           ├── dashboard/  # cards · charts · transactions table
+    │           └── exchange/   # currency converter
+    └── shared/
+        ├── components/        # UI kit (button, card, skeleton, empty-state, chip, toast)
+        └── pipes/
+```
+
+## Theme System
+
+Toggled via `ThemeService` (`inject(ThemeService).toggle()`).  
+Reads `prefers-color-scheme` on first visit; persists choice in `localStorage`.  
+CSS custom properties switch on `html[data-theme="light"|"dark"]`.
+
+## Routes
+
+| Path | Component | Lazy |
+|---|---|---|
+| `/login` | `LoginPageComponent` | ✓ |
+| `/` → `/dashboard` | `DashboardComponent` | ✓ |
+| `/exchange` | `ExchangeComponent` | ✓ |
+| `/analytics/mcc` | `MccAnalyticsComponent` | ✓ |
+
+## Environment
+
+Copy and edit `src/environments/environment.ts`:
+
+```ts
+export const environment = {
+    production: false,
+    basePathApi: 'https://your-api.example.com/api',
+    monobankApi: 'https://api.monobank.ua',
+};
+```
