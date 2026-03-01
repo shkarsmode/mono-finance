@@ -237,10 +237,12 @@ export class MonobankService {
     ): Observable<ITransaction[] | any> {
         this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
+        const tz = -new Date().getTimezoneOffset(); // e.g. 120 for UTC+2
         let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}`;
         if (year) {
             transactionsApiUrl += `/${+year}`;
         }
+        transactionsApiUrl += `?tz=${tz}`;
 
         return this.http
             .get<{ data: ITransaction[]; status: number; message: string }>(

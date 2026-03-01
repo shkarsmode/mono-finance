@@ -9,6 +9,7 @@
     padding: var(--space-5);
     cursor: pointer;
     transition: all var(--duration-normal) var(--ease-default);
+    flex-shrink: 0;
 
     &:not(.active) { opacity: 0.5; }
     &:hover { transform: translateY(-4px); opacity: 1; box-shadow: var(--shadow-3); }
@@ -17,6 +18,7 @@
         width: 260px;
         min-width: 260px;
         height: 160px;
+        max-width: 260px;
         padding: var(--space-4);
         scroll-snap-align: center;
     }
@@ -48,6 +50,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-2);
+    min-height: 24px;
+    overflow: hidden;
 }
 
 .title {
@@ -80,6 +84,8 @@
 .center {
     display: flex;
     justify-content: space-between;
+    min-height: 40px;
+    overflow: hidden;
     align-items: flex-end;
     margin-bottom: var(--space-3);
 }
@@ -101,6 +107,9 @@
     font-size: var(--text-xl);
     font-weight: 500;
     color: #94a3b8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     letter-spacing: 2px;
     margin-bottom: var(--space-1);
 
@@ -112,6 +121,8 @@
 .balance-line {
     display: flex;
     align-items: baseline;
+    min-height: 20px;
+    overflow: hidden;
     justify-content: center;
     gap: var(--space-2);
     margin-bottom: var(--space-2);
@@ -136,9 +147,8 @@
 }
 
 .bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    min-height: 24px;
+    overflow: hidden;
 
     .name {
         font-size: var(--text-xs);
@@ -146,6 +156,9 @@
         text-transform: uppercase;
         letter-spacing: 1.5px;
         color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 

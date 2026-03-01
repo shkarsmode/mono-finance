@@ -10,6 +10,22 @@
     margin-bottom: var(--space-4);
 }
 
+// ── Date Picker (always visible) ──
+.date-picker-section {
+    margin-bottom: var(--space-5);
+}
+
+.pick-month {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+
+    mat-form-field {
+        flex: 0 1 150px;
+        min-width: 120px;
+    }
+}
+
 // ── Cards ──
 .cards-section {
     margin-bottom: var(--space-6);
@@ -19,17 +35,40 @@
     display: flex;
     gap: var(--space-4);
     flex-wrap: wrap;
+    align-items: flex-start;
 
     @media (max-width: 767px) {
-        gap: var(--space-3);
         flex-wrap: nowrap;
+        gap: var(--space-3);
         overflow-x: auto;
+        overflow-y: hidden;
         scroll-snap-type: x mandatory;
         -webkit-overflow-scrolling: touch;
         padding-bottom: var(--space-2);
-        scrollbar-width: none;
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-border) transparent;
 
-        &::-webkit-scrollbar { display: none; }
+        app-card {
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
+        }
+
+        &::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 3px;
+            
+            &:hover {
+                background: var(--color-text-secondary);
+            }
+        }
     }
 }
 

@@ -35,12 +35,17 @@
 .wrap-name {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-2);
+    min-width: 100%;
 }
 
 .flag {
-    font-size: 22px;
-    line-height: 1;
+    width: 28px;
+    height: 21px;
+    border-radius: 2px;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 .name {
@@ -48,6 +53,7 @@
     font-weight: 600;
     color: var(--color-text-primary);
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .exchange {

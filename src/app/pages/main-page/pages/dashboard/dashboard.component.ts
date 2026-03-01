@@ -1,6 +1,8 @@
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
@@ -14,6 +16,7 @@ import { CardComponent, ChartComponent, TransactionsComponent } from './componen
     standalone: true,
     imports: [
         AsyncPipe, DatePipe, DecimalPipe,
+        MatFormFieldModule, MatSelectModule,
         CardComponent, ChartComponent, TransactionsComponent,
         TransactionsFilterPipe, TransactionsSortByPipe,
     ],
@@ -69,12 +72,32 @@ export default class DashboardComponent implements OnInit {
 
     readonly transactionCount = computed(() => this.transactions().length);
 
+    // ── Date picker state (owned by dashboard, always available) ──
+    activeMonth = new Date().getMonth() + 1;
+    activeYear = new Date().getFullYear();
+    readonly currentMonth = new Date().getMonth() + 1;
+    readonly currentYear = new Date().getFullYear();
+    readonly monthsMap = [
+        { name: 'Jan', value: 1 }, { name: 'Feb', value: 2 },
+        { name: 'Mar', value: 3 }, { name: 'Apr', value: 4 },
+        { name: 'May', value: 5 }, { name: 'Jun', value: 6 },
+        { name: 'Jul', value: 7 }, { name: 'Aug', value: 8 },
+        { name: 'Sep', value: 9 }, { name: 'Oct', value: 10 },
+        { name: 'Nov', value: 11 }, { name: 'Dec', value: 12 },
+    ];
+    yearsMap: number[] = [];
+
     private cancelBulkRequested = false;
     private readonly cancelPreviousRequest$ = new Subject<void>();
 
     @ViewChild('transactionsRef') transactionsRef!: TransactionsComponent;
 
     ngOnInit(): void {
+        const numberOfYears = new Date().getFullYear() - 2017;
+        for (let i = 0; i <= numberOfYears; i++) {
+            this.yearsMap.push(2017 + (numberOfYears - i));
+        }
+
         this.activeCardId$ = this.monobankService.activeCardId$;
         this.clientInfo$ = this.monobankService.clientInfo$;
         this.groups$ = this.categoryGroupService.categoryGroups$;
@@ -94,19 +117,23 @@ export default class DashboardComponent implements OnInit {
     }
 
     onSelectMonth(month: number): void {
+        this.activeMonth = month;
         this.monobankService.activeMonth = month;
+        if (this.transactionsRef) this.transactionsRef.activeMonth = month;
         this.cancelPreviousRequest$.next();
         this.monobankService
-            .getTransactions(month, this.monobankService.activeYear)
+            .getTransactions(month, this.activeYear)
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }
 
     onSelectYear(year: number): void {
+        this.activeYear = year;
         this.monobankService.activeYear = year;
+        if (this.transactionsRef) this.transactionsRef.activeYear = year;
         this.cancelPreviousRequest$.next();
         this.monobankService
-            .getTransactions(this.monobankService.activeMonth, year)
+            .getTransactions(this.activeMonth, year)
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }

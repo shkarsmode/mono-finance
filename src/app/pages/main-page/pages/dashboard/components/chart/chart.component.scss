@@ -11,4 +11,11 @@
         width: 100% !important;
         height: 100% !important;
     }
+
+    @media (max-width: 767px) {
+        max-width: 100%;
+        aspect-ratio: 1.6;
+        padding: var(--space-2);
+        border-radius: var(--radius-sm);
+    }
 }

@@ -29,7 +29,7 @@ export default class ExchangeComponent implements OnInit {
                     currencyNameA: this.codesMap[e.currencyCodeA].name,
                     currencyNameB: this.codesMap[e.currencyCodeB]?.name ?? 'UAH',
                     flagA: this.codesMap[e.currencyCodeA].flag,
-                    flagB: this.codesMap[e.currencyCodeB]?.flag ?? '🇺🇦',
+                    flagB: this.codesMap[e.currencyCodeB]?.flag ?? 'ua',
                 }));
             this.currencyData.set(filtered);
             this.isLoading.set(false);

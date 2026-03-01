@@ -47,6 +47,36 @@
     }
 </section>
 
+<!-- Date Picker (always visible) -->
+<section class="date-picker-section">
+    <div class="pick-month">
+        <mat-form-field class="months-wrap">
+            <mat-label>Month</mat-label>
+            <mat-select
+                [value]="activeMonth"
+                (valueChange)="onSelectMonth($event)">
+                @for (month of monthsMap; track month.value) {
+                    <mat-option
+                        [disabled]="currentMonth < month.value && currentYear === activeYear"
+                        [value]="month.value">
+                        {{ month.name }}
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field class="year">
+            <mat-label>Year</mat-label>
+            <mat-select
+                [value]="activeYear"
+                (valueChange)="onSelectYear($event)">
+                @for (year of yearsMap; track year) {
+                    <mat-option [value]="year">{{ year }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    </div>
+</section>
+
 <!-- Charts & Transactions -->
 @if (transactions().length) {
     <!-- Category Groups Summary -->

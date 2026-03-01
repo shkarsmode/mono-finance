@@ -6,6 +6,10 @@
     border-radius: var(--radius-md);
     padding: var(--space-5);
     overflow: hidden;
+
+    @media (max-width: 767px) {
+        padding: var(--space-3);
+    }
 }
 
 .pick-month {
@@ -140,6 +144,12 @@ table.transactions {
         &.date-th { width: 160px; }
         &.status-th { width: 60px; }
         &.amount-th { width: 120px; }
+
+        @media (max-width: 767px) {
+            padding: var(--space-1) var(--space-2);
+            &.date-th { width: auto; }
+            &.amount-th { width: auto; }
+        }
     }
 
     tbody tr {
@@ -153,6 +163,11 @@ table.transactions {
         padding: var(--space-3);
         font-size: var(--text-sm);
         color: var(--color-text-primary);
+
+        @media (max-width: 767px) {
+            padding: var(--space-2) var(--space-2);
+            font-size: var(--text-xs);
+        }
     }
 
     .desc-cell {
@@ -161,11 +176,20 @@ table.transactions {
         text-overflow: ellipsis;
         white-space: nowrap;
         max-width: 250px;
+
+        @media (max-width: 767px) {
+            max-width: 120px;
+            font-size: var(--text-xs);
+        }
     }
 
     .date-cell {
         color: var(--color-text-secondary);
         white-space: nowrap;
+
+        @media (max-width: 767px) {
+            font-size: var(--text-xs);
+        }
     }
 
     .status-arrow {
@@ -185,6 +209,10 @@ table.transactions {
             font-size: var(--text-xs);
             color: var(--color-success);
             margin-left: var(--space-1);
+        }
+
+        @media (max-width: 767px) {
+            font-size: var(--text-xs);
         }
     }
 

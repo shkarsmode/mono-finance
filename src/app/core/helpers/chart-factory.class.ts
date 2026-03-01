@@ -97,6 +97,7 @@ export class ChartFactory {
 
     public init(): void {
         this.prepareDataToCreate();
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 700;
         this.chart = new Chart(this.canvas, {
             type: 'line',
             data: {
@@ -105,10 +106,10 @@ export class ChartFactory {
                     {
                         label: this.label,
                         data: this.data,
-                        borderWidth: 2,
+                        borderWidth: isMobile ? 1.5 : 2,
                         pointStyle: 'circle',
-                        pointRadius: this.mode === 'monthly' ? 5 : 8,
-                        pointHoverRadius: this.mode === 'monthly' ? 9 : 13,
+                        pointRadius: isMobile ? 2 : (this.mode === 'monthly' ? 5 : 6),
+                        pointHoverRadius: isMobile ? 5 : (this.mode === 'monthly' ? 9 : 10),
                         fill: true,
                         borderCapStyle: 'square',
                         borderColor: CHART_COLORS_MAP[this.type],
