@@ -237,9 +237,7 @@ export class MonobankService {
     ): Observable<ITransaction[] | any> {
         this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
-        let transactionsApiUrl = `
-            ${this.basePathApi}/transaction/${cardId}/${month}
-        `;
+        let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}`;
         if (year) {
             transactionsApiUrl += `/${+year}`;
         }

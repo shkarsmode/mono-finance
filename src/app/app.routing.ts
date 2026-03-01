@@ -29,6 +29,11 @@ export const routes: Routes = [
                     import('./pages/main-page/pages/exchange/exchange.component'),
             },
             {
+                path: 'subscriptions',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/subscriptions/subscriptions.component'),
+            },
+            {
                 path: 'analytics/mcc',
                 loadComponent: () =>
                     import('./features/analytics-mcc/mcc-analytics.component'),

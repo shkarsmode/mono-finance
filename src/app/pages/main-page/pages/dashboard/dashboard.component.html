@@ -4,15 +4,13 @@
     <div class="cards-row">
         @if ((clientInfo$ | async); as clientInfo) {
             @for (account of clientInfo.accounts; track account.id) {
-                @if (account.currencyCode === 980) {
-                    <app-card
-                        [class.active]="account.id === (activeCardId$ | async)"
-                        [class.white]="account.type === 'white'"
-                        [account]="account"
-                        [name]="clientInfo.name"
-                        (onClick)="onCardClick($event)">
-                    </app-card>
-                }
+                <app-card
+                    [class.active]="account.id === (activeCardId$ | async)"
+                    [class.white]="account.type === 'white'"
+                    [account]="account"
+                    [name]="clientInfo.name"
+                    (onClick)="onCardClick($event)">
+                </app-card>
             }
         } @else {
             <div class="skeleton-card"></div>
@@ -51,6 +49,69 @@
 
 <!-- Charts & Transactions -->
 @if (transactions().length) {
+    <!-- Category Groups Summary -->
+    @if ((groups$ | async); as groups) {
+        @if (groups.length) {
+            <section class="categories-section">
+                <h2 class="section-title">Spending by Category</h2>
+                <div class="categories-grid">
+                    @for (group of groups; track group.title) {
+                        <div class="category-card" [class.has-amount]="group.amount < 0">
+                            <span class="category-emoji">{{ group.emoji }}</span>
+                            <div class="category-info">
+                                <span class="category-title">{{ group.title }}</span>
+                                <span class="category-amount" [class.expense]="group.amount < 0">
+                                    {{ (group.amount / 100) | number: '1.2-2' }} UAH
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    }
+
+    <!-- Spending Insights (bonus) -->
+    <section class="insights-section">
+        <h2 class="section-title">
+            <span class="material-icons-round">insights</span>
+            Quick Insights
+        </h2>
+        <div class="insights-grid">
+            <div class="insight-card insight-card--expense">
+                <span class="insight-card__icon material-icons-round">trending_down</span>
+                <div class="insight-card__content">
+                    <span class="insight-card__label">Total Expenses</span>
+                    <span class="insight-card__value expense">{{ (totalExpenses() / 100) | number: '1.2-2' }} UAH</span>
+                </div>
+            </div>
+            <div class="insight-card insight-card--income">
+                <span class="insight-card__icon material-icons-round">trending_up</span>
+                <div class="insight-card__content">
+                    <span class="insight-card__label">Total Income</span>
+                    <span class="insight-card__value income">{{ (totalIncome() / 100) | number: '1.2-2' }} UAH</span>
+                </div>
+            </div>
+            <div class="insight-card">
+                <span class="insight-card__icon material-icons-round">today</span>
+                <div class="insight-card__content">
+                    <span class="insight-card__label">Avg. Daily Spend</span>
+                    <span class="insight-card__value">{{ (averageDailySpend() / 100) | number: '1.0-0' }} UAH</span>
+                </div>
+            </div>
+            @if (biggestExpense(); as biggest) {
+                <div class="insight-card insight-card--highlight">
+                    <span class="insight-card__icon material-icons-round">priority_high</span>
+                    <div class="insight-card__content">
+                        <span class="insight-card__label">Biggest Expense</span>
+                        <span class="insight-card__value expense">{{ (biggest.amount / 100) | number: '1.2-2' }} UAH</span>
+                        <span class="insight-card__sub">{{ biggest.description }}</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
     <div class="dashboard-grid">
         <div class="charts-col">
             @defer (on viewport) {

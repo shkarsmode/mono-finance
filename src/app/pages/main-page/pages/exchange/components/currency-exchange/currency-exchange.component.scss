@@ -3,23 +3,23 @@
 }
 
 .exchange-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-5);
+    transition: box-shadow var(--duration-fast), border-color var(--duration-fast);
 
     &:hover {
-        border-color: var(--primary);
-        box-shadow: var(--shadow-md);
+        border-color: var(--color-primary);
+        box-shadow: var(--shadow-2);
     }
 }
 
 .exchange-divider {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md) 0;
+    gap: var(--space-3);
+    padding: var(--space-4) 0;
 }
 
 .exchange-icon {
@@ -29,7 +29,7 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--primary);
+    background: var(--color-primary);
     color: #fff;
     flex-shrink: 0;
 
@@ -39,8 +39,8 @@
 }
 
 .exchange-rate {
-    font-size: var(--font-sm);
+    font-size: var(--text-sm);
     font-weight: 600;
-    color: var(--primary);
+    color: var(--color-primary);
     white-space: nowrap;
 }

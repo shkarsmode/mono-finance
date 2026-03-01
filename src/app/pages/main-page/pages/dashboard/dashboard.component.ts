@@ -1,5 +1,5 @@
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -41,6 +41,33 @@ export default class DashboardComponent implements OnInit {
     groups$!: Observable<ICategoryGroup[]>;
     transactions$!: Observable<ITransaction[]>;
     readonly ChartType = ChartType;
+
+    // ── Spending Insights (bonus feature) ──
+    readonly totalExpenses = computed(() => {
+        const txs = this.transactions();
+        return txs.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0);
+    });
+
+    readonly totalIncome = computed(() => {
+        const txs = this.transactions();
+        return txs.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    });
+
+    readonly biggestExpense = computed(() => {
+        const txs = this.transactions().filter(t => t.amount < 0);
+        if (!txs.length) return null;
+        return txs.reduce((max, t) => t.amount < max.amount ? t : max, txs[0]);
+    });
+
+    readonly averageDailySpend = computed(() => {
+        const txs = this.transactions().filter(t => t.amount < 0);
+        if (!txs.length) return 0;
+        const days = new Set(txs.map(t => new Date(t.time * 1000).toDateString())).size;
+        const total = txs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        return days > 0 ? total / days : 0;
+    });
+
+    readonly transactionCount = computed(() => this.transactions().length);
 
     private cancelBulkRequested = false;
     private readonly cancelPreviousRequest$ = new Subject<void>();

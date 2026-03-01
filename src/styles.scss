@@ -21,11 +21,102 @@ body {
     font-family: var(--font-family-emoji);
 }
 
-// ── Material overrides ──
+// ── Angular Material — override to match design tokens ──
+.mat-mdc-form-field {
+    --mdc-filled-text-field-container-color: var(--color-surface);
+    --mdc-filled-text-field-focus-active-indicator-color: var(--color-primary);
+    --mdc-filled-text-field-label-text-color: var(--color-text-secondary);
+    --mdc-filled-text-field-input-text-color: var(--color-text-primary);
+    --mdc-outlined-text-field-outline-color: var(--color-border);
+    --mdc-outlined-text-field-focus-outline-color: var(--color-primary);
+    --mdc-outlined-text-field-label-text-color: var(--color-text-secondary);
+    --mdc-outlined-text-field-input-text-color: var(--color-text-primary);
+    font-family: var(--font-family-base) !important;
+}
+
+.mat-mdc-select {
+    --mat-select-trigger-text-font: var(--font-family-base);
+    --mat-select-trigger-text-size: var(--text-sm);
+    --mat-select-trigger-text-tracking: normal;
+    --mat-select-enabled-trigger-text-color: var(--color-text-primary);
+    --mat-select-focused-arrow-color: var(--color-primary);
+    --mat-select-enabled-arrow-color: var(--color-text-secondary);
+    font-family: var(--font-family-base) !important;
+}
+
+// Overlay panel (dropdown)
+.cdk-overlay-container {
+    z-index: 1000 !important;
+}
+
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: var(--shadow-3) !important;
+}
+
+.mat-mdc-option {
+    --mat-option-label-text-font: var(--font-family-base);
+    --mat-option-label-text-size: var(--text-sm);
+    --mat-option-label-text-color: var(--color-text-primary);
+    --mat-option-hover-state-layer-color: var(--color-surface-hover);
+    --mat-option-focus-state-layer-color: var(--color-surface-hover);
+    --mat-option-selected-state-layer-color: var(--color-primary-subtle);
+    min-height: 40px !important;
+}
+
+.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+        color: var(--color-primary) !important;
+    }
+}
+
+.mat-mdc-checkbox {
+    --mdc-checkbox-selected-checkmark-color: #fff;
+    --mdc-checkbox-selected-focus-icon-color: var(--color-primary);
+    --mdc-checkbox-selected-hover-icon-color: var(--color-primary);
+    --mdc-checkbox-selected-icon-color: var(--color-primary);
+    --mdc-checkbox-selected-pressed-icon-color: var(--color-primary);
+    --mdc-checkbox-unselected-icon-color: var(--color-text-tertiary);
+    --mdc-checkbox-unselected-hover-icon-color: var(--color-text-secondary);
+    font-family: var(--font-family-base) !important;
+
+    .mdc-label {
+        color: var(--color-text-primary);
+        font-family: var(--font-family-base);
+        font-size: var(--text-sm);
+    }
+}
+
+.mat-mdc-tooltip {
+    --mdc-plain-tooltip-container-color: var(--color-surface-elevated);
+    --mdc-plain-tooltip-supporting-text-color: var(--color-text-primary);
+    --mdc-plain-tooltip-supporting-text-font: var(--font-family-base);
+    --mdc-plain-tooltip-supporting-text-size: var(--text-xs);
+}
+
+.mat-badge-content {
+    font-family: var(--font-family-base) !important;
+    font-size: 10px !important;
+    background: var(--color-primary) !important;
+    color: #fff !important;
+}
+
 .mat-mdc-snack-bar-container {
     .mdc-snackbar__label {
         font-family: var(--font-family-base);
         white-space: pre-wrap;
+    }
+    .mdc-snackbar__surface {
+        background-color: var(--color-surface-elevated) !important;
+        border: 1px solid var(--color-border) !important;
+        border-radius: var(--radius-sm) !important;
+        box-shadow: var(--shadow-3) !important;
+    }
+    .mdc-snackbar__label {
+        color: var(--color-text-primary) !important;
     }
 }
 
@@ -44,12 +135,10 @@ body {
 // ── Toast variants ──
 .toast-success .mdc-snackbar__surface {
     background-color: var(--color-success) !important;
-    border-radius: var(--radius-sm) !important;
 }
 
 .toast-error .mdc-snackbar__surface {
     background-color: var(--color-error) !important;
-    border-radius: var(--radius-sm) !important;
 }
 
 // ── Global form field subscription wrapper fix ──
@@ -61,4 +150,20 @@ body {
 ::selection {
     background: var(--color-primary);
     color: var(--color-primary-text);
+}
+
+// ── Scrollbar ──
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
 }

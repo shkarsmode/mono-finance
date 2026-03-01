@@ -14,9 +14,11 @@
     &:hover { transform: translateY(-4px); opacity: 1; box-shadow: var(--shadow-3); }
 
     @media (max-width: 767px) {
-        width: 200px;
-        height: 110px;
-        padding: var(--space-3);
+        width: 260px;
+        min-width: 260px;
+        height: 160px;
+        padding: var(--space-4);
+        scroll-snap-align: center;
     }
 }
 
@@ -100,12 +102,37 @@
     font-weight: 500;
     color: #94a3b8;
     letter-spacing: 2px;
-    margin-bottom: var(--space-3);
+    margin-bottom: var(--space-1);
 
     @media (max-width: 767px) {
         font-size: var(--text-sm);
-        margin-bottom: var(--space-2);
     }
+}
+
+.balance-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.balance-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: #e2e8f0;
+    font-variant-numeric: tabular-nums;
+
+    @media (max-width: 767px) {
+        font-size: var(--text-xl);
+    }
+}
+
+.balance-currency {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
 }
 
 .bottom {
@@ -134,7 +161,8 @@
 
 @media (max-width: 767px) {
     :host {
-        .title, .center, .pay-pass { display: none; }
+        .center { display: none; }
+        .pay-pass { display: none; }
         .name { font-size: 9px !important; }
     }
 }

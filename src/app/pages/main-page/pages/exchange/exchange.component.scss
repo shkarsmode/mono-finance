@@ -3,46 +3,53 @@
 }
 
 .exchange-page {
-    padding: var(--spacing-lg);
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .page-title {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    font-size: var(--font-xl);
+    gap: var(--space-3);
+    font-size: var(--text-xl);
     font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: var(--spacing-xl);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-6);
 
     .material-icons-round {
         font-size: 28px;
-        color: var(--primary);
+        color: var(--color-primary);
     }
 }
 
 .exchange-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: var(--spacing-lg);
+    gap: var(--space-5);
 }
 
 .skeleton-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: var(--spacing-lg);
+    gap: var(--space-5);
 }
 
 .skeleton-card {
     height: 220px;
-    border-radius: var(--radius-lg);
-    background: var(--skeleton-base);
-    animation: pulse 1.5s ease-in-out infinite;
+    border-radius: var(--radius-md);
+    background: linear-gradient(
+        90deg,
+        var(--color-skeleton) 25%,
+        var(--color-skeleton-shine) 50%,
+        var(--color-skeleton) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+@keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .empty-state {
@@ -50,9 +57,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xxl);
-    color: var(--text-secondary);
+    gap: var(--space-3);
+    padding: var(--space-7);
+    color: var(--color-text-tertiary);
 
     .material-icons-round {
         font-size: 48px;
@@ -67,6 +74,6 @@
     }
 
     .page-title {
-        font-size: var(--font-lg);
+        font-size: var(--text-lg);
     }
 }

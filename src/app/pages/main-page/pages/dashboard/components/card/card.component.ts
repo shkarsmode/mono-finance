@@ -1,11 +1,13 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { currencyCodesMap } from '@core/data';
 import { IAccount } from '@core/interfaces';
 import { MaskedCardPipe } from '../../../../pipes/masked-card.pipe';
 
 @Component({
     selector: 'app-card',
     standalone: true,
-    imports: [MaskedCardPipe],
+    imports: [MaskedCardPipe, DecimalPipe],
     templateUrl: './card.component.html',
     styleUrl: './card.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -20,4 +22,12 @@ export class CardComponent {
     public onCardClick = () => this.onClick.emit(this.account);
 
     public isSmallScreen: boolean = window.innerWidth < 700;
+
+    get currencyName(): string {
+        return currencyCodesMap[this.account?.currencyCode]?.name ?? 'UAH';
+    }
+
+    get balanceFormatted(): number {
+        return (this.account?.balance ?? 0) / 100;
+    }
 }

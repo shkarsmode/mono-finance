@@ -1,3 +1,10 @@
+<!-- Global Loading Bar -->
+@if (loadingService.loading$ | async) {
+    <div class="global-loading-bar">
+        <div class="global-loading-bar__track"></div>
+    </div>
+}
+
 <!-- Overlay for mobile sidenav -->
 @if (sidenavOpen()) {
     <div class="overlay" (click)="closeSidenav()"></div>

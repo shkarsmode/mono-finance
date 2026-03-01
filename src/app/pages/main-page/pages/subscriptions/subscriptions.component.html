@@ -1,0 +1,148 @@
+<section class="subs-header">
+    <div class="subs-header__left">
+        <h1 class="page-title">
+            <span class="material-icons-round">autorenew</span>
+            Subscriptions
+        </h1>
+        <p class="page-subtitle">Detected recurring payments from your transaction history</p>
+    </div>
+
+    <button class="detect-btn" (click)="onDetect()" [disabled]="isDetecting()">
+        @if (isDetecting()) {
+            <span class="detect-btn__spinner"></span>
+            Analyzing…
+        } @else {
+            <span class="material-icons-round">search</span>
+            Detect subscriptions
+        }
+    </button>
+</section>
+
+<!-- Summary Cards -->
+@if (subscriptions().length) {
+    <div class="summary-row">
+        <div class="summary-card">
+            <span class="summary-card__icon material-icons-round">calendar_month</span>
+            <div class="summary-card__info">
+                <span class="summary-card__value">{{ (totalMonthly() / 100) | number: '1.2-2' }} UAH</span>
+                <span class="summary-card__label">Monthly total</span>
+            </div>
+        </div>
+        <div class="summary-card">
+            <span class="summary-card__icon material-icons-round">subscriptions</span>
+            <div class="summary-card__info">
+                <span class="summary-card__value">{{ activeSubs().length }}</span>
+                <span class="summary-card__label">Active subscriptions</span>
+            </div>
+        </div>
+        <div class="summary-card">
+            <span class="summary-card__icon material-icons-round">upcoming</span>
+            <div class="summary-card__info">
+                <span class="summary-card__value">{{ upcomingSubs().length }}</span>
+                <span class="summary-card__label">Due this week</span>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Upcoming This Week -->
+@if (upcomingSubs().length) {
+    <section class="upcoming-section">
+        <h2 class="section-title">
+            <span class="material-icons-round">notifications_active</span>
+            Coming Up
+        </h2>
+        <div class="upcoming-list">
+            @for (sub of upcomingSubs(); track sub.id) {
+                <div class="upcoming-item">
+                    <div class="upcoming-item__left">
+                        <span class="material-icons-round upcoming-item__icon">{{ getCadenceIcon(sub.cadence) }}</span>
+                        <div>
+                            <span class="upcoming-item__title">{{ sub.title }}</span>
+                            <span class="upcoming-item__date">{{ sub.nextExpectedAt | date: 'MMM d' }}</span>
+                        </div>
+                    </div>
+                    <span class="upcoming-item__amount">
+                        {{ (sub.averageAmount / 100) | number: '1.2-2' }} {{ getCurrencyName(sub.currency) }}
+                    </span>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Loading State -->
+@if (isLoading()) {
+    <div class="skeleton-list">
+        @for (i of [1,2,3,4,5]; track i) {
+            <div class="skeleton-row"></div>
+        }
+    </div>
+} @else if (!subscriptions().length) {
+    <div class="empty-state">
+        <span class="material-icons-round">manage_search</span>
+        <h3>No subscriptions detected</h3>
+        <p>Click "Detect subscriptions" to analyze your transaction history and find recurring payments</p>
+    </div>
+} @else {
+    <!-- All Subscriptions -->
+    <section class="subs-list-section">
+        <h2 class="section-title">All Subscriptions</h2>
+        <div class="subs-grid">
+            @for (sub of subscriptions(); track sub.id) {
+                <div class="sub-card" [class.sub-card--inactive]="!sub.isActive">
+                    <div class="sub-card__header">
+                        <div class="sub-card__title-group">
+                            <span class="sub-card__title">{{ sub.title }}</span>
+                            <span class="sub-card__cadence"
+                                  [class]="'cadence-' + sub.cadence">
+                                {{ getCadenceLabel(sub.cadence) }}
+                            </span>
+                        </div>
+                        <button class="sub-card__toggle"
+                                [class.active]="sub.isActive"
+                                (click)="onToggle(sub)">
+                            <span class="sub-card__toggle-track">
+                                <span class="sub-card__toggle-thumb"></span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="sub-card__amount">
+                        {{ (sub.averageAmount / 100) | number: '1.2-2' }}
+                        <span class="sub-card__currency">{{ getCurrencyName(sub.currency) }}</span>
+                    </div>
+
+                    <div class="sub-card__meta">
+                        <div class="sub-card__meta-item">
+                            <span class="material-icons-round">event</span>
+                            Last: {{ sub.lastSeenAt | date: 'MMM d, y' }}
+                        </div>
+                        @if (sub.nextExpectedAt) {
+                            <div class="sub-card__meta-item">
+                                <span class="material-icons-round">upcoming</span>
+                                Next: {{ sub.nextExpectedAt | date: 'MMM d' }}
+                            </div>
+                        }
+                        <div class="sub-card__meta-item">
+                            <span class="material-icons-round">repeat</span>
+                            {{ sub.occurrenceCount }} times
+                        </div>
+                    </div>
+
+                    <div class="sub-card__confidence">
+                        <div class="confidence-bar">
+                            <div class="confidence-bar__fill"
+                                 [class]="getConfidenceClass(sub.confidence)"
+                                 [style.width.%]="sub.confidence * 100">
+                            </div>
+                        </div>
+                        <span class="confidence-label">
+                            {{ (sub.confidence * 100) | number: '1.0-0' }}% confidence
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}

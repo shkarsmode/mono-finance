@@ -1,5 +1,30 @@
 $sidenav-width: 260px;
 
+// ── Global Loading Bar ──
+.global-loading-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: calc(var(--z-toast) + 1);
+    background: transparent;
+    overflow: hidden;
+
+    &__track {
+        height: 100%;
+        width: 40%;
+        background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+        border-radius: 999px;
+        animation: loading-slide 1.2s ease-in-out infinite;
+    }
+}
+
+@keyframes loading-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+}
+
 :host {
     display: flex;
     height: 100vh;

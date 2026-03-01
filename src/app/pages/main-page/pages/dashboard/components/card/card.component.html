@@ -13,12 +13,17 @@
 </div>
 
 @if (isSmallScreen) {
-    <div class="card-number">
-        {{ (account ? account.maskedPan[0].slice(-4) : '4444') }}
+    <div class="balance-line">
+        <span class="balance-value">{{ balanceFormatted | number: '1.2-2' }}</span>
+        <span class="balance-currency">{{ currencyName }}</span>
     </div>
 } @else {
     <div class="card-number">
         {{ (account ? account.maskedPan[0] : '4444444444444444') | maskedCard }}
+    </div>
+    <div class="balance-line">
+        <span class="balance-value">{{ balanceFormatted | number: '1.2-2' }}</span>
+        <span class="balance-currency">{{ currencyName }}</span>
     </div>
 }
 

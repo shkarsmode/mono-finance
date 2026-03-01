@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import {
     ChangeDetectionStrategy, Component,
     OnInit, ViewContainerRef, computed,
@@ -14,14 +15,14 @@ import { first } from 'rxjs';
 @Component({
     selector: 'app-main-page',
     standalone: true,
-    imports: [RouterOutlet, RouterLink, RouterLinkActive],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, AsyncPipe],
     templateUrl: './main-page.component.html',
     styleUrl: './main-page.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MainPageComponent implements OnInit {
     private readonly monobankService = inject(MonobankService);
-    private readonly loadingService = inject(LoadingService);
+    public readonly loadingService = inject(LoadingService);
     private readonly toastService = inject(ToastService);
     public readonly themeService = inject(ThemeService);
     private readonly viewContainerRef = inject(ViewContainerRef);
@@ -32,8 +33,8 @@ export class MainPageComponent implements OnInit {
 
     readonly navItems = [
         { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { path: '/transactions', icon: 'receipt_long', label: 'Transactions' },
         { path: '/exchange', icon: 'currency_exchange', label: 'Exchange' },
+        { path: '/subscriptions', icon: 'autorenew', label: 'Subscriptions' },
         { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
     ];
 
