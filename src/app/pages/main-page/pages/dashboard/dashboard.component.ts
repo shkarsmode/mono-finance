@@ -1,10 +1,11 @@
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
-import { first, lastValueFrom, Observable, Subject } from 'rxjs';
+import { first, firstValueFrom, lastValueFrom, Observable, Subject } from 'rxjs';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
 import {
@@ -20,6 +21,7 @@ selector: 'app-dashboard',
         CardComponent, ChartComponent, TransactionsComponent,
         CategoryManagerComponent, FloatingToolbarComponent,
         TransactionsFilterPipe, TransactionsSortByPipe,
+        DragDropModule,
     ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss',
@@ -265,5 +267,17 @@ export default class DashboardComponent implements OnInit {
     onCloseCategoryEditor(): void {
         this.showCategoryEditor.set(false);
         this.editingCategory.set(null);
+    }
+
+    // Handle drag & drop reordering of category groups
+    async onCategoryDrop(event: CdkDragDrop<ICategoryGroup[]>): Promise<void> {
+        const groups = (await firstValueFrom(this.groups$)) as ICategoryGroup[];
+        if (!groups) return;
+
+        const updated = [...groups];
+        moveItemInArray(updated, event.previousIndex, event.currentIndex);
+
+        // Apply ordering change and persist via service
+        this.categoryGroupService.changeOrdering(updated);
     }
 }

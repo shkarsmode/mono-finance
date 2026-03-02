@@ -168,23 +168,25 @@
         </div>
         <div class="drawer__body">
             @if ((groups$ | async); as groups) {
-                @for (group of groups; track group.title) {
-                    <div class="drawer-category"
-                         [class.has-expense]="group.amount < 0"
-                         [class.has-income]="group.amount > 0"
-                         (click)="onEditCategory(group)">
-                        <span class="drawer-category__emoji">{{ group.emoji }}</span>
-                        <div class="drawer-category__info">
-                            <span class="drawer-category__title">{{ group.title }}</span>
-                            <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
+                <div cdkDropList class="drawer-categories-list" (cdkDropListDropped)="onCategoryDrop($event)">
+                    @for (group of groups; track group.title) {
+                        <div class="drawer-category" cdkDrag
+                             [class.has-expense]="group.amount < 0"
+                             [class.has-income]="group.amount > 0"
+                             (click)="onEditCategory(group)">
+                            <span class="drawer-category__emoji">{{ group.emoji }}</span>
+                            <div class="drawer-category__info">
+                                <span class="drawer-category__title">{{ group.title }}</span>
+                                <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
+                            </div>
+                            <span class="drawer-category__amount"
+                                  [class.expense]="group.amount < 0"
+                                  [class.income]="group.amount > 0">
+                                {{ (group.amount / 100) | number: '1.2-2' }} UAH
+                            </span>
                         </div>
-                        <span class="drawer-category__amount"
-                              [class.expense]="group.amount < 0"
-                              [class.income]="group.amount > 0">
-                            {{ (group.amount / 100) | number: '1.2-2' }} UAH
-                        </span>
-                    </div>
-                }
+                    }
+                </div>
             }
             <!-- Add new -->
             <button class="drawer-add-btn" (click)="onAddCategory()">

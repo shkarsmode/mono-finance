@@ -134,6 +134,10 @@
     color: #e2e8f0;
     font-variant-numeric: tabular-nums;
 
+    ::ng-deep .white & {
+        color: #0f172a;
+    }
+
     @media (max-width: 767px) {
         font-size: var(--text-xl);
     }

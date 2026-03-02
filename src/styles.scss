@@ -127,6 +127,14 @@ body {
     }
 }
 
+.cdk-drag {
+    background-color: inherit;
+}
+
+.cdk-drag-preview {
+    transition: none !important;
+}
+
 // ── Drag-drop animation ──
 .cdk-drag-animating {
     transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
