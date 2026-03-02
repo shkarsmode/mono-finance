@@ -1,18 +1,16 @@
-<!-- Cards Section -->
+<!-- Cards Section (white card first) -->
 <section class="cards-section">
     <h2 class="section-title">Your Cards</h2>
     <div class="cards-row">
-        @if ((clientInfo$ | async); as clientInfo) {
-            @for (account of clientInfo.accounts; track account.id) {
-                <app-card
-                    [class.active]="account.id === (activeCardId$ | async)"
-                    [class.white]="account.type === 'white'"
-                    [account]="account"
-                    [name]="clientInfo.name"
-                    (onClick)="onCardClick($event)">
-                </app-card>
-            }
-        } @else {
+        @for (account of sortedAccounts(); track account.id) {
+            <app-card
+                [class.active]="account.id === (activeCardId$ | async)"
+                [class.white]="account.type === 'white'"
+                [account]="account"
+                [name]="clientInfoSignal()?.name ?? ''"
+                (onClick)="onCardClick($event)">
+            </app-card>
+        } @empty {
             <div class="skeleton-card"></div>
             <div class="skeleton-card"></div>
         }
@@ -47,55 +45,54 @@
     }
 </section>
 
-<!-- Date Picker (always visible) -->
-<section class="date-picker-section">
-    <div class="pick-month">
-        <mat-form-field class="months-wrap">
-            <mat-label>Month</mat-label>
-            <mat-select
-                [value]="activeMonth"
-                (valueChange)="onSelectMonth($event)">
-                @for (month of monthsMap; track month.value) {
-                    <mat-option
-                        [disabled]="currentMonth < month.value && currentYear === activeYear"
-                        [value]="month.value">
-                        {{ month.name }}
-                    </mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
-        <mat-form-field class="year">
-            <mat-label>Year</mat-label>
-            <mat-select
-                [value]="activeYear"
-                (valueChange)="onSelectYear($event)">
-                @for (year of yearsMap; track year) {
-                    <mat-option [value]="year">{{ year }}</mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
-    </div>
-</section>
-
 <!-- Charts & Transactions -->
 @if (transactions().length) {
     <!-- Category Groups Summary -->
     @if ((groups$ | async); as groups) {
         @if (groups.length) {
             <section class="categories-section">
-                <h2 class="section-title">Spending by Category</h2>
+                <div class="categories-header">
+                    <h2 class="section-title">Spending by Category</h2>
+                    <button class="add-category-btn" (click)="onAddCategory()">
+                        <span class="material-icons-round">add</span>
+                        Add
+                    </button>
+                </div>
                 <div class="categories-grid">
                     @for (group of groups; track group.title) {
-                        <div class="category-card" [class.has-amount]="group.amount < 0">
+                        <div class="category-card"
+                             [class.has-expense]="group.amount < 0"
+                             [class.has-income]="group.amount > 0"
+                             (click)="onEditCategory(group)">
                             <span class="category-emoji">{{ group.emoji }}</span>
                             <div class="category-info">
                                 <span class="category-title">{{ group.title }}</span>
-                                <span class="category-amount" [class.expense]="group.amount < 0">
+                                <span class="category-amount"
+                                      [class.expense]="group.amount < 0"
+                                      [class.income]="group.amount > 0">
                                     {{ (group.amount / 100) | number: '1.2-2' }} UAH
                                 </span>
                             </div>
+                            <button class="category-edit" (click)="onEditCategory(group); $event.stopPropagation()">
+                                <span class="material-icons-round">edit</span>
+                            </button>
                         </div>
                     }
+                    <!-- Add card -->
+                    <div class="category-card category-card--add" (click)="onAddCategory()">
+                        <span class="material-icons-round">add_circle_outline</span>
+                        <span class="category-add-text">New category</span>
+                    </div>
+                </div>
+            </section>
+        } @else {
+            <section class="categories-section">
+                <div class="categories-header">
+                    <h2 class="section-title">Spending by Category</h2>
+                </div>
+                <div class="category-card category-card--add" style="max-width: 240px" (click)="onAddCategory()">
+                    <span class="material-icons-round">add_circle_outline</span>
+                    <span class="category-add-text">Create your first category</span>
                 </div>
             </section>
         }
@@ -158,7 +155,7 @@
             (selectYear)="onSelectYear($event)"
             #transactionsRef>
         </app-transactions>
-        
+
         <div class="charts-col">
             @defer (on viewport) {
                 <app-chart
@@ -191,4 +188,29 @@
         <h3>No transactions yet</h3>
         <p>Select a card to view transactions for the current month</p>
     </div>
+}
+
+<!-- Floating Toolbar (month / year / sort) -->
+<app-floating-toolbar
+    [activeMonth]="activeMonth"
+    [activeYear]="activeYear"
+    [currentMonth]="currentMonth"
+    [currentYear]="currentYear"
+    [years]="yearsMap"
+    [sortBy]="sortBy()"
+    [sortDirection]="sortDirection()"
+    (monthChange)="onSelectMonth($event)"
+    (yearChange)="onSelectYear($event)"
+    (sortChange)="onSortTransactionsBy($event)">
+</app-floating-toolbar>
+
+<!-- Category Editor Modal -->
+@if (showCategoryEditor()) {
+    <app-category-manager
+        [editGroup]="editingCategory()"
+        [transactionDescriptions]="transactionDescriptions()"
+        (save)="onSaveCategory($event)"
+        (delete)="onDeleteCategory($event)"
+        (close)="onCloseCategoryEditor()">
+    </app-category-manager>
 }

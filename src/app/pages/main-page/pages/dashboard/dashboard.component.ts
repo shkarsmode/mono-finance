@@ -1,23 +1,24 @@
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
 import { ChartType, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { first, lastValueFrom, Observable, Subject } from 'rxjs';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
-import { CardComponent, ChartComponent, TransactionsComponent } from './components';
+import {
+    CardComponent, CategoryManagerComponent, ChartComponent,
+    FloatingToolbarComponent, TransactionsComponent
+} from './components';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
     imports: [
         AsyncPipe, DatePipe, DecimalPipe,
-        MatFormFieldModule, MatSelectModule,
         CardComponent, ChartComponent, TransactionsComponent,
+        CategoryManagerComponent, FloatingToolbarComponent,
         TransactionsFilterPipe, TransactionsSortByPipe,
     ],
     templateUrl: './dashboard.component.html',
@@ -72,6 +73,29 @@ export default class DashboardComponent implements OnInit {
 
     readonly transactionCount = computed(() => this.transactions().length);
 
+    /** Sorted accounts: type='white' always first */
+    readonly sortedAccounts = computed(() => {
+        const info = this.clientInfoSignal();
+        if (!info?.accounts) return [];
+        return [...info.accounts].sort((a, b) => {
+            if (a.type === 'white' && b.type !== 'white') return -1;
+            if (a.type !== 'white' && b.type === 'white') return 1;
+            return 0;
+        });
+    });
+
+    /** Transaction descriptions for category autocomplete */
+    readonly transactionDescriptions = computed(() => {
+        const txs = this.transactions();
+        return Array.from(new Set(txs.map(t => t.description)));
+    });
+
+    /** Category editing state */
+    readonly editingCategory = signal<ICategoryGroup | null>(null);
+    readonly showCategoryEditor = signal(false);
+    readonly showFloatingToolbar = signal(true);
+    readonly clientInfoSignal = signal<IAccountInfo | null>(null);
+
     // ── Date picker state (owned by dashboard, always available) ──
     activeMonth = new Date().getMonth() + 1;
     activeYear = new Date().getFullYear();
@@ -106,6 +130,10 @@ export default class DashboardComponent implements OnInit {
         this.transactions$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(t => this.transactions.set(t));
+
+        this.clientInfo$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(info => this.clientInfoSignal.set(info));
 
         this.monobankService.rateLimitCooldown$
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -208,5 +236,33 @@ export default class DashboardComponent implements OnInit {
 
     onCancelLoadAll(): void {
         this.cancelBulkRequested = true;
+    }
+
+    // ── Category Management ──
+    onAddCategory(): void {
+        this.editingCategory.set(null);
+        this.showCategoryEditor.set(true);
+    }
+
+    onEditCategory(group: ICategoryGroup): void {
+        this.editingCategory.set(group);
+        this.showCategoryEditor.set(true);
+    }
+
+    onSaveCategory(group: ICategoryGroup): void {
+        this.categoryGroupService.set(group);
+        this.showCategoryEditor.set(false);
+        this.editingCategory.set(null);
+    }
+
+    onDeleteCategory(group: ICategoryGroup): void {
+        this.categoryGroupService.delete(group);
+        this.showCategoryEditor.set(false);
+        this.editingCategory.set(null);
+    }
+
+    onCloseCategoryEditor(): void {
+        this.showCategoryEditor.set(false);
+        this.editingCategory.set(null);
     }
 }

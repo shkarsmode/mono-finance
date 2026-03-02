@@ -64,10 +64,18 @@ export class CategoryGroupService {
             (oldGroup: any) => oldGroup.title !== group.title
         );
         this.updateCategories([...updatedGroups, group]);
-        // this.localStorageService.set(LocalStorage.MyCategoryGroups, [
-        //     ...updatedGroups,
-        //     group,
-        // ]);
+        const transactions = await firstValueFrom(
+            this.monobankService.currentTransactions$
+        );
+        this.processTransactionsBasedOnGroups(transactions);
+    }
+
+    public async delete(group: ICategoryGroup): Promise<void> {
+        const groups = await firstValueFrom(this.categoryGroups$);
+        const updatedGroups = groups.filter(
+            (oldGroup: any) => oldGroup.title !== group.title
+        );
+        this.updateCategories(updatedGroups);
         const transactions = await firstValueFrom(
             this.monobankService.currentTransactions$
         );

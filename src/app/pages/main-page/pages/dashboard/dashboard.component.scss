@@ -10,19 +10,39 @@
     margin-bottom: var(--space-4);
 }
 
-// ── Date Picker (always visible) ──
-.date-picker-section {
-    margin-bottom: var(--space-5);
+// ── Categories header ──
+.categories-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+
+    .section-title {
+        margin-bottom: 0;
+    }
 }
 
-.pick-month {
-    display: flex;
-    gap: var(--space-3);
-    flex-wrap: wrap;
+.add-category-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    font-family: var(--font-sans);
+    color: var(--color-primary);
+    cursor: pointer;
+    transition: all var(--duration-fast);
 
-    mat-form-field {
-        flex: 0 1 150px;
-        min-width: 120px;
+    .material-icons-round { font-size: 16px; }
+
+    &:hover {
+        background: var(--color-primary);
+        color: #fff;
+        border-color: var(--color-primary);
     }
 }
 
@@ -270,14 +290,43 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    transition: border-color var(--duration-fast);
+    transition: all var(--duration-fast);
+    cursor: pointer;
+    position: relative;
 
-    &.has-amount {
-        border-left: 3px solid var(--color-expense);
+    &.has-expense {
+        border-left: 3px solid var(--color-expense-muted-border);
+    }
+
+    &.has-income {
+        border-left: 3px solid var(--color-income);
     }
 
     &:hover {
         border-color: var(--color-primary);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-1);
+    }
+
+    &--add {
+        border-style: dashed;
+        justify-content: center;
+        gap: var(--space-2);
+        color: var(--color-text-tertiary);
+        min-height: 72px;
+
+        .material-icons-round {
+            font-size: 24px;
+            color: var(--color-primary);
+            opacity: 0.6;
+        }
+
+        &:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+
+            .material-icons-round { opacity: 1; }
+        }
     }
 }
 
@@ -309,8 +358,47 @@
     font-variant-numeric: tabular-nums;
 
     &.expense {
-        color: var(--color-expense);
+        color: var(--color-expense-muted);
     }
+
+    &.income {
+        color: var(--color-income);
+    }
+}
+
+.category-edit {
+    position: absolute;
+    right: var(--space-2);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--duration-fast);
+
+    .material-icons-round { font-size: 16px; }
+
+    .category-card:hover & {
+        opacity: 1;
+    }
+
+    &:hover {
+        background: var(--color-surface-hover);
+        color: var(--color-primary);
+    }
+}
+
+.category-add-text {
+    font-size: var(--text-sm);
+    font-weight: 500;
 }
 
 // ── Dashboard grid ──

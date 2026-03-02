@@ -38,6 +38,11 @@ export const routes: Routes = [
                 loadComponent: () =>
                     import('./features/analytics-mcc/mcc-analytics.component'),
             },
+            {
+                path: 'profile',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/profile/profile.component'),
+            },
         ],
     },
     {

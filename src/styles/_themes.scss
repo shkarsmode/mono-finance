@@ -37,6 +37,13 @@
     --color-income: #10b981;
     --color-expense: #ef4444;
 
+    --color-expense-muted: #d97706;
+    --color-expense-muted-bg: rgba(245, 158, 11, 0.06);
+    --color-expense-muted-border: rgba(245, 158, 11, 0.35);
+    --color-income-muted: #059669;
+    --color-income-muted-bg: rgba(16, 185, 129, 0.06);
+    --color-income-muted-border: rgba(16, 185, 129, 0.35);
+
     --color-card-dark-bg: linear-gradient(135deg, #0f1419 0%, #1e2530 100%);
     --color-card-white-bg: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
     --color-card-dark-text: #c0c7d4;
@@ -86,6 +93,13 @@
 
     --color-income: #34d399;
     --color-expense: #f87171;
+
+    --color-expense-muted: #fbbf24;
+    --color-expense-muted-bg: rgba(251, 191, 36, 0.08);
+    --color-expense-muted-border: rgba(251, 191, 36, 0.25);
+    --color-income-muted: #34d399;
+    --color-income-muted-bg: rgba(52, 211, 153, 0.08);
+    --color-income-muted-border: rgba(52, 211, 153, 0.25);
 
     --color-card-dark-bg: linear-gradient(135deg, #1a1f2a 0%, #252c3d 100%);
     --color-card-white-bg: linear-gradient(135deg, #1e2433 0%, #262c38 100%);

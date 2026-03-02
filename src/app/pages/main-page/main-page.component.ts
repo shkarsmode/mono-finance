@@ -36,6 +36,7 @@ export class MainPageComponent implements OnInit {
         { path: '/exchange', icon: 'currency_exchange', label: 'Exchange' },
         { path: '/subscriptions', icon: 'autorenew', label: 'Subscriptions' },
         { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
+        { path: '/profile', icon: 'person', label: 'Profile' },
     ];
 
     ngOnInit(): void {
