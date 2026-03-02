@@ -43,6 +43,14 @@ export class MainPageComponent implements OnInit {
         this.toastService.init(this.viewContainerRef);
         this.initClientInfoData();
         this.initTransactionsData();
+
+        // Restore persisted UI preferences
+        if (localStorage.getItem('finance-blur-balance') === 'true') {
+            document.documentElement.classList.add('balance-blurred');
+        }
+        if (localStorage.getItem('finance-compact') === 'true') {
+            document.documentElement.classList.add('compact-mode');
+        }
     }
 
     toggleSidenav(): void {

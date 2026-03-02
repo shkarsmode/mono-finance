@@ -66,14 +66,15 @@ import { ThemeService } from '@core/services/theme.service';
                     </div>
 
                     <!-- Currency display -->
-                    <div class="setting-card">
+                    <div class="setting-card setting-card--clickable" (click)="cycleCurrency()">
                         <div class="setting-card__icon">
                             <span class="material-icons-round">currency_exchange</span>
                         </div>
                         <div class="setting-card__info">
                             <span class="setting-card__label">Currency Display</span>
-                            <span class="setting-card__value">UAH (Ukrainian Hryvnia)</span>
+                            <span class="setting-card__value">{{ currencyLabel() }}</span>
                         </div>
+                        <span class="material-icons-round setting-card__arrow">chevron_right</span>
                     </div>
 
                     <!-- Compact mode -->
@@ -256,6 +257,17 @@ import { ThemeService } from '@core/services/theme.service';
             border-radius: var(--radius-md);
             transition: border-color var(--duration-fast);
             &:hover { border-color: var(--color-primary); }
+
+            &--clickable {
+                cursor: pointer;
+                &:active { transform: scale(0.99); }
+            }
+        }
+
+        .setting-card__arrow {
+            font-size: 20px;
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
         }
 
         .setting-card__icon {
@@ -479,6 +491,16 @@ export default class ProfileComponent implements OnInit {
     readonly compactMode = signal(localStorage.getItem('finance-compact') === 'true');
     readonly isDark = computed(() => this.themeService.theme() === 'dark');
 
+    readonly currencyOptions = [
+        { code: 'UAH', label: 'UAH — Ukrainian Hryvnia', symbol: '₴' },
+        { code: 'USD', label: 'USD — US Dollar', symbol: '$' },
+        { code: 'EUR', label: 'EUR — Euro', symbol: '€' },
+    ];
+    readonly currencyIndex = signal(
+        Math.max(0, this.currencyOptions.findIndex(c => c.code === (localStorage.getItem('finance-currency') ?? 'UAH')))
+    );
+    readonly currencyLabel = computed(() => this.currencyOptions[this.currencyIndex()].label);
+
     readonly clientName = computed(() => this.clientInfo()?.name ?? 'User');
     readonly totalAccounts = computed(() => this.clientInfo()?.accounts?.length ?? 0);
     readonly totalJars = computed(() => this.clientInfo()?.jars?.length ?? 0);
@@ -487,6 +509,14 @@ export default class ProfileComponent implements OnInit {
     readonly jars = computed(() => this.clientInfo()?.jars ?? []);
 
     ngOnInit(): void {
+        // Restore persisted classes
+        if (this.balanceBlurred()) {
+            document.documentElement.classList.add('balance-blurred');
+        }
+        if (this.compactMode()) {
+            document.documentElement.classList.add('compact-mode');
+        }
+
         this.monobankService.clientInfo$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(info => this.clientInfo.set(info));
@@ -511,6 +541,13 @@ export default class ProfileComponent implements OnInit {
         const next = !this.compactMode();
         this.compactMode.set(next);
         localStorage.setItem('finance-compact', String(next));
+        document.documentElement.classList.toggle('compact-mode', next);
+    }
+
+    cycleCurrency(): void {
+        const next = (this.currencyIndex() + 1) % this.currencyOptions.length;
+        this.currencyIndex.set(next);
+        localStorage.setItem('finance-currency', this.currencyOptions[next].code);
     }
 
     logout(): void {

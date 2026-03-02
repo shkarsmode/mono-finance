@@ -8,12 +8,12 @@ import { first, lastValueFrom, Observable, Subject } from 'rxjs';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
 import {
-    CardComponent, CategoryManagerComponent, ChartComponent,
-    FloatingToolbarComponent, TransactionsComponent
+    CardComponent, CategoryManagerComponent, ChartComponent, TransactionsComponent
 } from './components';
+import { FloatingToolbarComponent } from './components/floating-toolbar/floating-toolbar.component';
 
 @Component({
-    selector: 'app-dashboard',
+selector: 'app-dashboard',
     standalone: true,
     imports: [
         AsyncPipe, DatePipe, DecimalPipe,
@@ -49,25 +49,25 @@ export default class DashboardComponent implements OnInit {
     // ── Spending Insights (bonus feature) ──
     readonly totalExpenses = computed(() => {
         const txs = this.transactions();
-        return txs.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0);
+        return txs.filter(t => +t.amount < 0).reduce((sum, t) => sum + +(t.amount ?? 0), 0);
     });
 
     readonly totalIncome = computed(() => {
         const txs = this.transactions();
-        return txs.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+        return txs.filter(t => +t.amount > 0).reduce((sum, t) => sum + +(t.amount ?? 0), 0);
     });
 
     readonly biggestExpense = computed(() => {
-        const txs = this.transactions().filter(t => t.amount < 0);
+        const txs = this.transactions().filter(t => +t.amount < 0);
         if (!txs.length) return null;
-        return txs.reduce((max, t) => t.amount < max.amount ? t : max, txs[0]);
+        return txs.reduce((max, t) => +t.amount < +max.amount ? t : max, txs[0]);
     });
 
     readonly averageDailySpend = computed(() => {
-        const txs = this.transactions().filter(t => t.amount < 0);
+        const txs = this.transactions().filter(t => +t.amount < 0);
         if (!txs.length) return 0;
         const days = new Set(txs.map(t => new Date(t.time * 1000).toDateString())).size;
-        const total = txs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+        const total = txs.reduce((sum, t) => sum + Math.abs((t.amount) ?? 0), 0);
         return days > 0 ? total / days : 0;
     });
 
@@ -93,6 +93,7 @@ export default class DashboardComponent implements OnInit {
     /** Category editing state */
     readonly editingCategory = signal<ICategoryGroup | null>(null);
     readonly showCategoryEditor = signal(false);
+    readonly showCategoryDrawer = signal(false);
     readonly showFloatingToolbar = signal(true);
     readonly clientInfoSignal = signal<IAccountInfo | null>(null);
 

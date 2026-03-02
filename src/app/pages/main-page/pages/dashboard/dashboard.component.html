@@ -47,55 +47,18 @@
 
 <!-- Charts & Transactions -->
 @if (transactions().length) {
-    <!-- Category Groups Summary -->
+    <!-- Category Drawer Trigger -->
     @if ((groups$ | async); as groups) {
-        @if (groups.length) {
-            <section class="categories-section">
-                <div class="categories-header">
-                    <h2 class="section-title">Spending by Category</h2>
-                    <button class="add-category-btn" (click)="onAddCategory()">
-                        <span class="material-icons-round">add</span>
-                        Add
-                    </button>
-                </div>
-                <div class="categories-grid">
-                    @for (group of groups; track group.title) {
-                        <div class="category-card"
-                             [class.has-expense]="group.amount < 0"
-                             [class.has-income]="group.amount > 0"
-                             (click)="onEditCategory(group)">
-                            <span class="category-emoji">{{ group.emoji }}</span>
-                            <div class="category-info">
-                                <span class="category-title">{{ group.title }}</span>
-                                <span class="category-amount"
-                                      [class.expense]="group.amount < 0"
-                                      [class.income]="group.amount > 0">
-                                    {{ (group.amount / 100) | number: '1.2-2' }} UAH
-                                </span>
-                            </div>
-                            <button class="category-edit" (click)="onEditCategory(group); $event.stopPropagation()">
-                                <span class="material-icons-round">edit</span>
-                            </button>
-                        </div>
-                    }
-                    <!-- Add card -->
-                    <div class="category-card category-card--add" (click)="onAddCategory()">
-                        <span class="material-icons-round">add_circle_outline</span>
-                        <span class="category-add-text">New category</span>
-                    </div>
-                </div>
-            </section>
-        } @else {
-            <section class="categories-section">
-                <div class="categories-header">
-                    <h2 class="section-title">Spending by Category</h2>
-                </div>
-                <div class="category-card category-card--add" style="max-width: 240px" (click)="onAddCategory()">
-                    <span class="material-icons-round">add_circle_outline</span>
-                    <span class="category-add-text">Create your first category</span>
-                </div>
-            </section>
-        }
+        <section class="categories-trigger-section">
+            <button class="categories-trigger-btn" (click)="showCategoryDrawer.set(true)">
+                <span class="material-icons-round">category</span>
+                <span class="categories-trigger-btn__text">Spending by Category</span>
+                @if (groups.length) {
+                    <span class="categories-trigger-btn__badge">{{ groups.length }}</span>
+                }
+                <span class="material-icons-round categories-trigger-btn__arrow">chevron_right</span>
+            </button>
+        </section>
     }
 
     <!-- Spending Insights (bonus) -->
@@ -116,7 +79,7 @@
                 <span class="insight-card__icon material-icons-round">trending_up</span>
                 <div class="insight-card__content">
                     <span class="insight-card__label">Total Income</span>
-                    <span class="insight-card__value income">{{ (totalIncome() / 100) }} UAH</span>
+                    <span class="insight-card__value income">{{ (totalIncome() / 100) | number: '1.2-2' }} UAH</span>
                 </div>
             </div>
             <div class="insight-card">
@@ -188,6 +151,48 @@
         <h3>No transactions yet</h3>
         <p>Select a card to view transactions for the current month</p>
     </div>
+}
+
+<!-- Category Sidebar Drawer -->
+@if (showCategoryDrawer()) {
+    <div class="drawer-backdrop" (click)="showCategoryDrawer.set(false)"></div>
+    <aside class="drawer">
+        <div class="drawer__header">
+            <h2 class="drawer__title">
+                <span class="material-icons-round">category</span>
+                Spending by Category
+            </h2>
+            <button class="drawer__close" (click)="showCategoryDrawer.set(false)">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="drawer__body">
+            @if ((groups$ | async); as groups) {
+                @for (group of groups; track group.title) {
+                    <div class="drawer-category"
+                         [class.has-expense]="group.amount < 0"
+                         [class.has-income]="group.amount > 0"
+                         (click)="onEditCategory(group)">
+                        <span class="drawer-category__emoji">{{ group.emoji }}</span>
+                        <div class="drawer-category__info">
+                            <span class="drawer-category__title">{{ group.title }}</span>
+                            <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
+                        </div>
+                        <span class="drawer-category__amount"
+                              [class.expense]="group.amount < 0"
+                              [class.income]="group.amount > 0">
+                            {{ (group.amount / 100) | number: '1.2-2' }} UAH
+                        </span>
+                    </div>
+                }
+            }
+            <!-- Add new -->
+            <button class="drawer-add-btn" (click)="onAddCategory()">
+                <span class="material-icons-round">add_circle_outline</span>
+                Add new category
+            </button>
+        </div>
+    </aside>
 }
 
 <!-- Floating Toolbar (month / year / sort) -->

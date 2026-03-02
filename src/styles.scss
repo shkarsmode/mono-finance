@@ -167,3 +167,49 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-tertiary);
 }
+
+// ── Balance blur (toggle from Profile settings) ──
+.balance-blurred {
+    .balance-value,
+    .balance-cell,
+    .jar-card__balance {
+        filter: blur(8px) !important;
+        transition: filter var(--duration-normal);
+        user-select: none;
+    }
+
+    .balance-value:hover,
+    .balance-cell:hover,
+    .jar-card__balance:hover {
+        filter: blur(0) !important;
+    }
+}
+
+// ── Compact mode ──
+.compact-mode {
+    .cards-section {
+        margin-bottom: var(--space-3);
+    }
+
+    .bulk-section {
+        margin-bottom: var(--space-3);
+    }
+
+    .insights-section,
+    .categories-section {
+        margin-bottom: var(--space-3);
+    }
+
+    .insight-card {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .category-card {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    app-card {
+        transform: scale(0.9);
+        transform-origin: top left;
+    }
+}

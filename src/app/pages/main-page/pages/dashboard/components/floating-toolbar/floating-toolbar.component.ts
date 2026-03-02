@@ -1,6 +1,6 @@
 import {
-    ChangeDetectionStrategy, Component, EventEmitter,
-    Input, Output, signal
+    ChangeDetectionStrategy, Component, ElementRef, EventEmitter,
+    HostListener, inject, Input, Output, signal
 } from '@angular/core';
 import { TransactionSortBy } from '@core/enums';
 
@@ -9,11 +9,20 @@ import { TransactionSortBy } from '@core/enums';
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="toolbar" [class.toolbar--expanded]="expanded()">
-            <!-- Collapse toggle -->
-            <button class="toolbar__toggle" (click)="expanded.set(!expanded())">
-                <span class="material-icons-round">
-                    {{ expanded() ? 'expand_more' : 'tune' }}
+        <!-- Backdrop for outside-tap close -->
+        @if (expanded()) {
+            <div class="backdrop" (click)="close()"></div>
+        }
+
+        <div class="toolbar"
+             [class.toolbar--expanded]="expanded()"
+             [class.toolbar--closing]="closing()">
+            <!-- Toggle button -->
+            <button class="toolbar__toggle" (click)="toggle()">
+                <span class="material-icons-round"
+                      [style.transform]="expanded() ? 'rotate(0)' : 'rotate(-180deg)'"
+                      style="transition: transform 0.25s ease">
+                    expand_more
                 </span>
             </button>
 
@@ -26,7 +35,6 @@ import { TransactionSortBy } from '@core/enums';
                             @for (m of months; track m.value) {
                                 <button class="pill"
                                         [class.pill--active]="m.value === activeMonth"
-                                        [class.pill--disabled]="currentYear === activeYear && m.value > currentMonth"
                                         [disabled]="currentYear === activeYear && m.value > currentMonth"
                                         (click)="onMonthSelect(m.value)">
                                     {{ m.name }}
@@ -35,10 +43,10 @@ import { TransactionSortBy } from '@core/enums';
                         </div>
                     </div>
 
-                    <!-- Year selector -->
+                    <!-- Year pills -->
                     <div class="toolbar__section">
                         <span class="toolbar__label">Year</span>
-                        <div class="pills">
+                        <div class="pills pills--scroll">
                             @for (y of years; track y) {
                                 <button class="pill"
                                         [class.pill--active]="y === activeYear"
@@ -49,7 +57,7 @@ import { TransactionSortBy } from '@core/enums';
                         </div>
                     </div>
 
-                    <!-- Sort -->
+                    <!-- Sort controls -->
                     <div class="toolbar__section toolbar__section--sort">
                         <span class="toolbar__label">Sort</span>
                         <div class="sort-btns">
@@ -74,7 +82,8 @@ import { TransactionSortBy } from '@core/enums';
                             <button class="sort-btn sort-btn--direction"
                                     (click)="toggleDirection()">
                                 <span class="material-icons-round"
-                                      [class.rotated]="sortDirection === 'asc'">
+                                      [style.transform]="sortDirection === 'asc' ? 'rotate(180deg)' : 'none'"
+                                      style="transition: transform 0.2s ease">
                                     arrow_downward
                                 </span>
                             </button>
@@ -82,16 +91,20 @@ import { TransactionSortBy } from '@core/enums';
                     </div>
                 </div>
             } @else {
-                <!-- Collapsed: show current month/year -->
-                <div class="toolbar__summary">
+                <!-- Collapsed summary -->
+                <div class="toolbar__summary" (click)="toggle()">
                     <span class="toolbar__summary-text">
                         {{ monthName }} {{ activeYear }}
                     </span>
-                    <span class="toolbar__summary-divider">·</span>
+                    <span class="toolbar__summary-divider">&middot;</span>
                     <span class="toolbar__summary-sort">
                         {{ sortLabel }}
-                        <span class="material-icons-round" style="font-size: 14px"
-                              [class.rotated]="sortDirection === 'asc'">arrow_downward</span>
+                        <span class="material-icons-round"
+                              style="font-size: 14px"
+                              [style.transform]="sortDirection === 'asc' ? 'rotate(180deg)' : 'none'"
+                              [style.transition]="'transform 0.2s ease'">
+                            arrow_downward
+                        </span>
                     </span>
                 </div>
             }
@@ -113,6 +126,13 @@ import { TransactionSortBy } from '@core/enums';
             }
         }
 
+        .backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: auto;
+        }
+
         .toolbar {
             pointer-events: auto;
             background: var(--color-surface-elevated);
@@ -124,14 +144,34 @@ import { TransactionSortBy } from '@core/enums';
             display: flex;
             align-items: center;
             gap: var(--space-3);
-            transition: all var(--duration-normal) var(--ease-default);
+            animation: slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
             &--expanded {
                 flex-direction: column;
                 align-items: stretch;
                 padding: var(--space-3) var(--space-4);
                 width: min(680px, calc(100vw - 32px));
+                animation: expand-up 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             }
+
+            &--closing {
+                animation: shrink-down 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+        }
+
+        @keyframes slide-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes expand-up {
+            from { opacity: 0.8; transform: scaleY(0.6); transform-origin: bottom; }
+            to { opacity: 1; transform: scaleY(1); transform-origin: bottom; }
+        }
+
+        @keyframes shrink-down {
+            from { opacity: 1; transform: scaleY(1); transform-origin: bottom; }
+            to { opacity: 0.8; transform: scaleY(0.6); transform-origin: bottom; }
         }
 
         .toolbar__toggle {
@@ -140,6 +180,8 @@ import { TransactionSortBy } from '@core/enums';
             justify-content: center;
             width: 36px;
             height: 36px;
+            border: none;
+            background: none;
             border-radius: var(--radius-sm);
             color: var(--color-text-secondary);
             cursor: pointer;
@@ -154,6 +196,8 @@ import { TransactionSortBy } from '@core/enums';
             align-items: center;
             gap: var(--space-2);
             white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
         }
 
         .toolbar__summary-text {
@@ -178,6 +222,12 @@ import { TransactionSortBy } from '@core/enums';
             display: flex;
             flex-direction: column;
             gap: var(--space-3);
+            animation: fade-in-content 0.25s ease 0.05s both;
+        }
+
+        @keyframes fade-in-content {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .toolbar__section {
@@ -198,13 +248,23 @@ import { TransactionSortBy } from '@core/enums';
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
+
+            &--scroll {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+                &::-webkit-scrollbar { display: none; }
+            }
         }
 
         .pill {
             padding: 4px 10px;
+            border: none;
             border-radius: var(--radius-full);
             font-size: var(--text-xs);
             font-weight: 500;
+            font-family: var(--font-sans);
             color: var(--color-text-secondary);
             background: var(--color-surface-hover);
             cursor: pointer;
@@ -221,7 +281,7 @@ import { TransactionSortBy } from '@core/enums';
                 color: #fff !important;
             }
 
-            &--disabled, &:disabled {
+            &:disabled {
                 opacity: 0.35;
                 cursor: not-allowed;
             }
@@ -237,9 +297,11 @@ import { TransactionSortBy } from '@core/enums';
             align-items: center;
             gap: 4px;
             padding: 4px 10px;
+            border: none;
             border-radius: var(--radius-full);
             font-size: var(--text-xs);
             font-weight: 500;
+            font-family: var(--font-sans);
             color: var(--color-text-secondary);
             background: var(--color-surface-hover);
             cursor: pointer;
@@ -263,10 +325,6 @@ import { TransactionSortBy } from '@core/enums';
             }
         }
 
-        .rotated {
-            transform: rotate(180deg);
-        }
-
         @media (max-width: 767px) {
             .toolbar--expanded {
                 width: calc(100vw - 16px);
@@ -275,6 +333,8 @@ import { TransactionSortBy } from '@core/enums';
     `],
 })
 export class FloatingToolbarComponent {
+    private readonly el = inject(ElementRef);
+
     @Input() activeMonth = 1;
     @Input() activeYear = 2026;
     @Input() currentMonth = 1;
@@ -289,6 +349,7 @@ export class FloatingToolbarComponent {
 
     readonly SortBy = TransactionSortBy;
     readonly expanded = signal(false);
+    readonly closing = signal(false);
 
     readonly months = [
         { name: 'Jan', value: 1 }, { name: 'Feb', value: 2 },
@@ -310,6 +371,27 @@ export class FloatingToolbarComponent {
             case TransactionSortBy.Payment: return 'Name';
             default: return '';
         }
+    }
+
+    toggle(): void {
+        if (this.expanded()) {
+            this.close();
+        } else {
+            this.expanded.set(true);
+        }
+    }
+
+    close(): void {
+        this.closing.set(true);
+        setTimeout(() => {
+            this.expanded.set(false);
+            this.closing.set(false);
+        }, 200);
+    }
+
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        if (this.expanded()) this.close();
     }
 
     onMonthSelect(month: number): void {

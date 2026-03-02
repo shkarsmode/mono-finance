@@ -74,7 +74,7 @@
                     <td class="desc-cell">{{ transaction.description }}</td>
                     <td class="date-cell">
                         @if (isSmallScreen) {
-                            {{ transaction.time * 1000 | date: 'd.MM HH:mm' }}
+                            {{ transaction.time * 1000 | date: 'd.MM' }}
                         } @else {
                             {{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}
                         }

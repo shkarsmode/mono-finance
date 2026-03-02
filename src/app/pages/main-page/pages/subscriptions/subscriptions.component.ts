@@ -20,7 +20,7 @@ export default class SubscriptionsComponent implements OnInit {
     readonly isDetecting = this.subService.isDetecting;
 
     readonly activeSubs = computed(() =>
-        this.subscriptions().filter(s => s.isActive)
+        (this.subscriptions() ?? []).filter(s => s?.isActive)
     );
 
     readonly totalMonthly = computed(() => {
