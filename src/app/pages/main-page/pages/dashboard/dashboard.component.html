@@ -141,8 +141,24 @@
             }
         </div>
     </section>
-
+    
     <div class="dashboard-grid">
+        <app-transactions
+            [groups]="groups$ | async"
+            [sortByValue]="sortBy()"
+            [transactions]="
+                transactions()
+                    | transactionsFilter: searchValue()
+                    | transactionsSortBy: sortBy() : sortDirection()
+            "
+            (searchTransactions)="onSearchTransaction($event)"
+            (selectValueChange)="onSelectValueChange($event)"
+            (sortBy)="onSortTransactionsBy($event)"
+            (selectMonth)="onSelectMonth($event)"
+            (selectYear)="onSelectYear($event)"
+            #transactionsRef>
+        </app-transactions>
+        
         <div class="charts-col">
             @defer (on viewport) {
                 <app-chart
@@ -168,21 +184,6 @@
             }
         </div>
 
-        <app-transactions
-            [groups]="groups$ | async"
-            [sortByValue]="sortBy()"
-            [transactions]="
-                transactions()
-                    | transactionsFilter: searchValue()
-                    | transactionsSortBy: sortBy() : sortDirection()
-            "
-            (searchTransactions)="onSearchTransaction($event)"
-            (selectValueChange)="onSelectValueChange($event)"
-            (sortBy)="onSortTransactionsBy($event)"
-            (selectMonth)="onSelectMonth($event)"
-            (selectYear)="onSelectYear($event)"
-            #transactionsRef>
-        </app-transactions>
     </div>
 } @else {
     <div class="empty-state">
