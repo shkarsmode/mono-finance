@@ -68,11 +68,12 @@ export class MainPageComponent implements OnInit {
     syncData(): void {
         if (this.isSyncing()) return;
         this.isSyncing.set(true);
-        this.monobankService.getClientInfo().pipe(first()).subscribe({
+        this.monobankService.syncClientInfo().pipe(first()).subscribe({
             next: () => {
                 this.monobankService.getTransactions(
                     this.monobankService.activeMonth,
                     this.monobankService.activeYear,
+                    { forceSync: true },
                 ).pipe(first()).subscribe({
                     next: () => {
                         this.isSyncing.set(false);

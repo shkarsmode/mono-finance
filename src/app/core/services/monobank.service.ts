@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, catchError, first, mergeMap, Observable, of, retryWhen, scan, tap, timer } from 'rxjs';
+import { BehaviorSubject, catchError, first, mergeMap, Observable, of, retryWhen, scan, switchMap, tap, timer } from 'rxjs';
 import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
 
@@ -201,10 +201,19 @@ export class MonobankService {
             .pipe(catchError((error) => this.handleClientInfoError(error)));
     }
 
-    public getClientInfo(): Observable<IAccountInfo | any> {
-        const clientInfoApiUrl = `${this.basePathApi}/users/my`;
+    public syncClientInfo(): Observable<IAccountInfo | any> {
+        return this.getClientInfo(true);
+    }
 
-        return this.http.get<IAccountInfo>(clientInfoApiUrl).pipe(
+    public getClientInfo(forceSync: boolean = false): Observable<IAccountInfo | any> {
+        const clientInfoApiUrl = forceSync
+            ? `${this.basePathApi}/users/my/sync`
+            : `${this.basePathApi}/users/my`;
+        const request$ = forceSync
+            ? this.http.post<IAccountInfo>(clientInfoApiUrl, {})
+            : this.http.get<IAccountInfo>(clientInfoApiUrl);
+
+        return request$.pipe(
             tap((clientInfo) => {
                 // console.log('clientInfo', clientInfo);
                 this.clientInfo$.next(clientInfo);
@@ -233,7 +242,8 @@ export class MonobankService {
 
     public getTransactions(
         month: number,
-        year?: number
+        year?: number,
+        options?: { forceSync?: boolean }
     ): Observable<ITransaction[] | any> {
         this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
@@ -244,10 +254,24 @@ export class MonobankService {
         }
         transactionsApiUrl += `?tz=${tz}`;
 
-        return this.http
-            .get<{ data: ITransaction[]; status: number; message: string }>(
-                transactionsApiUrl
+        let syncApiUrl = `${this.basePathApi}/transaction/sync/${cardId}?month=${month}&tz=${tz}`;
+        if (year) {
+            syncApiUrl += `&year=${+year}`;
+        }
+
+        const request$ = options?.forceSync
+            ? this.http.post(syncApiUrl, {}).pipe(
+                switchMap(() =>
+                    this.http.get<{ data: ITransaction[]; status: number; message: string }>(
+                        transactionsApiUrl
+                    )
+                )
             )
+            : this.http.get<{ data: ITransaction[]; status: number; message: string }>(
+                transactionsApiUrl
+            );
+
+        return request$
             .pipe(
                 tap(({ data, status, message }) => {
                     this.snackBar.open(message, '✅', {

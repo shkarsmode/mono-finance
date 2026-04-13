@@ -215,7 +215,7 @@ export default class DashboardComponent implements OnInit {
 
                 if ((trs as any)['data']?.length) {
                     this.emptyStreak.set(0);
-                    this.monobankService.mergeTransactions(trs as any);
+                    this.monobankService.mergeTransactions((trs as any).data);
                 } else {
                     this.emptyStreak.update(v => v + 1);
                 }

@@ -5,7 +5,18 @@ export interface IAccountInfo {
     permissions: string;
     accounts: IAccount[];
     jars: IJar[];
-    categoryGroups: any;
+    managedClients?: IManagedClient[];
+    categoryGroups?: any[];
+    _meta?: {
+        clientInfoUpdatedAt: number;
+        clientInfoNextRefreshAt: number;
+        webhookConfiguredAt: number;
+        webhookCheckedAt: number;
+        lastWebhookEventAt: number;
+        webhookUrl?: string | null;
+        clientInfoLastError?: string | null;
+        webhookLastError?: string | null;
+    };
 }
 
 interface IJar {
@@ -28,4 +39,23 @@ export interface IAccount {
     maskedPan: string[];
     type: string;
     iban: string;
+}
+
+interface IManagedClient {
+    clientId: string;
+    tin: number;
+    name: string;
+    accounts: IManagedAccount[];
+}
+
+interface IManagedAccount {
+    id: string;
+    balance: number;
+    creditLimit: number;
+    type: string;
+    currencyCode: number;
+    iban: string;
+    sendId?: string;
+    cashbackType?: string;
+    maskedPan?: string[];
 }
