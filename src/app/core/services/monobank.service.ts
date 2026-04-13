@@ -36,6 +36,16 @@ type TransactionsApiResponse = {
     syncMeta?: TransactionResponseMeta;
 };
 
+type TransactionsRequestOptions = {
+    forceSync?: boolean;
+    includeHold?: boolean;
+    silent?: boolean;
+};
+
+type SyncTransactionsRequestOptions = {
+    silent?: boolean;
+};
+
 @Injectable({
     providedIn: 'root',
 })
@@ -127,7 +137,7 @@ export class MonobankService {
     public getTransactionsWithRetry(
         month: number,
         year: number,
-        options?: { forceSync?: boolean; includeHold?: boolean; silent?: boolean }
+        options?: TransactionsRequestOptions
     ): Observable<TransactionsApiResponse> {
         return this.getTransactions(month, year, options).pipe(
             retryWhen(errors =>
@@ -276,7 +286,7 @@ export class MonobankService {
     public getTransactions(
         month: number,
         year?: number,
-        options?: { forceSync?: boolean; includeHold?: boolean; silent?: boolean }
+        options?: TransactionsRequestOptions
     ): Observable<TransactionsApiResponse> {
         if (!options?.silent) {
             this.loadingService.loading$.next(true);
@@ -333,6 +343,41 @@ export class MonobankService {
                     }
                 })
             );
+    }
+
+    public syncTransactionsMonth(
+        month: number,
+        year?: number,
+        options?: SyncTransactionsRequestOptions,
+    ): Observable<TransactionSyncResponse> {
+        if (!options?.silent) {
+            this.loadingService.loading$.next(true);
+        }
+
+        const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
+        const tz = -new Date().getTimezoneOffset();
+        let syncApiUrl = `${this.basePathApi}/transaction/sync/${cardId}?month=${month}&tz=${tz}`;
+        if (year) {
+            syncApiUrl += `&year=${+year}`;
+        }
+
+        return this.http.post<TransactionSyncResponse>(syncApiUrl, {}).pipe(
+            tap(({ message }) => {
+                if (!options?.silent) {
+                    this.snackBar.open(message, '✅', {
+                        duration: 5000,
+                        horizontalPosition: 'right',
+                        verticalPosition: 'top',
+                        panelClass: ['green-snackbar'],
+                    });
+                }
+            }),
+            tap(() => {
+                if (!options?.silent) {
+                    this.loadingService.loading$.next(false);
+                }
+            }),
+        );
     }
 
     private shouldSendQuery(key: LocalStorage): boolean {

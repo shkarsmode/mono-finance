@@ -48,6 +48,7 @@ selector: 'app-dashboard',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class DashboardComponent implements OnInit {
+    private readonly bulkMonoCooldownSec = 60;
     private readonly monobankService = inject(MonobankService);
     private readonly categoryGroupService = inject(CategoryGroupService);
     private readonly destroyRef = inject(DestroyRef);
@@ -278,31 +279,37 @@ export default class DashboardComponent implements OnInit {
                     this.bulkNarration.set(this.createScanningNarration(m, y));
                     this.bulkLastOutcome.set(`Requesting live statements for ${this.getPeriodLabel(m, y)}.`);
 
+                    const syncResult = await lastValueFrom(
+                        this.monobankService.syncTransactionsMonth(
+                            m,
+                            y,
+                            { silent: true },
+                        ).pipe(first())
+                    );
+
+                    const syncMeta = syncResult?.meta;
+                    if (syncMeta?.isUpToDate === false) {
+                        this.bulkNarration.set({
+                            eyebrow: 'Mono Cooldown',
+                            title: 'Mono is catching its breath',
+                            subtitle: `We already have a cached snapshot for ${this.getPeriodLabel(m, y)}. Waiting ${this.bulkMonoCooldownSec}s before retrying this same month.`,
+                            icon: 'schedule',
+                        });
+                        this.bulkLastOutcome.set(`Cached fallback detected for ${this.getPeriodLabel(m, y)}. Retrying after cooldown.`);
+                        await this.waitForSeconds(this.bulkMonoCooldownSec);
+                        continue;
+                    }
+
                     const result = await lastValueFrom(
-                        this.monobankService.getTransactionsWithRetry(
+                        this.monobankService.getTransactions(
                             m,
                             y,
                             {
-                                forceSync: true,
                                 includeHold: this.showHoldTransactions(),
                                 silent: true,
                             },
                         ).pipe(first())
                     );
-
-                    const syncMeta = this.getBulkSyncMeta(result);
-                    if (syncMeta?.isUpToDate === false) {
-                        const waitSec = this.resolveBulkWaitSec(syncMeta);
-                        this.bulkNarration.set({
-                            eyebrow: 'Mono Cooldown',
-                            title: 'Mono is catching its breath',
-                            subtitle: `We already have a cached snapshot for ${this.getPeriodLabel(m, y)}. Waiting ${waitSec}s before retrying this same month.`,
-                            icon: 'schedule',
-                        });
-                        this.bulkLastOutcome.set(`Cached fallback detected for ${this.getPeriodLabel(m, y)}. Retrying after cooldown.`);
-                        await this.waitForBulkRetry(syncMeta);
-                        continue;
-                    }
 
                     const data = result?.data ?? [];
                     this.bulkLatestCount.set(Array.isArray(data) ? data.length : 0);
@@ -327,30 +334,26 @@ export default class DashboardComponent implements OnInit {
                         this.bulkLastOutcome.set(`No new visible transactions for ${this.getPeriodLabel(m, y)}.`);
                     }
 
-                    const waitSec = this.resolveBulkWaitSec(syncMeta ?? result?.meta);
-                    if (waitSec > 0) {
-                        const nextPeriod = this.getPreviousPeriod(m, y);
-                        this.bulkNarration.set({
-                            eyebrow: 'Cooling The Engines',
-                            title: 'Preparing the next archive jump',
-                            subtitle: `Mono cooldown is active for ${waitSec}s. Next stop: ${this.getPeriodLabel(nextPeriod.month, nextPeriod.year)}.`,
-                            icon: 'hourglass_top',
-                        });
-                        this.bulkLastOutcome.set(`Pausing between statement pulls so Mono can reset its cooldown.`);
-                    }
-                    await this.waitForBulkRetry(syncMeta ?? result?.meta);
+                    const nextPeriod = this.getPreviousPeriod(m, y);
+                    this.bulkNarration.set({
+                        eyebrow: 'Cooling The Engines',
+                        title: 'Preparing the next archive jump',
+                        subtitle: `Mono cooldown is fixed at ${this.bulkMonoCooldownSec}s. Next stop: ${this.getPeriodLabel(nextPeriod.month, nextPeriod.year)}.`,
+                        icon: 'hourglass_top',
+                    });
+                    this.bulkLastOutcome.set('Holding a full 60-second cooldown before the next Mono sync.');
+                    await this.waitForSeconds(this.bulkMonoCooldownSec);
                 } catch (err: any) {
                     // On rate limit error, wait and retry this same month
                     if (err?.status === 429 || (err?.error?.message ?? '').toString().toLowerCase().includes('too many')) {
-                        const waitSec = this.monobankService.parseRetryAfterFromError(err);
                         this.bulkNarration.set({
                             eyebrow: 'Rate Limit Shield',
                             title: 'Mono asked us to slow down',
-                            subtitle: `Cooldown detected while syncing ${this.getPeriodLabel(m, y)}. Waiting ${waitSec}s and retrying the same month.`,
+                            subtitle: `Cooldown detected while syncing ${this.getPeriodLabel(m, y)}. Waiting ${this.bulkMonoCooldownSec}s and retrying the same month.`,
                             icon: 'shield',
                         });
                         this.bulkLastOutcome.set(`Rate limit hit for ${this.getPeriodLabel(m, y)}. Holding position.`);
-                        await this.waitForSeconds(waitSec);
+                        await this.waitForSeconds(this.bulkMonoCooldownSec);
                         continue; // retry same month
                     }
                     // For non-429 errors, skip this month
@@ -465,25 +468,6 @@ export default class DashboardComponent implements OnInit {
 
     private getBulkSyncMeta(result: BulkLoadResult | null | undefined): BulkLoadMeta | undefined {
         return result?.syncMeta ?? result?.meta;
-    }
-
-    private async waitForBulkRetry(meta?: BulkLoadMeta): Promise<void> {
-        const waitSec = this.resolveBulkWaitSec(meta);
-        if (waitSec > 0) {
-            await this.waitForSeconds(waitSec);
-        }
-    }
-
-    private resolveBulkWaitSec(meta?: BulkLoadMeta): number {
-        if (!meta) {
-            return 0;
-        }
-
-        if (meta.nextAllowedAt) {
-            return Math.max(0, Number(meta.nextAllowedAt) - Math.floor(Date.now() / 1000));
-        }
-
-        return Math.max(0, Number(meta.retryAfterSec ?? 0));
     }
 
     private async waitForSeconds(seconds: number): Promise<void> {
