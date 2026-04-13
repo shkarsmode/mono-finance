@@ -1,0 +1,111 @@
+<section class="calendar-page">
+    <div class="calendar-header">
+        <h1 class="page-title">
+            <span class="material-icons-round">calendar_month</span>
+            Money Calendar
+        </h1>
+        <div class="month-nav">
+            <button class="nav-btn" (click)="prevMonth()">
+                <span class="material-icons-round">chevron_left</span>
+            </button>
+            <span class="month-label">{{ monthName() }} {{ activeYear() }}</span>
+            <button class="nav-btn" (click)="nextMonth()">
+                <span class="material-icons-round">chevron_right</span>
+            </button>
+        </div>
+    </div>
+
+    @if (loading()) {
+        <div class="calendar-skeleton">
+            @for (i of [1,2,3,4,5]; track i) {
+                <div class="skeleton-row">
+                    @for (j of [1,2,3,4,5,6,7]; track j) {
+                        <div class="skeleton-cell"></div>
+                    }
+                </div>
+            }
+        </div>
+    } @else if (calendarData(); as data) {
+        <!-- Totals bar -->
+        <div class="totals-bar">
+            <div class="total-item">
+                <span class="total-label">Income</span>
+                <span class="total-value income">{{ (data.totals.income / 100) | number: '1.0-0' }} ₴</span>
+            </div>
+            <div class="total-item">
+                <span class="total-label">Expenses</span>
+                <span class="total-value expense">{{ (data.totals.expense / 100) | number: '1.0-0' }} ₴</span>
+            </div>
+            <div class="total-item">
+                <span class="total-label">Avg Daily</span>
+                <span class="total-value">{{ (data.totals.avgDailySpend / 100) | number: '1.0-0' }} ₴</span>
+            </div>
+            <div class="total-item">
+                <span class="total-label">Active Days</span>
+                <span class="total-value">{{ data.totals.activeDays }}</span>
+            </div>
+        </div>
+
+        <!-- Calendar grid -->
+        <div class="calendar-grid">
+            <!-- Weekday headers -->
+            @for (wd of weekdays; track wd) {
+                <div class="weekday-header">{{ wd }}</div>
+            }
+
+            <!-- Day cells -->
+            @for (cell of calendarGrid(); track $index) {
+                @if (cell) {
+                    <div class="day-cell"
+                         [class.has-data]="cell.txCount > 0"
+                         [class.selected]="selectedDay()?.date === cell.date"
+                         [attr.data-heat]="heatLevel(cell)"
+                         (click)="selectDay(cell)">
+                        <span class="day-number">{{ cell.dayOfMonth }}</span>
+                        @if (cell.txCount > 0) {
+                            <span class="day-expense">-{{ (cell.expense / 100) | number: '1.0-0' }}</span>
+                            @if (cell.income > 0) {
+                                <span class="day-income">+{{ (cell.income / 100) | number: '1.0-0' }}</span>
+                            }
+                        }
+                    </div>
+                } @else {
+                    <div class="day-cell day-cell--blank"></div>
+                }
+            }
+        </div>
+
+        <!-- Day detail panel -->
+        @if (selectedDay(); as day) {
+            <div class="day-detail">
+                <h3 class="day-detail__date">{{ day.date }}</h3>
+                <div class="day-detail__grid">
+                    <div class="detail-stat">
+                        <span class="detail-stat__label">Expenses</span>
+                        <span class="detail-stat__value expense">{{ (day.expense / 100) | number: '1.2-2' }} ₴</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat__label">Income</span>
+                        <span class="detail-stat__value income">{{ (day.income / 100) | number: '1.2-2' }} ₴</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat__label">Net</span>
+                        <span class="detail-stat__value" [class.income]="day.net > 0" [class.expense]="day.net < 0">
+                            {{ (day.net / 100) | number: '1.2-2' }} ₴
+                        </span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-stat__label">Transactions</span>
+                        <span class="detail-stat__value">{{ day.txCount }}</span>
+                    </div>
+                </div>
+                @if (day.topMerchant) {
+                    <p class="day-detail__merchant">
+                        <span class="material-icons-round">storefront</span>
+                        Top merchant: <strong>{{ day.topMerchant }}</strong>
+                    </p>
+                }
+            </div>
+        }
+    }
+</section>

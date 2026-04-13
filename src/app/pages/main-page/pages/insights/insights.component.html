@@ -1,0 +1,73 @@
+<section class="insights-page">
+    <h1 class="page-title">
+        <span class="material-icons-round">psychology</span>
+        Insights & Anomalies
+    </h1>
+    <p class="page-subtitle">AI-powered analysis of your spending patterns</p>
+
+    @if (loading()) {
+        <div class="insights-loading">
+            @for (i of [1, 2, 3, 4]; track i) {
+                <div class="insight-skeleton"></div>
+            }
+        </div>
+    } @else if (error()) {
+        <div class="insights-error">
+            <span class="material-icons-round">error_outline</span>
+            <p>{{ error() }}</p>
+            <button class="retry-btn" (click)="loadInsights()">
+                <span class="material-icons-round">refresh</span>
+                Retry
+            </button>
+        </div>
+    } @else if (insights().length === 0) {
+        <div class="insights-empty">
+            <span class="material-icons-round">auto_awesome</span>
+            <h3>No insights yet</h3>
+            <p>Load more transactions to unlock spending insights and anomaly detection</p>
+        </div>
+    } @else {
+        <div class="insights-list">
+            @for (insight of insights(); track insight.id) {
+                <div class="insight-item" [class]="'insight-item--' + insight.severity">
+                    <div class="insight-item__icon-wrap" [class]="'insight-item__icon-wrap--' + insight.severity">
+                        <span class="material-icons-round">{{ typeIcon(insight.type) }}</span>
+                    </div>
+                    <div class="insight-item__body">
+                        <div class="insight-item__header">
+                            <span class="insight-item__type">{{ insight.type }}</span>
+                            <span class="insight-item__severity" [class]="'severity--' + insight.severity">
+                                <span class="material-icons-round">{{ severityIcon(insight.severity) }}</span>
+                                {{ insight.severity }}
+                            </span>
+                        </div>
+                        <h3 class="insight-item__title">{{ insight.title }}</h3>
+                        <p class="insight-item__description">{{ insight.description }}</p>
+                        @if (insight.value !== undefined) {
+                            <div class="insight-item__metrics">
+                                <span class="metric">
+                                    <span class="metric__label">Current</span>
+                                    <span class="metric__value">{{ (insight.value / 100) | number: '1.0-0' }} UAH</span>
+                                </span>
+                                @if (insight.previousValue !== undefined) {
+                                    <span class="metric">
+                                        <span class="metric__label">Previous</span>
+                                        <span class="metric__value">{{ (insight.previousValue / 100) | number: '1.0-0' }} UAH</span>
+                                    </span>
+                                }
+                                @if (insight.changePercent !== undefined) {
+                                    <span class="metric">
+                                        <span class="metric__label">Change</span>
+                                        <span class="metric__value" [class.positive]="insight.changePercent < 0" [class.negative]="insight.changePercent > 0">
+                                            {{ insight.changePercent > 0 ? '+' : '' }}{{ insight.changePercent }}%
+                                        </span>
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

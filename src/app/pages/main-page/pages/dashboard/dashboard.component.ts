@@ -2,7 +2,7 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ChartType, TransactionSortBy } from '@core/enums';
+import { ChartType, LocalStorage, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { first, firstValueFrom, lastValueFrom, Observable, Subject } from 'rxjs';
@@ -75,11 +75,15 @@ export default class DashboardComponent implements OnInit {
 
     readonly transactionCount = computed(() => this.transactions().length);
 
-    /** Sorted accounts: type='white' always first */
+    /** Sorted accounts: type='white' always first, filtered by chip selection */
     readonly sortedAccounts = computed(() => {
         const info = this.clientInfoSignal();
         if (!info?.accounts) return [];
-        return [...info.accounts].sort((a, b) => {
+        const filters = this.cardTypeFilters();
+        const filtered = filters.size > 0
+            ? info.accounts.filter(a => filters.has(a.type))
+            : info.accounts;
+        return [...filtered].sort((a, b) => {
             if (a.type === 'white' && b.type !== 'white') return -1;
             if (a.type !== 'white' && b.type === 'white') return 1;
             return 0;
@@ -98,6 +102,15 @@ export default class DashboardComponent implements OnInit {
     readonly showCategoryDrawer = signal(false);
     readonly showFloatingToolbar = signal(true);
     readonly clientInfoSignal = signal<IAccountInfo | null>(null);
+
+    // ── Card type filter chips ──
+    readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
+    readonly availableCardTypes = computed(() => {
+        const info = this.clientInfoSignal();
+        if (!info?.accounts) return [];
+        const types = new Set(info.accounts.map(a => a.type).filter(Boolean));
+        return Array.from(types);
+    });
 
     // ── Date picker state (owned by dashboard, always available) ──
     activeMonth = new Date().getMonth() + 1;
@@ -204,20 +217,38 @@ export default class DashboardComponent implements OnInit {
                 this.processedMonths() < 240 &&
                 y >= 2015
             ) {
-                const trs = await lastValueFrom(
-                    this.monobankService.getTransactions(m, y).pipe(first())
-                );
+                try {
+                    const result = await lastValueFrom(
+                        this.monobankService.getTransactionsWithRetry(m, y).pipe(first())
+                    );
 
-                if ((trs as any)['status'] === 429) {
-                    await new Promise(r => setTimeout(r, 60001));
-                    continue;
-                }
+                    const data = (result as any)?.data ?? result;
+                    if (Array.isArray(data) && data.length > 0) {
+                        this.emptyStreak.set(0);
+                        this.monobankService.mergeTransactions(data);
+                    } else {
+                        this.emptyStreak.update(v => v + 1);
+                    }
 
-                if ((trs as any)['data']?.length) {
-                    this.emptyStreak.set(0);
-                    this.monobankService.mergeTransactions((trs as any).data);
-                } else {
-                    this.emptyStreak.update(v => v + 1);
+                    // Respect nextAllowedAt from meta if present
+                    const meta = (result as any)?.meta;
+                    if (meta?.nextAllowedAt) {
+                        const waitSec = Math.max(0, Number(meta.nextAllowedAt) - Math.floor(Date.now() / 1000));
+                        if (waitSec > 1) {
+                            this.rateLimitLeftSec.set(waitSec);
+                            await new Promise(r => setTimeout(r, waitSec * 1000));
+                        }
+                    }
+                } catch (err: any) {
+                    // On rate limit error, wait and retry this same month
+                    if (err?.status === 429 || (err?.error?.message ?? '').toString().toLowerCase().includes('too many')) {
+                        const waitSec = this.monobankService.parseRetryAfterFromError(err);
+                        this.rateLimitLeftSec.set(waitSec);
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue; // retry same month
+                    }
+                    // For non-429 errors, skip this month
+                    console.warn(`Bulk load error for ${y}/${m}:`, err);
                 }
 
                 this.processedMonths.update(v => v + 1);
@@ -239,6 +270,35 @@ export default class DashboardComponent implements OnInit {
 
     onCancelLoadAll(): void {
         this.cancelBulkRequested = true;
+    }
+
+    // ── Card Type Filter ──
+    toggleCardTypeFilter(type: string): void {
+        const current = new Set(this.cardTypeFilters());
+        if (current.has(type)) {
+            current.delete(type);
+        } else {
+            current.add(type);
+        }
+        this.cardTypeFilters.set(current);
+        this.saveCardTypeFilters(current);
+    }
+
+    clearCardTypeFilters(): void {
+        this.cardTypeFilters.set(new Set());
+        localStorage.removeItem(LocalStorage.CardTypeFilters);
+    }
+
+    private loadCardTypeFilters(): Set<string> {
+        try {
+            const raw = localStorage.getItem(LocalStorage.CardTypeFilters);
+            if (raw) return new Set(JSON.parse(raw));
+        } catch { /* ignore */ }
+        return new Set();
+    }
+
+    private saveCardTypeFilters(filters: Set<string>): void {
+        localStorage.setItem(LocalStorage.CardTypeFilters, JSON.stringify([...filters]));
     }
 
     // ── Category Management ──

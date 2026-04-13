@@ -1,6 +1,27 @@
 <!-- Cards Section (white card first) -->
 <section class="cards-section">
     <h2 class="section-title">Your Cards</h2>
+
+    <!-- Card type filter chips -->
+    @if (availableCardTypes().length > 1) {
+        <div class="card-type-chips">
+            @for (type of availableCardTypes(); track type) {
+                <button
+                    class="card-type-chip"
+                    [class.card-type-chip--active]="cardTypeFilters().has(type)"
+                    (click)="toggleCardTypeFilter(type)">
+                    {{ type }}
+                </button>
+            }
+            @if (cardTypeFilters().size > 0) {
+                <button class="card-type-chip card-type-chip--clear" (click)="clearCardTypeFilters()">
+                    <span class="material-icons-round">close</span>
+                    Clear
+                </button>
+            }
+        </div>
+    }
+
     <div class="cards-row">
         @for (account of sortedAccounts(); track account.id) {
             <app-card

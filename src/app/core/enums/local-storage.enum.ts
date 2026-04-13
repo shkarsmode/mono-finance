@@ -6,4 +6,5 @@ export enum LocalStorage {
     MonobankToken = 'monobankToken',
     UpdatedMonobankDataAt = 'updatedMonobankDataAt',
     MyCategoryGroups = 'myCategoryGroups',
+    CardTypeFilters = 'cardTypeFilters',
 }

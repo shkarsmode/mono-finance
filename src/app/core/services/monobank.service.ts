@@ -87,6 +87,10 @@ export class MonobankService {
         // 4) дефолтный кулдаун
         return 60;
     }
+
+    public parseRetryAfterFromError(err: any): number {
+        return this.parseRetryAfterSec(err);
+    }
     
     private isTooMany(err: HttpErrorResponse): boolean {
         const msg = (err?.error?.message ?? err?.message ?? '').toString().toLowerCase();
