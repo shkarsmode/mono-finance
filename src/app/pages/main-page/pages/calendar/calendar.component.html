@@ -25,24 +25,24 @@
                 </div>
             }
         </div>
-    } @else if (calendarData(); as data) {
+    } @else if (calendarData()) {
         <!-- Totals bar -->
         <div class="totals-bar">
             <div class="total-item">
                 <span class="total-label">Income</span>
-                <span class="total-value income">{{ (data.totals.income / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value income">{{ (calendarData()!.totals.income / 100) | number: '1.0-0' }} ₴</span>
             </div>
             <div class="total-item">
                 <span class="total-label">Expenses</span>
-                <span class="total-value expense">{{ (data.totals.expense / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value expense">{{ (calendarData()!.totals.expense / 100) | number: '1.0-0' }} ₴</span>
             </div>
             <div class="total-item">
                 <span class="total-label">Avg Daily</span>
-                <span class="total-value">{{ (data.totals.avgDailySpend / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value">{{ (calendarData()!.totals.avgDailySpend / 100) | number: '1.0-0' }} ₴</span>
             </div>
             <div class="total-item">
                 <span class="total-label">Active Days</span>
-                <span class="total-value">{{ data.totals.activeDays }}</span>
+                <span class="total-value">{{ calendarData()!.totals.activeDays }}</span>
             </div>
         </div>
 

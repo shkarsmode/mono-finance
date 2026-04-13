@@ -95,7 +95,7 @@ import { ICategoryGroup } from '@core/interfaces';
                         </div>
                     }
                     <span class="field__hint">
-                        Press Enter or Tab to add. Keys match transaction descriptions.
+                        Press Enter or Tab to add. Text keys match descriptions; numeric keys (e.g. 5411) match MCC codes.
                     </span>
                 </div>
             </div>

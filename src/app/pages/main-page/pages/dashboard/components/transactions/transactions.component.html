@@ -70,8 +70,14 @@
         <tbody>
             @for (transaction of transactions; track transaction.id) {
                 <tr [matTooltip]="transaction.comment ?? ''"
-                    matTooltipPosition="left">
-                    <td class="desc-cell">{{ transaction.description }}</td>
+                    matTooltipPosition="left"
+                    [class.hold-row]="transaction.hold">
+                    <td class="desc-cell">
+                        {{ transaction.description }}
+                        @if (transaction.hold) {
+                            <span class="hold-badge">Hold</span>
+                        }
+                    </td>
                     <td class="date-cell">
                         @if (isSmallScreen) {
                             {{ transaction.time * 1000 | date: 'd.MM' }}

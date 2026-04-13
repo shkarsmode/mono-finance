@@ -17,4 +17,6 @@ export interface ITransaction {
     readonly counterEdrpou?: string;
     readonly counterIban?: string;
     readonly counterName?: string;
+    readonly merchantName?: string;
+    readonly merchantKey?: string;
 }

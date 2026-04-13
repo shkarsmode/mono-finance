@@ -56,6 +56,15 @@
         }
     </button>
 
+    <button
+        class="hold-toggle"
+        type="button"
+        [class.hold-toggle--active]="showHoldTransactions()"
+        (click)="toggleShowHold()">
+        <span class="material-icons-round">{{ showHoldTransactions() ? 'visibility' : 'visibility_off' }}</span>
+        Hold transactions
+    </button>
+
     @if (isBulkLoading()) {
         <button class="bulk-cancel" type="button" (click)="onCancelLoadAll()">
             Cancel
@@ -66,23 +75,20 @@
     }
 </section>
 
+<!-- Category Drawer Trigger (always accessible) -->
+<section class="categories-trigger-section">
+    <button class="categories-trigger-btn" (click)="showCategoryDrawer.set(true)">
+        <span class="material-icons-round">category</span>
+        <span class="categories-trigger-btn__text">Spending by Category</span>
+        @if ((groups$ | async)?.length; as count) {
+            <span class="categories-trigger-btn__badge">{{ count }}</span>
+        }
+        <span class="material-icons-round categories-trigger-btn__arrow">chevron_right</span>
+    </button>
+</section>
+
 <!-- Charts & Transactions -->
 @if (transactions().length) {
-    <!-- Category Drawer Trigger -->
-    @if ((groups$ | async); as groups) {
-        <section class="categories-trigger-section">
-            <button class="categories-trigger-btn" (click)="showCategoryDrawer.set(true)">
-                <span class="material-icons-round">category</span>
-                <span class="categories-trigger-btn__text">Spending by Category</span>
-                @if (groups.length) {
-                    <span class="categories-trigger-btn__badge">{{ groups.length }}</span>
-                }
-                <span class="material-icons-round categories-trigger-btn__arrow">chevron_right</span>
-            </button>
-        </section>
-    }
-
-    <!-- Spending Insights (bonus) -->
     <section class="insights-section">
         <h2 class="section-title">
             <span class="material-icons-round">insights</span>
@@ -189,25 +195,33 @@
         </div>
         <div class="drawer__body">
             @if ((groups$ | async); as groups) {
-                <div cdkDropList class="drawer-categories-list" (cdkDropListDropped)="onCategoryDrop($event)">
-                    @for (group of groups; track group.title) {
-                        <div class="drawer-category" cdkDrag
-                             [class.has-expense]="group.amount < 0"
-                             [class.has-income]="group.amount > 0"
-                             (click)="onEditCategory(group)">
-                            <span class="drawer-category__emoji">{{ group.emoji }}</span>
-                            <div class="drawer-category__info">
-                                <span class="drawer-category__title">{{ group.title }}</span>
-                                <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
+                @if (groups.length) {
+                    <div cdkDropList class="drawer-categories-list" (cdkDropListDropped)="onCategoryDrop($event)">
+                        @for (group of groups; track group.title) {
+                            <div class="drawer-category" cdkDrag
+                                 [class.has-expense]="group.amount < 0"
+                                 [class.has-income]="group.amount > 0"
+                                 (click)="onEditCategory(group)">
+                                <span class="drawer-category__emoji">{{ group.emoji }}</span>
+                                <div class="drawer-category__info">
+                                    <span class="drawer-category__title">{{ group.title }}</span>
+                                    <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
+                                </div>
+                                <span class="drawer-category__amount"
+                                      [class.expense]="group.amount < 0"
+                                      [class.income]="group.amount > 0">
+                                    {{ (group.amount / 100) | number: '1.2-2' }} UAH
+                                </span>
                             </div>
-                            <span class="drawer-category__amount"
-                                  [class.expense]="group.amount < 0"
-                                  [class.income]="group.amount > 0">
-                                {{ (group.amount / 100) | number: '1.2-2' }} UAH
-                            </span>
-                        </div>
-                    }
-                </div>
+                        }
+                    </div>
+                } @else {
+                    <div class="drawer-empty">
+                        <span class="material-icons-round">folder_open</span>
+                        <p>No categories yet</p>
+                        <p class="drawer-empty__hint">Create your first category to track spending by group</p>
+                    </div>
+                }
             }
             <!-- Add new -->
             <button class="drawer-add-btn" (click)="onAddCategory()">

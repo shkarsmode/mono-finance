@@ -40,6 +40,7 @@ export default class DashboardComponent implements OnInit {
     readonly processedMonths = signal(0);
     readonly emptyStreak = signal(0);
     readonly rateLimitLeftSec = signal(0);
+    readonly showHoldTransactions = signal(false);
     readonly maxEmptyStreak = 2;
 
     activeCardId$!: Observable<string>;
@@ -166,7 +167,7 @@ export default class DashboardComponent implements OnInit {
         if (this.transactionsRef) this.transactionsRef.activeMonth = month;
         this.cancelPreviousRequest$.next();
         this.monobankService
-            .getTransactions(month, this.activeYear)
+            .getTransactions(month, this.activeYear, { includeHold: this.showHoldTransactions() })
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }
@@ -177,7 +178,15 @@ export default class DashboardComponent implements OnInit {
         if (this.transactionsRef) this.transactionsRef.activeYear = year;
         this.cancelPreviousRequest$.next();
         this.monobankService
-            .getTransactions(this.activeMonth, year)
+            .getTransactions(this.activeMonth, year, { includeHold: this.showHoldTransactions() })
+            .pipe(first(), takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+    }
+
+    toggleShowHold(): void {
+        this.showHoldTransactions.update(v => !v);
+        this.monobankService
+            .getTransactions(this.activeMonth, this.activeYear, { includeHold: this.showHoldTransactions() })
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }

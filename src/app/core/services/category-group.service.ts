@@ -10,8 +10,8 @@ import { MonobankService } from './monobank.service';
     providedIn: 'root',
 })
 export class CategoryGroupService {
-    public readonly categoryGroups$: BehaviorSubject<ICategoryGroup[] | any> =
-        new BehaviorSubject(null);
+    public readonly categoryGroups$: BehaviorSubject<ICategoryGroup[]> =
+        new BehaviorSubject<ICategoryGroup[]>([]);
 
     public readonly loadingService: LoadingService = inject(LoadingService);
 
@@ -109,30 +109,33 @@ export class CategoryGroupService {
                 this.monobankService.currentTransactions$
             )) as ITransaction[];
         }
-        // let groups = this.localStorageService.get(
-        //     LocalStorage.MyCategoryGroups
-        // ) as ICategoryGroup[];
 
         let groups = this.categoryGroups$.getValue();
-        // console.log(groups);
 
-        // groups = this.getDefaultGroupsIfNotExist(groups);
-
-        if (!groups) {
+        if (!groups || !groups.length) {
             return;
         }
 
         groups.forEach((group: any) => (group.amount = 0));
 
         transactions.forEach((transaction) => {
-            let isFit = false;
             groups.forEach((group: any) => {
-                isFit = group.keys.some((key: any) =>
-                    transaction.description
-                        .toLocaleLowerCase()
-                        .includes(key.toLocaleLowerCase())
-                );
-                isFit && (group.amount += +transaction.amount);
+                const isFit = group.keys.some((key: string) => {
+                    const trimmed = key.trim();
+                    // MCC match: purely numeric key
+                    if (/^\d+$/.test(trimmed)) {
+                        return transaction.mcc === Number(trimmed)
+                            || transaction.originalMcc === Number(trimmed);
+                    }
+                    // Text match: description, merchantName, counterName (case-insensitive)
+                    const lowerKey = trimmed.toLocaleLowerCase();
+                    return (
+                        (transaction.description ?? '').toLocaleLowerCase().includes(lowerKey) ||
+                        ((transaction as any).merchantName ?? '').toLocaleLowerCase().includes(lowerKey) ||
+                        (transaction.counterName ?? '').toLocaleLowerCase().includes(lowerKey)
+                    );
+                });
+                if (isFit) group.amount += +transaction.amount;
             });
         });
 

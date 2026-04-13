@@ -222,9 +222,7 @@ export class MonobankService {
                 // console.log('clientInfo', clientInfo);
                 this.clientInfo$.next(clientInfo);
 
-                if (clientInfo.categoryGroups) {
-                    this.categoryGroups$.next(clientInfo.categoryGroups);
-                }
+                this.categoryGroups$.next(clientInfo.categoryGroups ?? []);
                 const activeCardId = localStorage.getItem(
                     LocalStorage.MonobankActiveCardId
                 );
@@ -247,7 +245,7 @@ export class MonobankService {
     public getTransactions(
         month: number,
         year?: number,
-        options?: { forceSync?: boolean }
+        options?: { forceSync?: boolean; includeHold?: boolean }
     ): Observable<ITransaction[] | any> {
         this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
@@ -257,6 +255,9 @@ export class MonobankService {
             transactionsApiUrl += `/${+year}`;
         }
         transactionsApiUrl += `?tz=${tz}`;
+        if (options?.includeHold) {
+            transactionsApiUrl += `&includeHold=true`;
+        }
 
         let syncApiUrl = `${this.basePathApi}/transaction/sync/${cardId}?month=${month}&tz=${tz}`;
         if (year) {
