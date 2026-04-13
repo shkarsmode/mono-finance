@@ -66,14 +66,103 @@
     </button>
 
     @if (isBulkLoading()) {
-        <button class="bulk-cancel" type="button" (click)="onCancelLoadAll()">
-            Cancel
-        </button>
-        <div class="bulk-progress">
-            <div class="bulk-progress__bar" [style.width.%]="bulkProgressPercent"></div>
+        <div class="bulk-inline-note">
+            <span class="material-icons-round">motion_photos_on</span>
+            Deep sync is running in the archive overlay
         </div>
     }
 </section>
+
+@if (isBulkLoading()) {
+    <div class="bulk-overlay" role="dialog" aria-modal="true" aria-labelledby="bulk-sync-title">
+        <div class="bulk-overlay__backdrop"></div>
+
+        <section class="bulk-modal">
+            <div class="bulk-modal__glow bulk-modal__glow--left"></div>
+            <div class="bulk-modal__glow bulk-modal__glow--right"></div>
+
+            <header class="bulk-modal__header">
+                <div class="bulk-modal__badge">
+                    <span class="material-icons-round">data_thresholding</span>
+                    {{ bulkNarration().eyebrow }}
+                </div>
+
+                <button class="bulk-modal__cancel" type="button" (click)="onCancelLoadAll()">
+                    <span class="material-icons-round">close</span>
+                    Stop sync
+                </button>
+            </header>
+
+            <div class="bulk-modal__hero">
+                <div class="bulk-radar" aria-hidden="true">
+                    <div class="bulk-radar__ring bulk-radar__ring--outer"></div>
+                    <div class="bulk-radar__ring bulk-radar__ring--middle"></div>
+                    <div class="bulk-radar__ring bulk-radar__ring--inner"></div>
+                    <div class="bulk-radar__beam"></div>
+                    <div class="bulk-radar__center">
+                        <span class="material-icons-round">{{ bulkNarration().icon }}</span>
+                        <strong>{{ bulkCurrentPeriodLabel() }}</strong>
+                        <span>{{ bulkAmbientLabel() }}</span>
+                    </div>
+                </div>
+
+                <div class="bulk-modal__copy">
+                    <p class="bulk-modal__eyebrow">{{ bulkNarration().eyebrow }}</p>
+                    <h2 class="bulk-modal__title" id="bulk-sync-title">{{ bulkNarration().title }}</h2>
+                    <p class="bulk-modal__subtitle">{{ bulkNarration().subtitle }}</p>
+
+                    <div class="bulk-progress bulk-progress--modal">
+                        <div class="bulk-progress__bar" [style.width.%]="bulkProgressPercent"></div>
+                    </div>
+
+                    <div class="bulk-modal__progress-row">
+                        <span>{{ bulkProgressLabel() }}</span>
+                        <span>{{ bulkProgressPercent }}%</span>
+                    </div>
+
+                    <div class="bulk-chip-row">
+                        @for (chip of bulkHighlightChips(); track chip) {
+                            <span class="bulk-chip">{{ chip }}</span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="bulk-stats">
+                <article class="bulk-stat-card">
+                    <span class="bulk-stat-card__label">Current jump</span>
+                    <strong class="bulk-stat-card__value">{{ bulkCurrentPeriodLabel() }}</strong>
+                </article>
+                <article class="bulk-stat-card">
+                    <span class="bulk-stat-card__label">Latest catch</span>
+                    <strong class="bulk-stat-card__value">{{ bulkLatestCount() }} tx</strong>
+                </article>
+                <article class="bulk-stat-card">
+                    <span class="bulk-stat-card__label">Cooldown</span>
+                    <strong class="bulk-stat-card__value">
+                        @if (rateLimitLeftSec() > 0) {
+                            {{ rateLimitLeftSec() }}s
+                        } @else {
+                            clear
+                        }
+                    </strong>
+                </article>
+                <article class="bulk-stat-card">
+                    <span class="bulk-stat-card__label">Empty streak</span>
+                    <strong class="bulk-stat-card__value">{{ emptyStreak() }}/{{ maxEmptyStreak }}</strong>
+                </article>
+            </div>
+
+            <section class="bulk-stream">
+                <div class="bulk-stream__headline">
+                    <span class="material-icons-round">stream</span>
+                    Live archive feed
+                </div>
+                <p class="bulk-stream__text">{{ bulkLastOutcome() }}</p>
+            </section>
+        </section>
+    </div>
+}
 
 <!-- Category Drawer Trigger (always accessible) -->
 <section class="categories-trigger-section">

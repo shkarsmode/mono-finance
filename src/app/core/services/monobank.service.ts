@@ -127,7 +127,7 @@ export class MonobankService {
     public getTransactionsWithRetry(
         month: number,
         year: number,
-        options?: { forceSync?: boolean; includeHold?: boolean }
+        options?: { forceSync?: boolean; includeHold?: boolean; silent?: boolean }
     ): Observable<TransactionsApiResponse> {
         return this.getTransactions(month, year, options).pipe(
             retryWhen(errors =>
@@ -276,9 +276,11 @@ export class MonobankService {
     public getTransactions(
         month: number,
         year?: number,
-        options?: { forceSync?: boolean; includeHold?: boolean }
+        options?: { forceSync?: boolean; includeHold?: boolean; silent?: boolean }
     ): Observable<TransactionsApiResponse> {
-        this.loadingService.loading$.next(true);
+        if (!options?.silent) {
+            this.loadingService.loading$.next(true);
+        }
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const tz = -new Date().getTimezoneOffset(); // e.g. 120 for UTC+2
         let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}`;
@@ -313,17 +315,23 @@ export class MonobankService {
         return request$
             .pipe(
                 tap(({ data, status, message }) => {
-                    this.snackBar.open(message, '✅', {
-                        duration: 5000,
-                        horizontalPosition: 'right',
-                        verticalPosition: 'top',
-                        panelClass: ['green-snackbar'],
-                    });
+                    if (!options?.silent) {
+                        this.snackBar.open(message, '✅', {
+                            duration: 5000,
+                            horizontalPosition: 'right',
+                            verticalPosition: 'top',
+                            panelClass: ['green-snackbar'],
+                        });
+                    }
                     this.currentTransactions$.next(
                         this.removeDuplicatedTransactionsById(data)
                     )
                 }),
-                tap(() => this.loadingService.loading$.next(false))
+                tap(() => {
+                    if (!options?.silent) {
+                        this.loadingService.loading$.next(false);
+                    }
+                })
             );
     }
 
