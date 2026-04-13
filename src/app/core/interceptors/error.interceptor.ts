@@ -26,6 +26,12 @@ export class ErrorInterceptor implements HttpInterceptor {
         return next.handle(request).pipe(
             catchError((error: any) => {
                 this.loadingService.loading$.next(false);
+
+                // Let auth pages handle their own errors
+                if (request.url.includes('/auth/')) {
+                    return throwError(() => error);
+                }
+
                 console.log(error.error);
                 console.log(error.error.statusCode);
                 if (error.error.statusCode === 401) {

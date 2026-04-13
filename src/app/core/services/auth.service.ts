@@ -78,6 +78,15 @@ export class AuthService {
         )
     }
 
+    public registration(
+        userAuthData: { email: string; password: string; monobankToken: string }
+    ): Observable<{ message: string }> {
+        return this.http.post<{ message: string }>(
+            `${this.basePathAPI}/auth/registration`,
+            userAuthData
+        );
+    }
+
     public setToken(token: string): void {
         localStorage.setItem('token', token);
         const id = this.getUserIdFromToken(token);
