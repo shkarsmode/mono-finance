@@ -1,6 +1,7 @@
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { ICategoryGroup } from '@core/interfaces';
+import { CurrencyDisplayService } from '@core/services';
 
 @Component({
     selector: 'app-sidebar-groups-ui',
@@ -10,6 +11,7 @@ import { ICategoryGroup } from '@core/interfaces';
 })
 export class SidebarGroupsUiComponent {
     @Input() groups: ICategoryGroup[] | null;
+    readonly currencyDisplay = inject(CurrencyDisplayService);
 
     @Output() openGroup: EventEmitter<void> = new EventEmitter();
     @Output() changeOrdering: EventEmitter<ICategoryGroup[]> =

@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 
 interface Insight {
@@ -21,7 +22,7 @@ interface Insight {
 @Component({
     selector: 'app-insights',
     standalone: true,
-    imports: [DecimalPipe],
+    imports: [DecimalPipe, DisplayMoneyPipe],
     templateUrl: './insights.component.html',
     styleUrl: './insights.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

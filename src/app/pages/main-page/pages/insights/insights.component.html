@@ -47,12 +47,12 @@
                             <div class="insight-item__metrics">
                                 <span class="metric">
                                     <span class="metric__label">Current</span>
-                                    <span class="metric__value">{{ (insight.value / 100) | number: '1.0-0' }} UAH</span>
+                                    <span class="metric__value">{{ insight.value | displayMoney: 980 : 0 : 2 }}</span>
                                 </span>
                                 @if (insight.previousValue !== undefined) {
                                     <span class="metric">
                                         <span class="metric__label">Previous</span>
-                                        <span class="metric__value">{{ (insight.previousValue / 100) | number: '1.0-0' }} UAH</span>
+                                        <span class="metric__value">{{ insight.previousValue | displayMoney: 980 : 0 : 2 }}</span>
                                     </span>
                                 }
                                 @if (insight.changePercent !== undefined) {

@@ -158,6 +158,10 @@ table.transactions {
 
         &:hover { background: var(--color-surface-hover); }
 
+        &.clickable-row {
+            cursor: pointer;
+        }
+
         &.hold-row {
             opacity: 0.6;
             background: repeating-linear-gradient(

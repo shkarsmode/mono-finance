@@ -1,7 +1,9 @@
 // mcc-analytics.component.ts
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectorRef, Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ChartType } from '@core/enums';
+import { CurrencyDisplayService } from '@core/services';
 import { Subscription } from 'rxjs';
 import { ChartComponent } from '../../pages/main-page/pages/dashboard/components/chart/chart.component';
 import { MccAnalyticsService, MccRow, MonthlyPoint, TrendTarget } from './mcc-analytics.service';
@@ -20,6 +22,8 @@ export default class MccAnalyticsComponent {
     private api = inject(MccAnalyticsService);
     public readonly ChartType: typeof ChartType = ChartType;
     private cdr = inject(ChangeDetectorRef);
+    private readonly route = inject(ActivatedRoute);
+    readonly currencyDisplay = inject(CurrencyDisplayService);
 
     from = signal<string>('2025-01-01'); // yyyy-mm-dd
     to = signal<string>('');
@@ -54,7 +58,7 @@ export default class MccAnalyticsComponent {
     // ==== Trend state (inline panel) ====
     selectedTrendLabel = '';
     expandedKey = signal<string | null>(null);   // 'mcc:5732' / 'merchant:xxx'
-    monthlyTrend: MonthlyPoint[] = [];
+    monthlyTrend = signal<MonthlyPoint[]>([]);
     trendLoading = false;
     trendPercent = signal(0);
     trendCurrent = signal(0); // kept for UI compatibility; equals total when loaded
@@ -66,6 +70,10 @@ export default class MccAnalyticsComponent {
     constructor() {
         const now = new Date();
         this.to.set(now.toISOString().slice(0, 10));
+        const initialSearch = this.route.snapshot.queryParamMap.get('search');
+        if (initialSearch) {
+            this.search.set(initialSearch);
+        }
         this.fetch();
     }
 
@@ -73,11 +81,17 @@ export default class MccAnalyticsComponent {
         this.trendCurrent();
         const max = Math.max(
             0, 
-            ...this.monthlyTrend
+            ...this.displayTrendPoints()
                 .flatMap(p => [p.expense / 100, p.income / 100])
         );
         return Math.ceil(max * 1.05 / 1000) * 1000;
     });
+
+    readonly displayTrendPoints = computed(() => this.monthlyTrend().map(point => ({
+        ...point,
+        income: this.currencyDisplay.convertMinorAmountToMinorUnits(point.income, 980),
+        expense: this.currencyDisplay.convertMinorAmountToMinorUnits(point.expense, 980),
+    })));
 
     // Period for charts (seconds)
     public period = computed(() => {
@@ -110,7 +124,7 @@ export default class MccAnalyticsComponent {
         this.trendSub?.unsubscribe();
         this.expandedKey.set(null);
         this.selectedTrendLabel = '';
-        this.monthlyTrend = [];
+        this.monthlyTrend.set([]);
         this.trendLoading = false;
         this.trendPercent.set(0);
         this.trendCurrent.set(0);
@@ -123,7 +137,7 @@ export default class MccAnalyticsComponent {
         this.trendSub?.unsubscribe();
     
         this.trendLoading = true;
-        this.monthlyTrend = [];
+        this.monthlyTrend.set([]);
         this.trendPercent.set(0);
         this.trendCurrent.set(0);
         this.trendTotal.set(0);
@@ -142,9 +156,9 @@ export default class MccAnalyticsComponent {
                     this.cdr.markForCheck();
                     return;
                 }
-                this.monthlyTrend = ev.points ?? [];
-                this.trendTotal.set(this.monthlyTrend.length);
-                this.trendCurrent.set(this.monthlyTrend.length);
+                this.monthlyTrend.set(ev.points ?? []);
+                this.trendTotal.set(this.monthlyTrend().length);
+                this.trendCurrent.set(this.monthlyTrend().length);
                 this.trendPercent.set(100);
                 this.trendEtaMs.set(0);
                 this.trendLoading = false;
@@ -202,8 +216,12 @@ export default class MccAnalyticsComponent {
         }
     }
 
-    formatUAH(n: number) {
-        return new Intl.NumberFormat('uk-UA', { style: 'currency', currency: 'UAH', maximumFractionDigits: 2 }).format(n);
+    formatAmount(n: number) {
+        return this.currencyDisplay.formatMajorAmount(n, 980);
+    }
+
+    formatMerchantAmount(n: number) {
+        return this.currencyDisplay.formatMajorAmount(n, 980, 0, 2);
     }
 
     exportCsv() {

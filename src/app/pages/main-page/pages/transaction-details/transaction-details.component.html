@@ -1,0 +1,163 @@
+@if (transaction(); as tx) {
+    <section class="transaction-page">
+        <header class="transaction-header">
+            <button class="back-btn" type="button" (click)="goBack()">
+                <span class="material-icons-round">arrow_back</span>
+                Back to dashboard
+            </button>
+
+            <div class="transaction-header__meta">
+                <span class="transaction-header__badge" [class.income]="tx.amount >= 0" [class.expense]="tx.amount < 0">
+                    {{ tx.amount >= 0 ? 'Income' : 'Expense' }}
+                </span>
+                <span class="transaction-header__time">{{ tx.time * 1000 | date: 'MMM d, y • HH:mm' }}</span>
+            </div>
+        </header>
+
+        <section class="hero-card">
+            <div>
+                <p class="hero-card__eyebrow">Transaction Details</p>
+                <h1 class="hero-card__title">{{ tx.description }}</h1>
+                <p class="hero-card__subtitle">{{ merchantDisplay() }}</p>
+            </div>
+
+            <div class="hero-card__amount">
+                <strong>{{ tx.amount | displayMoney: tx.currencyCode }}</strong>
+                <span>{{ formatOriginalMinorAmount(tx.amount, tx.currencyCode) }} original</span>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-card__label">Operation amount</span>
+                <strong class="stat-card__value">{{ tx.operationAmount | displayMoney: tx.currencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.operationAmount, tx.currencyCode) }}</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-card__label">Cashback</span>
+                <strong class="stat-card__value">{{ tx.cashbackAmount | displayMoney: tx.currencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.cashbackAmount, tx.currencyCode) }}</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-card__label">Balance after payment</span>
+                <strong class="stat-card__value">{{ tx.balance | displayMoney: tx.currencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.balance, tx.currencyCode) }}</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-card__label">Commission</span>
+                <strong class="stat-card__value">{{ tx.commissionRate | displayMoney: tx.currencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.commissionRate, tx.currencyCode) }}</span>
+            </article>
+        </section>
+
+        <div class="details-grid">
+            <section class="panel">
+                <div class="panel__header">
+                    <div>
+                        <p class="panel__eyebrow">MCC</p>
+                        <h2 class="panel__title">{{ tx.mcc }} - {{ mccLabel() }}</h2>
+                    </div>
+                    <button class="panel__action" type="button" (click)="openMerchantSearch()">
+                        <span class="material-icons-round">travel_explore</span>
+                        Explore analytics
+                    </button>
+                </div>
+
+                <p class="panel__text">
+                    MCC is the merchant category code. It explains what kind of business the bank attached to this payment.
+                </p>
+
+                <dl class="meta-list">
+                    <div class="meta-row">
+                        <dt>Merchant category</dt>
+                        <dd>{{ mccLabel() }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Original MCC</dt>
+                        <dd>{{ tx.originalMcc || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Merchant key</dt>
+                        <dd>{{ tx.merchantKey || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Currency</dt>
+                        <dd>{{ originalCurrencyCode() }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="panel">
+                <div class="panel__header">
+                    <div>
+                        <p class="panel__eyebrow">Identifiers</p>
+                        <h2 class="panel__title">Technical info</h2>
+                    </div>
+                </div>
+
+                <dl class="meta-list">
+                    <div class="meta-row">
+                        <dt>Transaction ID</dt>
+                        <dd>{{ tx.id }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Receipt ID</dt>
+                        <dd>{{ tx.receiptId || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Invoice ID</dt>
+                        <dd>{{ tx.invoiceId || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Hold status</dt>
+                        <dd>{{ tx.hold ? 'Hold' : 'Booked' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Comment</dt>
+                        <dd>{{ tx.comment || 'n/a' }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="panel panel--wide">
+                <div class="panel__header">
+                    <div>
+                        <p class="panel__eyebrow">Counterparty</p>
+                        <h2 class="panel__title">Merchant and bank side</h2>
+                    </div>
+                </div>
+
+                <dl class="meta-list meta-list--two">
+                    <div class="meta-row">
+                        <dt>Merchant name</dt>
+                        <dd>{{ tx.merchantName || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>Counterparty name</dt>
+                        <dd>{{ tx.counterName || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>EDRPOU</dt>
+                        <dd>{{ tx.counterEdrpou || 'n/a' }}</dd>
+                    </div>
+                    <div class="meta-row">
+                        <dt>IBAN</dt>
+                        <dd>{{ tx.counterIban || 'n/a' }}</dd>
+                    </div>
+                </dl>
+            </section>
+        </div>
+    </section>
+} @else {
+    <section class="missing-state">
+        <span class="material-icons-round">receipt_long</span>
+        <h1>Transaction not found</h1>
+        <p>
+            We could not restore transaction <strong>{{ transactionId() }}</strong>. Open it again from the transaction list.
+        </p>
+        <button class="back-btn" type="button" (click)="goBack()">
+            <span class="material-icons-round">arrow_back</span>
+            Back to dashboard
+        </button>
+    </section>
+}

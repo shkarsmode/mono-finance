@@ -1,59 +1,81 @@
 <section class="calendar-page">
-    <div class="calendar-header">
-        <h1 class="page-title">
-            <span class="material-icons-round">calendar_month</span>
-            Money Calendar
-        </h1>
+    <header class="calendar-header">
+        <div>
+            <h1 class="page-title">
+                <span class="material-icons-round">calendar_month</span>
+                Money Calendar
+            </h1>
+            <p class="page-subtitle">
+                Month overview with daily heat, selected-day summary and the active card feed below.
+            </p>
+        </div>
+
         <div class="month-nav">
-            <button class="nav-btn" (click)="prevMonth()">
+            <button class="nav-btn" type="button" (click)="prevMonth()">
                 <span class="material-icons-round">chevron_left</span>
             </button>
             <span class="month-label">{{ monthName() }} {{ activeYear() }}</span>
-            <button class="nav-btn" (click)="nextMonth()">
+            <button class="nav-btn" type="button" (click)="nextMonth()">
                 <span class="material-icons-round">chevron_right</span>
             </button>
         </div>
-    </div>
+    </header>
 
     @if (loading()) {
-        <div class="calendar-skeleton">
-            @for (i of [1,2,3,4,5]; track i) {
-                <div class="skeleton-row">
-                    @for (j of [1,2,3,4,5,6,7]; track j) {
-                        <div class="skeleton-cell"></div>
-                    }
-                </div>
-            }
-        </div>
+        <section class="calendar-loading">
+            <div class="calendar-loading__hero">
+                <div class="calendar-loading__badge">Preparing the month view</div>
+                <div class="calendar-loading__headline"></div>
+                <div class="calendar-loading__subline"></div>
+            </div>
+
+            <div class="totals-skeleton">
+                @for (i of [1, 2, 3, 4]; track i) {
+                    <div class="totals-skeleton__item"></div>
+                }
+            </div>
+
+            <div class="calendar-skeleton">
+                @for (i of [1, 2, 3, 4, 5]; track i) {
+                    <div class="skeleton-row">
+                        @for (j of [1, 2, 3, 4, 5, 6, 7]; track j) {
+                            <div class="skeleton-cell"></div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="transactions-skeleton">
+                @for (i of [1, 2, 3]; track i) {
+                    <div class="transactions-skeleton__row"></div>
+                }
+            </div>
+        </section>
     } @else if (calendarData()) {
-        <!-- Totals bar -->
         <div class="totals-bar">
             <div class="total-item">
                 <span class="total-label">Income</span>
-                <span class="total-value income">{{ (calendarData()!.totals.income / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value income">{{ calendarData()!.totals.income / 100 | displayMoneyMajor: 980 }}</span>
             </div>
             <div class="total-item">
                 <span class="total-label">Expenses</span>
-                <span class="total-value expense">{{ (calendarData()!.totals.expense / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value expense">{{ calendarData()!.totals.expense / 100 | displayMoneyMajor: 980 }}</span>
             </div>
             <div class="total-item">
                 <span class="total-label">Avg Daily</span>
-                <span class="total-value">{{ (calendarData()!.totals.avgDailySpend / 100) | number: '1.0-0' }} ₴</span>
+                <span class="total-value">{{ calendarData()!.totals.avgDailySpend / 100 | displayMoneyMajor: 980 }}</span>
             </div>
             <div class="total-item">
-                <span class="total-label">Active Days</span>
-                <span class="total-value">{{ calendarData()!.totals.activeDays }}</span>
+                <span class="total-label">Transactions</span>
+                <span class="total-value">{{ calendarData()!.totals.txCount }}</span>
             </div>
         </div>
 
-        <!-- Calendar grid -->
         <div class="calendar-grid">
-            <!-- Weekday headers -->
-            @for (wd of weekdays; track wd) {
-                <div class="weekday-header">{{ wd }}</div>
+            @for (weekday of weekdays; track weekday) {
+                <div class="weekday-header">{{ weekday }}</div>
             }
 
-            <!-- Day cells -->
             @for (cell of calendarGrid(); track $index) {
                 @if (cell) {
                     <div class="day-cell"
@@ -63,9 +85,9 @@
                          (click)="selectDay(cell)">
                         <span class="day-number">{{ cell.dayOfMonth }}</span>
                         @if (cell.txCount > 0) {
-                            <span class="day-expense">-{{ (cell.expense / 100) | number: '1.0-0' }}</span>
+                            <span class="day-expense">-{{ cell.expense / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
                             @if (cell.income > 0) {
-                                <span class="day-income">+{{ (cell.income / 100) | number: '1.0-0' }}</span>
+                                <span class="day-income">+{{ cell.income / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
                             }
                         }
                     </div>
@@ -75,23 +97,28 @@
             }
         </div>
 
-        <!-- Day detail panel -->
         @if (selectedDay(); as day) {
             <div class="day-detail">
-                <h3 class="day-detail__date">{{ day.date }}</h3>
+                <div class="day-detail__heading">
+                    <div>
+                        <h3 class="day-detail__date">{{ day.date }}</h3>
+                        <p class="day-detail__subtitle">{{ selectedDaySummary() }}</p>
+                    </div>
+                </div>
+
                 <div class="day-detail__grid">
                     <div class="detail-stat">
                         <span class="detail-stat__label">Expenses</span>
-                        <span class="detail-stat__value expense">{{ (day.expense / 100) | number: '1.2-2' }} ₴</span>
+                        <span class="detail-stat__value expense">{{ day.expense / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
                     <div class="detail-stat">
                         <span class="detail-stat__label">Income</span>
-                        <span class="detail-stat__value income">{{ (day.income / 100) | number: '1.2-2' }} ₴</span>
+                        <span class="detail-stat__value income">{{ day.income / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
                     <div class="detail-stat">
                         <span class="detail-stat__label">Net</span>
                         <span class="detail-stat__value" [class.income]="day.net > 0" [class.expense]="day.net < 0">
-                            {{ (day.net / 100) | number: '1.2-2' }} ₴
+                            {{ day.net / 100 | displayMoneyMajor: 980 }}
                         </span>
                     </div>
                     <div class="detail-stat">
@@ -99,6 +126,7 @@
                         <span class="detail-stat__value">{{ day.txCount }}</span>
                     </div>
                 </div>
+
                 @if (day.topMerchant) {
                     <p class="day-detail__merchant">
                         <span class="material-icons-round">storefront</span>
@@ -107,5 +135,51 @@
                 }
             </div>
         }
+
+        <section class="calendar-transactions">
+            <div class="calendar-transactions__header">
+                <div>
+                    <h2 class="section-title">
+                        <span class="material-icons-round">receipt_long</span>
+                        Month transactions
+                    </h2>
+                    <p class="calendar-transactions__subtitle">
+                        Full feed for the active card in {{ monthName() }} {{ activeYear() }}.
+                    </p>
+                </div>
+                <div class="calendar-transactions__meta">
+                    <span class="calendar-transactions__badge">{{ monthTransactions().length }} rows</span>
+                    @if (selectedDaySummary(); as summary) {
+                        <span class="calendar-transactions__badge calendar-transactions__badge--soft">{{ summary }}</span>
+                    }
+                </div>
+            </div>
+
+            @if (transactionError()) {
+                <div class="calendar-transactions__empty">
+                    <span class="material-icons-round">credit_card_off</span>
+                    <p>{{ transactionError() }}</p>
+                </div>
+            } @else if (monthTransactions().length) {
+                <app-transactions
+                    [allowGroupFilter]="false"
+                    [title]="'Active Card Feed'"
+                    [sortByValue]="transactionSortBy()"
+                    [transactions]="
+                        monthTransactions()
+                            | transactionsFilter: transactionSearch()
+                            | transactionsSortBy: transactionSortBy() : transactionSortDirection()
+                    "
+                    (searchTransactions)="onSearchTransactions($event)"
+                    (sortBy)="onSortTransactions($event)"
+                    (openTransaction)="onOpenTransaction($event)">
+                </app-transactions>
+            } @else {
+                <div class="calendar-transactions__empty">
+                    <span class="material-icons-round">event_busy</span>
+                    <p>No active-card transactions were found for this month.</p>
+                </div>
+            }
+        </section>
     }
 </section>

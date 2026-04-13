@@ -49,9 +49,19 @@ export const routes: Routes = [
                     import('./pages/main-page/pages/calendar/calendar.component'),
             },
             {
+                path: 'changelog',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/changelog/changelog.component'),
+            },
+            {
                 path: 'profile',
                 loadComponent: () =>
                     import('./pages/main-page/pages/profile/profile.component'),
+            },
+            {
+                path: 'transactions/:id',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/transaction-details/transaction-details.component'),
             },
         ],
     },

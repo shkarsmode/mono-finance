@@ -40,6 +40,7 @@ type TransactionsRequestOptions = {
     forceSync?: boolean;
     includeHold?: boolean;
     silent?: boolean;
+    store?: boolean;
 };
 
 type SyncTransactionsRequestOptions = {
@@ -66,6 +67,7 @@ export class MonobankService {
 
     private readonly _rateLimitCooldown$ = new BehaviorSubject<number>(0);
     public readonly rateLimitCooldown$ = this._rateLimitCooldown$.asObservable();
+    private readonly transactionSnapshotStorageKey = 'finance-transaction-snapshots';
 
     constructor(
         private readonly router: Router,
@@ -333,9 +335,10 @@ export class MonobankService {
                             panelClass: ['green-snackbar'],
                         });
                     }
-                    this.currentTransactions$.next(
-                        this.removeDuplicatedTransactionsById(data)
-                    )
+                    const uniqueTransactions = this.removeDuplicatedTransactionsById(data);
+                    if (options?.store !== false) {
+                        this.currentTransactions$.next(uniqueTransactions);
+                    }
                 }),
                 tap(() => {
                     if (!options?.silent) {
@@ -378,6 +381,22 @@ export class MonobankService {
                 }
             }),
         );
+    }
+
+    public rememberTransaction(transaction: ITransaction): void {
+        const snapshots = this.readTransactionSnapshots();
+        snapshots[transaction.id] = transaction;
+        sessionStorage.setItem(this.transactionSnapshotStorageKey, JSON.stringify(snapshots));
+    }
+
+    public resolveTransactionSnapshot(transactionId: string): ITransaction | null {
+        const currentTransactions = this.currentTransactions$.value as ITransaction[];
+        const fromCurrent = currentTransactions?.find?.(transaction => transaction.id === transactionId);
+        if (fromCurrent) {
+            return fromCurrent;
+        }
+
+        return this.readTransactionSnapshots()[transactionId] ?? null;
     }
 
     private shouldSendQuery(key: LocalStorage): boolean {
@@ -446,6 +465,15 @@ export class MonobankService {
 
     private getLocalStorageData(key: LocalStorage): any {
         return this.localStorageService.get(key);
+    }
+
+    private readTransactionSnapshots(): Record<string, ITransaction> {
+        try {
+            const raw = sessionStorage.getItem(this.transactionSnapshotStorageKey);
+            return raw ? JSON.parse(raw) : {};
+        } catch {
+            return {};
+        }
     }
 
     private updateLocalStorage(key: LocalStorage, value: any): void {

@@ -1,0 +1,179 @@
+:host {
+    display: block;
+}
+
+.changelog-page {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-4);
+    align-items: end;
+    margin-bottom: var(--space-6);
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: calc(var(--radius-md) + 4px);
+    background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 42%),
+        var(--color-surface);
+
+    @media (max-width: 767px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.hero__eyebrow {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+}
+
+.hero__title {
+    margin: 0;
+    font-size: clamp(1.8rem, 2vw + 1rem, 2.6rem);
+    line-height: 1.05;
+    color: var(--color-text-primary);
+}
+
+.hero__subtitle {
+    max-width: 640px;
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+}
+
+.hero__meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+    gap: var(--space-3);
+}
+
+.hero-stat {
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-surface) 88%, var(--color-background));
+}
+
+.hero-stat__label {
+    display: block;
+    margin-bottom: var(--space-1);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.hero-stat__value {
+    font-size: var(--text-xl);
+    color: var(--color-text-primary);
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.release-card {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: stretch;
+}
+
+.release-card__rail {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.release-card__rail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: calc(var(--space-5) * -1);
+    width: 1px;
+    background: color-mix(in srgb, var(--color-border) 75%, transparent);
+}
+
+.release-card:last-child .release-card__rail::after {
+    display: none;
+}
+
+.release-card__dot {
+    position: relative;
+    z-index: 1;
+    width: 12px;
+    height: 12px;
+    margin-top: var(--space-5);
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.release-card__body {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.release-card__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+
+    @media (max-width: 600px) {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.release-card__version {
+    padding: 6px 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.release-card__date {
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
+}
+
+.release-card__title {
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-primary);
+    font-size: var(--text-lg);
+}
+
+.release-card__summary {
+    margin: 0 0 var(--space-4);
+    color: var(--color-text-secondary);
+    line-height: 1.65;
+}
+
+.release-card__points {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--color-text-secondary);
+    line-height: 1.7;
+}
+
+.release-card__points li + li {
+    margin-top: var(--space-2);
+}

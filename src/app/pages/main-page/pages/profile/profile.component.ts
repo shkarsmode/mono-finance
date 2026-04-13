@@ -1,4 +1,5 @@
 import { AsyncPipe, DecimalPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import {
     ChangeDetectionStrategy, Component, computed,
     DestroyRef, inject, OnInit, signal
@@ -7,13 +8,16 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { IAccountInfo, ITransaction } from '@core/interfaces';
 import { AuthService } from '@core/services/auth.service';
+import { CurrencyDisplayService } from '@core/services/currency-display.service';
 import { MonobankService } from '@core/services/monobank.service';
 import { ThemeService } from '@core/services/theme.service';
+import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
+import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [AsyncPipe, DecimalPipe],
+    imports: [AsyncPipe, DecimalPipe, DisplayMoneyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         <div class="profile-page">
@@ -25,7 +29,6 @@ import { ThemeService } from '@core/services/theme.service';
                 <p class="profile-sub">Monobank • Personal Finance</p>
             </header>
 
-            <!-- Settings -->
             <section class="section">
                 <h2 class="section__title">
                     <span class="material-icons-round">settings</span>
@@ -33,7 +36,6 @@ import { ThemeService } from '@core/services/theme.service';
                 </h2>
 
                 <div class="settings-grid">
-                    <!-- Theme -->
                     <div class="setting-card">
                         <div class="setting-card__icon">
                             <span class="material-icons-round">
@@ -49,7 +51,6 @@ import { ThemeService } from '@core/services/theme.service';
                         </button>
                     </div>
 
-                    <!-- Balance blur -->
                     <div class="setting-card">
                         <div class="setting-card__icon">
                             <span class="material-icons-round">visibility_off</span>
@@ -65,19 +66,18 @@ import { ThemeService } from '@core/services/theme.service';
                         </button>
                     </div>
 
-                    <!-- Currency display -->
                     <div class="setting-card setting-card--clickable" (click)="cycleCurrency()">
                         <div class="setting-card__icon">
                             <span class="material-icons-round">currency_exchange</span>
                         </div>
                         <div class="setting-card__info">
                             <span class="setting-card__label">Currency Display</span>
-                            <span class="setting-card__value">{{ currencyLabel() }}</span>
+                            <span class="setting-card__value">{{ currencyDisplay.selectedLabel() }}</span>
+                            <span class="setting-card__value">{{ currencyDisplay.rateHint() }}</span>
                         </div>
                         <span class="material-icons-round setting-card__arrow">chevron_right</span>
                     </div>
 
-                    <!-- Compact mode -->
                     <div class="setting-card">
                         <div class="setting-card__icon">
                             <span class="material-icons-round">dashboard_customize</span>
@@ -95,7 +95,6 @@ import { ThemeService } from '@core/services/theme.service';
                 </div>
             </section>
 
-            <!-- Statistics -->
             <section class="section">
                 <h2 class="section__title">
                     <span class="material-icons-round">bar_chart</span>
@@ -128,13 +127,12 @@ import { ThemeService } from '@core/services/theme.service';
                         <span class="stat-card__icon material-icons-round">receipt_long</span>
                         <div class="stat-card__info">
                             <span class="stat-card__value">{{ totalTransactions() }}</span>
-                            <span class="stat-card__label">Transactions loaded</span>
+                            <span class="stat-card__label">Transactions this year</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Jars overview -->
             @if (jars().length) {
                 <section class="section">
                     <h2 class="section__title">
@@ -160,9 +158,9 @@ import { ThemeService } from '@core/services/theme.service';
                                     </div>
                                 }
                                 <div class="jar-card__amounts">
-                                    <span class="jar-card__balance">{{ jar.balance / 100 | number: '1.2-2' }}</span>
+                                    <span class="jar-card__balance">{{ jar.balance | displayMoney: jar.currencyCode }}</span>
                                     @if (jar.goal > 0) {
-                                        <span class="jar-card__goal">/ {{ jar.goal / 100 | number: '1.0-0' }}</span>
+                                        <span class="jar-card__goal">/ {{ jar.goal | displayMoney: jar.currencyCode : 0 : 2 }}</span>
                                     }
                                 </div>
                             </div>
@@ -171,7 +169,6 @@ import { ThemeService } from '@core/services/theme.service';
                 </section>
             }
 
-            <!-- Danger zone -->
             <section class="section section--danger">
                 <h2 class="section__title">
                     <span class="material-icons-round">warning</span>
@@ -193,7 +190,6 @@ import { ThemeService } from '@core/services/theme.service';
             padding-bottom: var(--space-8);
         }
 
-        /* Header */
         .profile-header {
             display: flex;
             flex-direction: column;
@@ -210,7 +206,11 @@ import { ThemeService } from '@core/services/theme.service';
             display: flex;
             align-items: center;
             justify-content: center;
-            .material-icons-round { font-size: 36px; color: var(--color-primary); }
+
+            .material-icons-round {
+                font-size: 36px;
+                color: var(--color-primary);
+            }
         }
 
         .profile-name {
@@ -224,7 +224,6 @@ import { ThemeService } from '@core/services/theme.service';
             color: var(--color-text-tertiary);
         }
 
-        /* Sections */
         .section {
             margin-bottom: var(--space-6);
         }
@@ -237,10 +236,13 @@ import { ThemeService } from '@core/services/theme.service';
             font-weight: 600;
             color: var(--color-text-primary);
             margin-bottom: var(--space-4);
-            .material-icons-round { font-size: 22px; color: var(--color-primary); }
+
+            .material-icons-round {
+                font-size: 22px;
+                color: var(--color-primary);
+            }
         }
 
-        /* Settings grid */
         .settings-grid {
             display: flex;
             flex-direction: column;
@@ -256,11 +258,17 @@ import { ThemeService } from '@core/services/theme.service';
             border: 1px solid var(--color-border);
             border-radius: var(--radius-md);
             transition: border-color var(--duration-fast);
-            &:hover { border-color: var(--color-primary); }
+
+            &:hover {
+                border-color: var(--color-primary);
+            }
 
             &--clickable {
                 cursor: pointer;
-                &:active { transform: scale(0.99); }
+
+                &:active {
+                    transform: scale(0.99);
+                }
             }
         }
 
@@ -279,7 +287,11 @@ import { ThemeService } from '@core/services/theme.service';
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            .material-icons-round { font-size: 20px; color: var(--color-primary); }
+
+            .material-icons-round {
+                font-size: 20px;
+                color: var(--color-primary);
+            }
         }
 
         .setting-card__info {
@@ -300,7 +312,6 @@ import { ThemeService } from '@core/services/theme.service';
             color: var(--color-text-tertiary);
         }
 
-        /* Toggle */
         .toggle {
             width: 44px;
             height: 24px;
@@ -332,7 +343,6 @@ import { ThemeService } from '@core/services/theme.service';
             transform: translateX(20px);
         }
 
-        /* Stats grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -374,7 +384,6 @@ import { ThemeService } from '@core/services/theme.service';
             color: var(--color-text-tertiary);
         }
 
-        /* Jars */
         .jars-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -428,6 +437,7 @@ import { ThemeService } from '@core/services/theme.service';
             display: flex;
             gap: var(--space-1);
             align-items: baseline;
+            flex-wrap: wrap;
         }
 
         .jar-card__balance {
@@ -441,11 +451,13 @@ import { ThemeService } from '@core/services/theme.service';
             color: var(--color-text-tertiary);
         }
 
-        /* Danger zone */
         .section--danger {
             padding-top: var(--space-5);
             border-top: 1px solid var(--color-border);
-            .section__title .material-icons-round { color: var(--color-error); }
+
+            .section__title .material-icons-round {
+                color: var(--color-error);
+            }
         }
 
         .btn {
@@ -458,13 +470,17 @@ import { ThemeService } from '@core/services/theme.service';
             font-weight: 500;
             cursor: pointer;
             transition: all var(--duration-fast);
-            .material-icons-round { font-size: 16px; }
+
+            .material-icons-round {
+                font-size: 16px;
+            }
         }
 
         .btn--danger {
             background: var(--color-error-subtle);
             color: var(--color-error);
             border: 1px solid transparent;
+
             &:hover {
                 background: var(--color-error);
                 color: #fff;
@@ -484,32 +500,25 @@ export default class ProfileComponent implements OnInit {
     private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly http = inject(HttpClient);
+    private readonly baseApi = inject(BASE_PATH_API);
+    readonly currencyDisplay = inject(CurrencyDisplayService);
 
     readonly clientInfo = signal<IAccountInfo | null>(null);
     readonly transactions = signal<ITransaction[]>([]);
+    readonly yearlyTransactionsCount = signal<number | null>(null);
     readonly balanceBlurred = signal(localStorage.getItem('finance-blur-balance') === 'true');
     readonly compactMode = signal(localStorage.getItem('finance-compact') === 'true');
     readonly isDark = computed(() => this.themeService.theme() === 'dark');
-
-    readonly currencyOptions = [
-        { code: 'UAH', label: 'UAH — Ukrainian Hryvnia', symbol: '₴' },
-        { code: 'USD', label: 'USD — US Dollar', symbol: '$' },
-        { code: 'EUR', label: 'EUR — Euro', symbol: '€' },
-    ];
-    readonly currencyIndex = signal(
-        Math.max(0, this.currencyOptions.findIndex(c => c.code === (localStorage.getItem('finance-currency') ?? 'UAH')))
-    );
-    readonly currencyLabel = computed(() => this.currencyOptions[this.currencyIndex()].label);
 
     readonly clientName = computed(() => this.clientInfo()?.name ?? 'User');
     readonly totalAccounts = computed(() => this.clientInfo()?.accounts?.length ?? 0);
     readonly totalJars = computed(() => this.clientInfo()?.jars?.length ?? 0);
     readonly totalCategories = computed(() => this.clientInfo()?.categoryGroups?.length ?? 0);
-    readonly totalTransactions = computed(() => this.transactions().length);
+    readonly totalTransactions = computed(() => this.yearlyTransactionsCount() ?? this.transactions().length);
     readonly jars = computed(() => this.clientInfo()?.jars ?? []);
 
     ngOnInit(): void {
-        // Restore persisted classes
         if (this.balanceBlurred()) {
             document.documentElement.classList.add('balance-blurred');
         }
@@ -524,6 +533,8 @@ export default class ProfileComponent implements OnInit {
         this.monobankService.currentTransactions$
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(txs => this.transactions.set(txs));
+
+        this.loadYearlyTransactionsCount();
     }
 
     toggleTheme(): void {
@@ -545,13 +556,32 @@ export default class ProfileComponent implements OnInit {
     }
 
     cycleCurrency(): void {
-        const next = (this.currencyIndex() + 1) % this.currencyOptions.length;
-        this.currencyIndex.set(next);
-        localStorage.setItem('finance-currency', this.currencyOptions[next].code);
+        this.currencyDisplay.cycleCurrency();
+        this.currencyDisplay.refreshRates(true);
     }
 
     logout(): void {
         this.authService.logout();
         this.router.navigateByUrl('/login');
+    }
+
+    private loadYearlyTransactionsCount(): void {
+        const now = new Date();
+        const from = `${now.getFullYear()}-01-01`;
+        const to = now.toISOString().slice(0, 10);
+
+        this.http.get<{ totals?: { txCount?: number } }>(
+            `${this.baseApi}/analytics/mcc-table`,
+            { params: { from, to } },
+        )
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.yearlyTransactionsCount.set(response?.totals?.txCount ?? 0);
+                },
+                error: () => {
+                    this.yearlyTransactionsCount.set(this.transactions().length);
+                },
+            });
     }
 }

@@ -25,7 +25,7 @@
                 <span class="groups-item__emoji emoji">{{ group.emoji }}</span>
                 <span class="groups-item__text">{{ group.title }}</span>
             </div>
-            <div class="groups-item__amount">{{  group.amount / 100}} UAH</div>
+            <div class="groups-item__amount">{{ currencyDisplay.formatMinorAmount(group.amount, 980, 0, 2) }}</div>
         </li>
     }
     <div class="info">Double click to delete group</div>

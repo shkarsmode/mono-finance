@@ -38,6 +38,7 @@ export class MainPageComponent implements OnInit {
         { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
         { path: '/insights', icon: 'psychology', label: 'Insights' },
         { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
+        { path: '/changelog', icon: 'timeline', label: 'Changes' },
         { path: '/profile', icon: 'person', label: 'Profile' },
     ];
 

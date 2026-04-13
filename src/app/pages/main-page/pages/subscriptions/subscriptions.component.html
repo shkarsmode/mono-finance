@@ -24,7 +24,9 @@
         <div class="summary-card">
             <span class="summary-card__icon material-icons-round">calendar_month</span>
             <div class="summary-card__info">
-                <span class="summary-card__value">{{ (totalMonthly() / 100) | number: '1.2-2' }} UAH</span>
+                <span class="summary-card__value">
+                    {{ totalMonthly() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
+                </span>
                 <span class="summary-card__label">Monthly total</span>
             </div>
         </div>
@@ -63,7 +65,7 @@
                         </div>
                     </div>
                     <span class="upcoming-item__amount">
-                        {{ (sub.averageAmount / 100) | number: '1.2-2' }} {{ getCurrencyName(sub.currency) }}
+                        {{ sub.averageAmount | displayMoney: sub.currency }}
                     </span>
                 </div>
             }
@@ -109,7 +111,7 @@
                     </div>
 
                     <div class="sub-card__amount">
-                        {{ (sub.averageAmount / 100) | number: '1.2-2' }}
+                        {{ sub.averageAmount | displayMoney: sub.currency }}
                         <span class="sub-card__currency">{{ getCurrencyName(sub.currency) }}</span>
                     </div>
 

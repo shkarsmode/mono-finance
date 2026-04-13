@@ -188,21 +188,27 @@
                 <span class="insight-card__icon material-icons-round">trending_down</span>
                 <div class="insight-card__content">
                     <span class="insight-card__label">Total Expenses</span>
-                    <span class="insight-card__value expense">{{ (totalExpenses() / 100) | number: '1.2-2' }} UAH</span>
+                    <span class="insight-card__value expense">
+                        {{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
+                    </span>
                 </div>
             </div>
             <div class="insight-card insight-card--income">
                 <span class="insight-card__icon material-icons-round">trending_up</span>
                 <div class="insight-card__content">
                     <span class="insight-card__label">Total Income</span>
-                    <span class="insight-card__value income">{{ (totalIncome() / 100) | number: '1.2-2' }} UAH</span>
+                    <span class="insight-card__value income">
+                        {{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
+                    </span>
                 </div>
             </div>
             <div class="insight-card">
                 <span class="insight-card__icon material-icons-round">today</span>
                 <div class="insight-card__content">
                     <span class="insight-card__label">Avg. Daily Spend</span>
-                    <span class="insight-card__value">{{ (averageDailySpend() / 100) | number: '1.0-0' }} UAH</span>
+                    <span class="insight-card__value">
+                        {{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 2 }}
+                    </span>
                 </div>
             </div>
             @if (biggestExpense(); as biggest) {
@@ -210,7 +216,7 @@
                     <span class="insight-card__icon material-icons-round">priority_high</span>
                     <div class="insight-card__content">
                         <span class="insight-card__label">Biggest Expense</span>
-                        <span class="insight-card__value expense">{{ (biggest.amount / 100) | number: '1.2-2' }} UAH</span>
+                        <span class="insight-card__value expense">{{ biggest.amount | displayMoney: biggest.currencyCode }}</span>
                         <span class="insight-card__sub">{{ biggest.description }}</span>
                     </div>
                 </div>
@@ -230,6 +236,7 @@
             (searchTransactions)="onSearchTransaction($event)"
             (selectValueChange)="onSelectValueChange($event)"
             (sortBy)="onSortTransactionsBy($event)"
+            (openTransaction)="onOpenTransaction($event)"
             (selectMonth)="onSelectMonth($event)"
             (selectYear)="onSelectYear($event)"
             #transactionsRef>
@@ -238,13 +245,15 @@
         <div class="charts-col">
             @defer (on viewport) {
                 <app-chart
-                    [transactions]="transactions() | transactionsFilter: searchValue()"
+                    [transactions]="chartTransactions() | transactionsFilter: searchValue()"
                     [label]="'Monthly Income'"
+                    [currency]="currencyDisplay.selectedCode()"
                     [type]="ChartType.Income">
                 </app-chart>
                 <app-chart
-                    [transactions]="transactions() | transactionsFilter: searchValue()"
+                    [transactions]="chartTransactions() | transactionsFilter: searchValue()"
                     [label]="'Monthly Expenses'"
+                    [currency]="currencyDisplay.selectedCode()"
                     [type]="ChartType.Expenses">
                 </app-chart>
             } @placeholder {
@@ -299,7 +308,7 @@
                                 <span class="drawer-category__amount"
                                       [class.expense]="group.amount < 0"
                                       [class.income]="group.amount > 0">
-                                    {{ (group.amount / 100) | number: '1.2-2' }} UAH
+                                    {{ group.amount | displayMoney: 980 }}
                                 </span>
                             </div>
                         }

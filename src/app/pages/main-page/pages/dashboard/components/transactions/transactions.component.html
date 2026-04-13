@@ -1,7 +1,7 @@
 <div class="top">
     <div class="top__title">
         <span class="material-icons-round">receipt_long</span>
-        Transactions
+        {{ title }}
     </div>
     <div class="wrap-input">
         <span class="wrap-input__icon material-icons-round">search</span>
@@ -20,26 +20,28 @@
     </div>
 </div>
 
-<div class="filters">
-    <mat-checkbox
-        (change)="onFilterGroupsChange($event)"
-        [checked]="isFilterByGroups">
-        {{ isFilterByGroups ? '' : 'Filter by groups' }}
-    </mat-checkbox>
-    @if (isFilterByGroups) {
-        <mat-form-field>
-            <mat-label>Groups</mat-label>
-            <mat-select (valueChange)="onSelectValueChange($event)" multiple>
-                @for (group of groups; track group.title) {
-                    <mat-option [value]="group.keys.join()">
-                        <span>{{ group.emoji }}</span>
-                        <span>{{ group.title }}</span>
-                    </mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
-    }
-</div>
+@if (allowGroupFilter && groups?.length) {
+    <div class="filters">
+        <mat-checkbox
+            (change)="onFilterGroupsChange($event)"
+            [checked]="isFilterByGroups">
+            {{ isFilterByGroups ? '' : 'Filter by groups' }}
+        </mat-checkbox>
+        @if (isFilterByGroups) {
+            <mat-form-field>
+                <mat-label>Groups</mat-label>
+                <mat-select (valueChange)="onSelectValueChange($event)" multiple>
+                    @for (group of groups; track group.title) {
+                        <mat-option [value]="group.keys.join()">
+                            <span>{{ group.emoji }}</span>
+                            <span>{{ group.title }}</span>
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+        }
+    </div>
+}
 
 <div class="table-wrap">
     <table class="transactions">
@@ -71,7 +73,9 @@
             @for (transaction of transactions; track transaction.id) {
                 <tr [matTooltip]="transaction.comment ?? ''"
                     matTooltipPosition="left"
-                    [class.hold-row]="transaction.hold">
+                    [class.hold-row]="transaction.hold"
+                    [class.clickable-row]="true"
+                    (click)="onTransactionClick(transaction)">
                     <td class="desc-cell">
                         {{ transaction.description }}
                         @if (transaction.hold) {
@@ -95,14 +99,14 @@
                         </td>
                     }
                     <td class="amount-cell" [class.sent]="transaction.amount < 0">
-                        {{ transaction.amount / 100 }} UAH
+                        {{ transaction.amount | displayMoney: transaction.currencyCode }}
                         @if (transaction.cashbackAmount > 0) {
-                            <span class="cashback">+{{ transaction.cashbackAmount / 100 }}</span>
+                            <span class="cashback">+{{ transaction.cashbackAmount | displayMoney: transaction.currencyCode : 0 : 2 }}</span>
                         }
                     </td>
                     @if (!isSmallScreen) {
                         <td class="balance-cell">
-                            {{ transaction.balance / 100 | number: '1.0-0' }}
+                            {{ transaction.balance | displayMoney: transaction.currencyCode : 0 : 2 }}
                         </td>
                     }
                 </tr>

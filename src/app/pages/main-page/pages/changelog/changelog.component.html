@@ -1,0 +1,48 @@
+<section class="changelog-page">
+    <header class="hero">
+        <div class="hero__copy">
+            <p class="hero__eyebrow">Project Changelog</p>
+            <h1 class="hero__title">Recent product changes</h1>
+            <p class="hero__subtitle">
+                A clean timeline of the updates that shaped the current finance flow.
+            </p>
+        </div>
+
+        <div class="hero__meta">
+            <div class="hero-stat">
+                <span class="hero-stat__label">Releases</span>
+                <strong class="hero-stat__value">{{ entries.length }}</strong>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat__label">Latest</span>
+                <strong class="hero-stat__value">{{ entries[0].version }}</strong>
+            </div>
+        </div>
+    </header>
+
+    <section class="timeline" aria-label="Release timeline">
+        @for (entry of entries; track entry.version) {
+            <article class="release-card">
+                <div class="release-card__rail">
+                    <span class="release-card__dot"></span>
+                </div>
+
+                <div class="release-card__body">
+                    <div class="release-card__topline">
+                        <span class="release-card__version">{{ entry.version }}</span>
+                        <span class="release-card__date">{{ entry.shippedAt | date: 'd MMM y' }}</span>
+                    </div>
+
+                    <h2 class="release-card__title">{{ entry.title }}</h2>
+                    <p class="release-card__summary">{{ entry.summary }}</p>
+
+                    <ul class="release-card__points">
+                        @for (point of entry.points; track point) {
+                            <li>{{ point }}</li>
+                        }
+                    </ul>
+                </div>
+            </article>
+        }
+    </section>
+</section>

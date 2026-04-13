@@ -64,16 +64,16 @@
             <td class="mono">{{ r.mcc }}</td>
             <td [title]="mccName(r.mcc)">{{ mccName(r.mcc) }}</td>
             <td class="mono">{{ r.txCount }}</td>
-            <td class="mono neg">{{ formatUAH(r.totalSpent) }}</td>
-            <td class="mono pos">{{ formatUAH(r.totalIncome) }}</td>
-            <td class="mono" [class.neg]="r.net<0" [class.pos]="r.net>0">{{ formatUAH(r.net) }}</td>
-            <td class="mono">{{ formatUAH(r.avgAbs) }}</td>
+            <td class="mono neg">{{ formatAmount(r.totalSpent) }}</td>
+            <td class="mono pos">{{ formatAmount(r.totalIncome) }}</td>
+            <td class="mono" [class.neg]="r.net<0" [class.pos]="r.net>0">{{ formatAmount(r.net) }}</td>
+            <td class="mono">{{ formatAmount(r.avgAbs) }}</td>
             <td class="tops">
               @for (t of r.topMerchants; track t.name) {
                 <button class="pill"
                         (click)="$event.stopPropagation(); openTrendForMerchant(t.name)"
-                        [title]="t.name + ' ' + (t.total | number:'1.0-2')">
-                  {{ t.name }} ({{ t.total | number:'1.0-2' }})
+                        [title]="t.name + ' ' + formatMerchantAmount(t.total)">
+                  {{ t.name }} ({{ formatMerchantAmount(t.total) }})
                 </button>
               }
             </td>
@@ -115,10 +115,10 @@
                             [label]="selectedTrendLabel"
                             [type]="ChartType.Expenses"
                             [mode]="'monthly'"
-                            [monthly]="monthlyTrend"
+                            [monthly]="displayTrendPoints()"
                             [period]="period()"
                             [minorUnits]="true"
-                            [currency]="'грн'"
+                            [currency]="currencyDisplay.selectedCode()"
                             [yMax]="commonMax()">
                         </app-chart>
         
@@ -126,10 +126,10 @@
                             [label]="selectedTrendLabel"
                             [type]="ChartType.Income"
                             [mode]="'monthly'"
-                            [monthly]="monthlyTrend"
+                            [monthly]="displayTrendPoints()"
                             [period]="period()"
                             [minorUnits]="true"
-                            [currency]="'грн'"
+                            [currency]="currencyDisplay.selectedCode()"
                             [yMax]="commonMax()">
                         </app-chart>
                     </div>

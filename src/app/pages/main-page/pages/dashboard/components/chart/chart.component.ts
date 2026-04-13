@@ -31,7 +31,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     @Input() public period?: { fromSec: number; toSec: number };
 
     /** Новый вход — настройки формата */
-    @Input() public currency: string = 'грн';
+    @Input() public currency: string = 'UAH';
     @Input() public minorUnits = true; // true, если суммы в копейках
 
     @Input() public type: ChartType = ChartType.Income;

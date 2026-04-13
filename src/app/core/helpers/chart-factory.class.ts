@@ -66,7 +66,7 @@ export class ChartFactory {
         opts?: ChartOptionsExt
     ) {
         this.mode = opts?.mode ?? 'daily';
-        this.currency = opts?.currency ?? 'грн';
+        this.currency = opts?.currency ?? 'UAH';
         this.minorUnits = opts?.minorUnits ?? false;
         this.yMax = opts?.yMax; // <-- new
         if (opts?.period) (this as any)._period = opts.period;

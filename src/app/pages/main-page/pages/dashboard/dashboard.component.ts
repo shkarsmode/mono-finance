@@ -2,10 +2,13 @@ import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-
 import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { ChartType, LocalStorage, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
-import { CategoryGroupService, MonobankService } from '@core/services';
+import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { first, firstValueFrom, lastValueFrom, Observable, Subject } from 'rxjs';
+import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
+import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
 import {
@@ -40,6 +43,7 @@ selector: 'app-dashboard',
         AsyncPipe, DatePipe, DecimalPipe,
         CardComponent, ChartComponent, TransactionsComponent,
         CategoryManagerComponent, FloatingToolbarComponent,
+        DisplayMoneyPipe, DisplayMoneyMajorPipe,
         TransactionsFilterPipe, TransactionsSortByPipe,
         DragDropModule,
     ],
@@ -51,6 +55,8 @@ export default class DashboardComponent implements OnInit {
     private readonly bulkMonoCooldownSec = 60;
     private readonly monobankService = inject(MonobankService);
     private readonly categoryGroupService = inject(CategoryGroupService);
+    private readonly router = inject(Router);
+    readonly currencyDisplay = inject(CurrencyDisplayService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly transactions = signal<ITransaction[]>([]);
@@ -84,29 +90,43 @@ export default class DashboardComponent implements OnInit {
     // ── Spending Insights (bonus feature) ──
     readonly totalExpenses = computed(() => {
         const txs = this.transactions();
-        return txs.filter(t => +t.amount < 0).reduce((sum, t) => sum + +(t.amount ?? 0), 0);
+        return txs
+            .filter(t => +t.amount < 0)
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode), 0);
     });
 
     readonly totalIncome = computed(() => {
         const txs = this.transactions();
-        return txs.filter(t => +t.amount > 0).reduce((sum, t) => sum + +(t.amount ?? 0), 0);
+        return txs
+            .filter(t => +t.amount > 0)
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode), 0);
     });
 
     readonly biggestExpense = computed(() => {
         const txs = this.transactions().filter(t => +t.amount < 0);
         if (!txs.length) return null;
-        return txs.reduce((max, t) => +t.amount < +max.amount ? t : max, txs[0]);
+        return txs.reduce((max, tx) => {
+            const txAmount = this.currencyDisplay.convertMinorAmount(tx.amount, tx.currencyCode);
+            const maxAmount = this.currencyDisplay.convertMinorAmount(max.amount, max.currencyCode);
+            return txAmount < maxAmount ? tx : max;
+        }, txs[0]);
     });
 
     readonly averageDailySpend = computed(() => {
         const txs = this.transactions().filter(t => +t.amount < 0);
         if (!txs.length) return 0;
         const days = new Set(txs.map(t => new Date(t.time * 1000).toDateString())).size;
-        const total = txs.reduce((sum, t) => sum + Math.abs((t.amount) ?? 0), 0);
+        const total = txs.reduce(
+            (sum, t) => sum + Math.abs(this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode)),
+            0,
+        );
         return days > 0 ? total / days : 0;
     });
 
     readonly transactionCount = computed(() => this.transactions().length);
+    readonly chartTransactions = computed(() =>
+        this.transactions().map(transaction => this.currencyDisplay.convertTransactionForMinorUnitCharts(transaction))
+    );
 
     /** Sorted accounts: type='white' always first, filtered by chip selection */
     readonly sortedAccounts = computed(() => {
@@ -234,6 +254,13 @@ export default class DashboardComponent implements OnInit {
     onSortTransactionsBy(sort: { sortBy: TransactionSortBy; direction: 'asc' | 'desc' }): void {
         this.sortBy.set(sort.sortBy);
         this.sortDirection.set(sort.direction);
+    }
+
+    onOpenTransaction(transaction: ITransaction): void {
+        this.monobankService.rememberTransaction(transaction);
+        this.router.navigate(['/transactions', transaction.id], {
+            state: { transaction },
+        });
     }
 
     get bulkProgressPercent(): number {

@@ -1,4 +1,5 @@
 export enum LocalStorage {
+    FinanceDisplayCurrency = 'finance-currency',
     MonobankCurrency = 'monobankCurrency',
     MonobankClientInfo = 'monobankClientInfo',
     MonobankTransactions = 'monobankTransactions',

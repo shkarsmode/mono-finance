@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TransactionSortBy } from '@core/enums';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { DisplayMoneyPipe } from '../../../../../../shared/pipes/display-money.pipe';
 
 @Component({
     selector: 'app-transactions',
@@ -15,12 +16,15 @@ import { ICategoryGroup, ITransaction } from '@core/interfaces';
         DatePipe, DecimalPipe,
         MatCheckboxModule, MatSelectModule, MatTooltipModule,
         MatBadgeModule, MatFormFieldModule,
+        DisplayMoneyPipe,
     ],
     templateUrl: './transactions.component.html',
     styleUrl: './transactions.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsComponent implements OnInit {
+    @Input() public title = 'Transactions';
+    @Input() public allowGroupFilter = true;
     @Input() public searchValue: string = '';
     @Input() public groups: ICategoryGroup[] | null = null;
     @Input() public transactions: ITransaction[] | null = null;
@@ -31,6 +35,7 @@ export class TransactionsComponent implements OnInit {
     @Output() public selectValueChange = new EventEmitter<string[]>();
     @Output() public selectMonth = new EventEmitter<number>();
     @Output() public selectYear = new EventEmitter<number>();
+    @Output() public openTransaction = new EventEmitter<ITransaction>();
 
     @ViewChild('inputRef') public inputRef!: ElementRef<HTMLInputElement>;
 
@@ -101,5 +106,9 @@ export class TransactionsComponent implements OnInit {
 
     onSelectValueChange(event: string[]): void {
         this.selectValueChange.emit(event);
+    }
+
+    onTransactionClick(transaction: ITransaction): void {
+        this.openTransaction.emit(transaction);
     }
 }
