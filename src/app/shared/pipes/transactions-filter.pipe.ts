@@ -17,12 +17,22 @@ export class TransactionsFilterPipe implements PipeTransform {
         const searchValues = searchValue
             .toLowerCase()
             .split(',')
-            .map((value) => value.trim());
+            .map((value) => value.trim())
+            .filter(Boolean);
 
         return transactions.filter((transaction) => 
-            searchValues.some((search) =>
-                transaction.description.toLowerCase().includes(search)
-            )
+            searchValues.some((search) => {
+                // MCC match: purely numeric search token
+                if (/^\d+$/.test(search)) {
+                    const mcc = Number(search);
+                    return transaction.mcc === mcc || transaction.originalMcc === mcc;
+                }
+                // Text match: description, counterName, merchantName
+                const desc = (transaction.description ?? '').toLowerCase();
+                const counter = (transaction.counterName ?? '').toLowerCase();
+                const merchant = ((transaction as any).merchantName ?? '').toLowerCase();
+                return desc.includes(search) || counter.includes(search) || merchant.includes(search);
+            })
         );
     }
 }
