@@ -5,9 +5,36 @@ import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, catchError, first, mergeMap, Observable, of, retryWhen, scan, switchMap, tap, timer } from 'rxjs';
+import { BehaviorSubject, catchError, first, map, mergeMap, Observable, of, retryWhen, scan, switchMap, tap, timer } from 'rxjs';
 import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
+
+type TransactionResponseMeta = {
+    cacheHit?: boolean;
+    dataSource?: 'cache' | 'monobank';
+    syncMode?: 'fresh-cache' | 'live' | 'cache-fallback';
+    isUpToDate?: boolean;
+    monobankResponded?: boolean;
+    retryAfterSec?: number;
+    nextAllowedAt?: number;
+    [key: string]: unknown;
+};
+
+type TransactionSyncResponse = {
+    synced: number;
+    total: number;
+    status: number;
+    message: string;
+    meta?: TransactionResponseMeta;
+};
+
+type TransactionsApiResponse = {
+    data: ITransaction[];
+    status: number;
+    message: string;
+    meta?: TransactionResponseMeta;
+    syncMeta?: TransactionResponseMeta;
+};
 
 @Injectable({
     providedIn: 'root',
@@ -97,8 +124,12 @@ export class MonobankService {
         return err?.status === 429 || msg.includes('too many');
     }
     
-    public getTransactionsWithRetry(month: number, year: number) {
-        return this.getTransactions(month, year).pipe(
+    public getTransactionsWithRetry(
+        month: number,
+        year: number,
+        options?: { forceSync?: boolean; includeHold?: boolean }
+    ): Observable<TransactionsApiResponse> {
+        return this.getTransactions(month, year, options).pipe(
             retryWhen(errors =>
                 errors.pipe(
                     scan((state, err: HttpErrorResponse) => {
@@ -246,7 +277,7 @@ export class MonobankService {
         month: number,
         year?: number,
         options?: { forceSync?: boolean; includeHold?: boolean }
-    ): Observable<ITransaction[] | any> {
+    ): Observable<TransactionsApiResponse> {
         this.loadingService.loading$.next(true);
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const tz = -new Date().getTimezoneOffset(); // e.g. 120 for UTC+2
@@ -265,14 +296,17 @@ export class MonobankService {
         }
 
         const request$ = options?.forceSync
-            ? this.http.post(syncApiUrl, {}).pipe(
-                switchMap(() =>
-                    this.http.get<{ data: ITransaction[]; status: number; message: string }>(
-                        transactionsApiUrl
+            ? this.http.post<TransactionSyncResponse>(syncApiUrl, {}).pipe(
+                switchMap((syncResult) =>
+                    this.http.get<TransactionsApiResponse>(transactionsApiUrl).pipe(
+                        map(result => ({
+                            ...result,
+                            syncMeta: syncResult.meta,
+                        }))
                     )
                 )
             )
-            : this.http.get<{ data: ITransaction[]; status: number; message: string }>(
+            : this.http.get<TransactionsApiResponse>(
                 transactionsApiUrl
             );
 

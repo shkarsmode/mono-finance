@@ -13,6 +13,19 @@ import {
 } from './components';
 import { FloatingToolbarComponent } from './components/floating-toolbar/floating-toolbar.component';
 
+type BulkLoadMeta = {
+    isUpToDate?: boolean;
+    nextAllowedAt?: number;
+    retryAfterSec?: number;
+    syncMode?: 'fresh-cache' | 'live' | 'cache-fallback';
+};
+
+type BulkLoadResult = {
+    data?: ITransaction[];
+    meta?: BulkLoadMeta;
+    syncMeta?: BulkLoadMeta;
+};
+
 @Component({
 selector: 'app-dashboard',
     standalone: true,
@@ -228,10 +241,20 @@ export default class DashboardComponent implements OnInit {
             ) {
                 try {
                     const result = await lastValueFrom(
-                        this.monobankService.getTransactionsWithRetry(m, y).pipe(first())
+                        this.monobankService.getTransactionsWithRetry(
+                            m,
+                            y,
+                            { includeHold: this.showHoldTransactions() },
+                        ).pipe(first())
                     );
 
-                    const data = (result as any)?.data ?? result;
+                    const syncMeta = this.getBulkSyncMeta(result);
+                    if (syncMeta?.isUpToDate === false) {
+                        await this.waitForBulkRetry(syncMeta);
+                        continue;
+                    }
+
+                    const data = result?.data ?? [];
                     if (Array.isArray(data) && data.length > 0) {
                         this.emptyStreak.set(0);
                         this.monobankService.mergeTransactions(data);
@@ -239,21 +262,12 @@ export default class DashboardComponent implements OnInit {
                         this.emptyStreak.update(v => v + 1);
                     }
 
-                    // Respect nextAllowedAt from meta if present
-                    const meta = (result as any)?.meta;
-                    if (meta?.nextAllowedAt) {
-                        const waitSec = Math.max(0, Number(meta.nextAllowedAt) - Math.floor(Date.now() / 1000));
-                        if (waitSec > 1) {
-                            this.rateLimitLeftSec.set(waitSec);
-                            await new Promise(r => setTimeout(r, waitSec * 1000));
-                        }
-                    }
+                    await this.waitForBulkRetry(syncMeta ?? result?.meta);
                 } catch (err: any) {
                     // On rate limit error, wait and retry this same month
                     if (err?.status === 429 || (err?.error?.message ?? '').toString().toLowerCase().includes('too many')) {
                         const waitSec = this.monobankService.parseRetryAfterFromError(err);
-                        this.rateLimitLeftSec.set(waitSec);
-                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        await this.waitForSeconds(waitSec);
                         continue; // retry same month
                     }
                     // For non-429 errors, skip this month
@@ -348,5 +362,41 @@ export default class DashboardComponent implements OnInit {
 
         // Apply ordering change and persist via service
         this.categoryGroupService.changeOrdering(updated);
+    }
+
+    private getBulkSyncMeta(result: BulkLoadResult | null | undefined): BulkLoadMeta | undefined {
+        return result?.syncMeta ?? result?.meta;
+    }
+
+    private async waitForBulkRetry(meta?: BulkLoadMeta): Promise<void> {
+        const waitSec = this.resolveBulkWaitSec(meta);
+        if (waitSec > 0) {
+            await this.waitForSeconds(waitSec);
+        }
+    }
+
+    private resolveBulkWaitSec(meta?: BulkLoadMeta): number {
+        if (!meta) {
+            return 0;
+        }
+
+        if (meta.nextAllowedAt) {
+            return Math.max(0, Number(meta.nextAllowedAt) - Math.floor(Date.now() / 1000));
+        }
+
+        return Math.max(0, Number(meta.retryAfterSec ?? 0));
+    }
+
+    private async waitForSeconds(seconds: number): Promise<void> {
+        if (seconds <= 0) {
+            return;
+        }
+
+        this.rateLimitLeftSec.set(seconds);
+        try {
+            await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+        } finally {
+            this.rateLimitLeftSec.set(0);
+        }
     }
 }
