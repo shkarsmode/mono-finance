@@ -128,10 +128,10 @@ export class CurrencyDisplayService {
         );
     }
 
-    mapTransactionAmountToDisplay<T extends { amount: number; currencyCode: number | string }>(transaction: T): T {
+    mapTransactionAmountToDisplay<T extends { amount: number; currencyCode: number | string; cardCurrencyCode?: number | string }>(transaction: T): T {
         return {
             ...transaction,
-            amount: this.convertMinorAmount(transaction.amount, transaction.currencyCode),
+            amount: this.convertMinorAmount(transaction.amount, transaction.cardCurrencyCode ?? transaction.currencyCode),
         };
     }
 
@@ -141,15 +141,17 @@ export class CurrencyDisplayService {
         balance?: number;
         operationAmount?: number;
         currencyCode: number | string;
+        cardCurrencyCode?: number | string;
     }>(transaction: T): T {
+        const cardCurrency = transaction.cardCurrencyCode ?? transaction.currencyCode;
         return {
             ...transaction,
-            amount: this.convertMinorAmountToMinorUnits(transaction.amount, transaction.currencyCode),
+            amount: this.convertMinorAmountToMinorUnits(transaction.amount, cardCurrency),
             cashbackAmount: transaction.cashbackAmount !== undefined
-                ? this.convertMinorAmountToMinorUnits(transaction.cashbackAmount, transaction.currencyCode)
+                ? this.convertMinorAmountToMinorUnits(transaction.cashbackAmount, cardCurrency)
                 : transaction.cashbackAmount,
             balance: transaction.balance !== undefined
-                ? this.convertMinorAmountToMinorUnits(transaction.balance, transaction.currencyCode)
+                ? this.convertMinorAmountToMinorUnits(transaction.balance, cardCurrency)
                 : transaction.balance,
             operationAmount: transaction.operationAmount !== undefined
                 ? this.convertMinorAmountToMinorUnits(transaction.operationAmount, transaction.currencyCode)

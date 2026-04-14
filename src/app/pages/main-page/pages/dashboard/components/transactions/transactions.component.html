@@ -99,14 +99,14 @@
                         </td>
                     }
                     <td class="amount-cell" [class.sent]="transaction.amount < 0">
-                        {{ transaction.amount | displayMoney: transaction.currencyCode }}
+                        {{ transaction.amount | displayMoney: transaction.cardCurrencyCode }}
                         @if (transaction.cashbackAmount > 0) {
-                            <span class="cashback">+{{ transaction.cashbackAmount | displayMoney: transaction.currencyCode : 0 : 2 }}</span>
+                            <span class="cashback">+{{ transaction.cashbackAmount | displayMoney: transaction.cardCurrencyCode : 0 : 2 }}</span>
                         }
                     </td>
                     @if (!isSmallScreen) {
                         <td class="balance-cell">
-                            {{ transaction.balance | displayMoney: transaction.currencyCode : 0 : 2 }}
+                            {{ transaction.balance | displayMoney: transaction.cardCurrencyCode : 0 : 2 }}
                         </td>
                     }
                 </tr>

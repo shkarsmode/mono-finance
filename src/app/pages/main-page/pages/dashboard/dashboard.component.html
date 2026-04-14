@@ -216,7 +216,7 @@
                     <span class="insight-card__icon material-icons-round">priority_high</span>
                     <div class="insight-card__content">
                         <span class="insight-card__label">Biggest Expense</span>
-                        <span class="insight-card__value expense">{{ biggest.amount | displayMoney: biggest.currencyCode }}</span>
+                        <span class="insight-card__value expense">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode }}</span>
                         <span class="insight-card__sub">{{ biggest.description }}</span>
                     </div>
                 </div>

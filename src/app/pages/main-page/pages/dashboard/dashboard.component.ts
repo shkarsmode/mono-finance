@@ -7,8 +7,8 @@ import { ChartType, LocalStorage, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { first, firstValueFrom, lastValueFrom, Observable, Subject } from 'rxjs';
-import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
+import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
 import {
@@ -92,22 +92,22 @@ export default class DashboardComponent implements OnInit {
         const txs = this.transactions();
         return txs
             .filter(t => +t.amount < 0)
-            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode), 0);
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0);
     });
 
     readonly totalIncome = computed(() => {
         const txs = this.transactions();
         return txs
             .filter(t => +t.amount > 0)
-            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode), 0);
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0);
     });
 
     readonly biggestExpense = computed(() => {
         const txs = this.transactions().filter(t => +t.amount < 0);
         if (!txs.length) return null;
         return txs.reduce((max, tx) => {
-            const txAmount = this.currencyDisplay.convertMinorAmount(tx.amount, tx.currencyCode);
-            const maxAmount = this.currencyDisplay.convertMinorAmount(max.amount, max.currencyCode);
+            const txAmount = this.currencyDisplay.convertMinorAmount(tx.amount, tx.cardCurrencyCode);
+            const maxAmount = this.currencyDisplay.convertMinorAmount(max.amount, max.cardCurrencyCode);
             return txAmount < maxAmount ? tx : max;
         }, txs[0]);
     });
@@ -117,7 +117,7 @@ export default class DashboardComponent implements OnInit {
         if (!txs.length) return 0;
         const days = new Set(txs.map(t => new Date(t.time * 1000).toDateString())).size;
         const total = txs.reduce(
-            (sum, t) => sum + Math.abs(this.currencyDisplay.convertMinorAmount(t.amount, t.currencyCode)),
+            (sum, t) => sum + Math.abs(this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode)),
             0,
         );
         return days > 0 ? total / days : 0;

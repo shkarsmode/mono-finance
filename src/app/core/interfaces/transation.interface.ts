@@ -7,6 +7,7 @@ export interface ITransaction {
     readonly amount: number;
     readonly operationAmount: number;
     readonly currencyCode: number;
+    readonly cardCurrencyCode: number;
     readonly commissionRate: number;
     readonly cashbackAmount: number;
     readonly balance: number;

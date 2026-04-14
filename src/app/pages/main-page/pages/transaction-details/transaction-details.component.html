@@ -22,8 +22,8 @@
             </div>
 
             <div class="hero-card__amount">
-                <strong>{{ tx.amount | displayMoney: tx.currencyCode }}</strong>
-                <span>{{ formatOriginalMinorAmount(tx.amount, tx.currencyCode) }} original</span>
+                <strong>{{ tx.amount | displayMoney: tx.cardCurrencyCode }}</strong>
+                <span>{{ formatOriginalMinorAmount(tx.amount, tx.cardCurrencyCode) }} original</span>
             </div>
         </section>
 
@@ -35,18 +35,18 @@
             </article>
             <article class="stat-card">
                 <span class="stat-card__label">Cashback</span>
-                <strong class="stat-card__value">{{ tx.cashbackAmount | displayMoney: tx.currencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.cashbackAmount, tx.currencyCode) }}</span>
+                <strong class="stat-card__value">{{ tx.cashbackAmount | displayMoney: tx.cardCurrencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.cashbackAmount, tx.cardCurrencyCode) }}</span>
             </article>
             <article class="stat-card">
                 <span class="stat-card__label">Balance after payment</span>
-                <strong class="stat-card__value">{{ tx.balance | displayMoney: tx.currencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.balance, tx.currencyCode) }}</span>
+                <strong class="stat-card__value">{{ tx.balance | displayMoney: tx.cardCurrencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.balance, tx.cardCurrencyCode) }}</span>
             </article>
             <article class="stat-card">
                 <span class="stat-card__label">Commission</span>
-                <strong class="stat-card__value">{{ tx.commissionRate | displayMoney: tx.currencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.commissionRate, tx.currencyCode) }}</span>
+                <strong class="stat-card__value">{{ tx.commissionRate | displayMoney: tx.cardCurrencyCode }}</strong>
+                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.commissionRate, tx.cardCurrencyCode) }}</span>
             </article>
         </section>
 
