@@ -438,29 +438,15 @@ export class MonobankService {
     private removeDuplicatedTransactionsById(
         transactions: ITransaction[]
     ): ITransaction[] {
-        const duplicatedElementsCount: { [key: string]: number } = {};
-
-        transactions.forEach((e) => {
-            duplicatedElementsCount[e.id] =
-                duplicatedElementsCount[e.id] >= 0
-                    ? duplicatedElementsCount[e.id] + 1
-                    : 0;
-        });
-
-        const duplicatedElementsArr = Object.entries(duplicatedElementsCount)
-            .filter((el) => el[1])
-            .map((el) => el[0]);
-
-        duplicatedElementsArr.forEach((duplicated) => {
-            const firstDuplicatedElementIndex = transactions.findIndex(
-                (transaction) =>
-                    transaction?.id && transaction?.id === duplicated
-            );
-            console.log('Duplicated', duplicated);
-            transactions[firstDuplicatedElementIndex] = undefined as any;
-        });
-
-        return transactions.filter((transaction) => !!transaction);
+        // De-dupe by Monobank id in one pass, last write wins. Does not mutate the
+        // input and keeps the newest copy of any repeated id.
+        const byId = new Map<string, ITransaction>();
+        for (const transaction of transactions ?? []) {
+            if (transaction?.id) {
+                byId.set(transaction.id, transaction);
+            }
+        }
+        return Array.from(byId.values());
     }
 
     private getLocalStorageData(key: LocalStorage): any {

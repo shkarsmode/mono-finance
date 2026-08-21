@@ -181,7 +181,9 @@ export class CurrencyDisplayService {
         if (stored && this.options.some(option => option.code === stored)) {
             return stored;
         }
-        return 'USD';
+        // Default to the account's native currency. Defaulting to USD renders every
+        // UAH amount unchanged but under a $ symbol whenever rates are unavailable.
+        return 'UAH';
     }
 
     private getRateBetween(sourceCurrencyCode: number, targetCurrencyCode: number): number | null {

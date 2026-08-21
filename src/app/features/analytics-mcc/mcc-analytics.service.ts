@@ -1,6 +1,6 @@
 // mcc-analytics.service.ts
 import { HttpClient, HttpEvent, HttpEventType, HttpParams } from '@angular/common/http';
-import { Inject, inject, Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 import { interval, Observable, Subject, Subscription } from 'rxjs';
 
@@ -54,8 +54,9 @@ function readEma(key: string, fallbackMs: number): number {
 @Injectable({ providedIn: 'root' })
 export class MccAnalyticsService {
     private http = inject(HttpClient);
-    @Inject(BASE_PATH_API) private readonly baseUrl: string = 'https://api.91.98.164.192.nip.io/api';
-    private tokenGetter = () => localStorage.getItem('token') || '';
+    // @Inject as a *property* decorator is a no-op — this was silently hardcoding the
+    // prod VPS URL into a public repo. inject() is the correct DI here.
+    private readonly baseUrl = inject(BASE_PATH_API);
 
     loading = signal(false);
     last = signal<MccResponse | null>(null);
@@ -68,9 +69,10 @@ export class MccAnalyticsService {
             if (to) params = params.set('to', to);
             if (mccCsv) params = params.set('mcc', mccCsv);
 
+            // Auth header is added centrally by TokenInterceptor for our own API.
             const res = await this.http.get<MccResponse>(
                 `${this.baseUrl}/analytics/mcc-table`,
-                { params, headers: { Authorization: `Bearer ${this.tokenGetter()}` } }
+                { params }
             ).toPromise();
 
             if (res) this.last.set(res);
@@ -90,8 +92,7 @@ export class MccAnalyticsService {
             .set('key', String(target.key));
 
 
-        const headers = { Authorization: `Bearer ${this.tokenGetter()}` };
-
+        // Auth header is added centrally by TokenInterceptor for our own API.
         const progressKey = `${target.kind}:${target.key}:${fromISO}:${toISO}`;
         const startTime = Date.now();
 
@@ -119,7 +120,7 @@ export class MccAnalyticsService {
         };
 
         const httpSub = this.http.request<MonthlyPoint[]>(
-            'GET', `${this.baseUrl}/analytics/monthly-trend`, { headers, reportProgress: true, observe: 'events', params }
+            'GET', `${this.baseUrl}/analytics/monthly-trend`, { reportProgress: true, observe: 'events', params }
         )
             .subscribe({
                 next: (event: HttpEvent<MonthlyPoint[]>) => {
