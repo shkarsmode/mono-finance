@@ -1,0 +1,23 @@
+services:
+    web:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: finance-web
+        restart: unless-stopped
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.finance-web.rule=Host(`web.91.98.164.192.nip.io`)"
+            - "traefik.http.routers.finance-web.entrypoints=websecure"
+            - "traefik.http.routers.finance-web.tls.certresolver=letsencrypt"
+            - "traefik.http.services.finance-web.loadbalancer.server.port=80"
+            - "traefik.docker.network=proxy"
+            - "traefik.http.routers.finance-web-http.rule=Host(`web.91.98.164.192.nip.io`)"
+            - "traefik.http.routers.finance-web-http.entrypoints=web"
+            - "traefik.http.routers.finance-web-http.middlewares=redirect-to-https@file"
+        networks:
+            - proxy
+
+networks:
+    proxy:
+        external: true

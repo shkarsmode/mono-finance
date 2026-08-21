@@ -8,7 +8,7 @@ export interface ISubscription {
     merchantKey: string;
     title: string;
     averageAmount: number;
-    currency: number;
+    currency: string;
     cadence: 'monthly' | 'weekly' | 'unknown';
     lastSeenAt: string;
     nextExpectedAt: string | null;

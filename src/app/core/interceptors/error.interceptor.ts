@@ -1,4 +1,5 @@
 import {
+    HttpErrorResponse,
     HttpHandler,
     HttpInterceptor,
     HttpRequest
@@ -24,35 +25,39 @@ export class ErrorInterceptor implements HttpInterceptor {
 
     public intercept(request: HttpRequest<any>, next: HttpHandler) {
         return next.handle(request).pipe(
-            catchError((error: any) => {
+            catchError((error: HttpErrorResponse) => {
                 this.loadingService.loading$.next(false);
 
-                // Let auth pages handle their own errors
+                // Let auth pages handle their own errors — and always re-throw the
+                // original HttpErrorResponse so downstream status/Retry-After handling works.
                 if (request.url.includes('/auth/')) {
                     return throwError(() => error);
                 }
 
-                console.log(error.error);
-                console.log(error.error.statusCode);
-                if (error.error.statusCode === 401) {
-                    this.router.navigateByUrl('/login');
+                // 401 → session is gone. Branch on the transport status, not on a
+                // body field (custom error bodies may not carry statusCode).
+                if (error.status === 401) {
                     this.authService.logout();
-                    this.snackBar.open(`You have to authorize`, '👀', {
-                        duration: 6000,
-                    });
-                    return throwError(() => new Error('401'));
+                    this.router.navigateByUrl('/login');
+                    this.snackBar.open(`You have to authorize`, '👀', { duration: 6000 });
+                    return throwError(() => error);
                 }
 
-                const params = this.removeBasePathUrl(error.url);
-                const { errorDescription } = error.error;
+                // 429 is a normal, expected rate-limit signal handled by callers
+                // (cooldown timers / reschedule). Do not surface it as an error toast.
+                if (error.status !== 429) {
+                    const params = this.removeBasePathUrl(error.url ?? '');
+                    const description =
+                        error.error?.message ??
+                        error.error?.errorDescription ??
+                        error.message ??
+                        'Request failed';
+                    this.snackBar.open(`Url ${params}\n ${description}`, '👀', { duration: 6000 });
+                }
 
-                this.snackBar.open(
-                    `Url ${params}\n ${errorDescription}`,
-                    '👀',
-                    { duration: 6000 }
-                );
-
-                return throwError(() => new Error(error.error));
+                // Preserve the HttpErrorResponse so status, headers (Retry-After) and
+                // body survive for whoever catches it.
+                return throwError(() => error);
             })
         );
     }

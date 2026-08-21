@@ -9,6 +9,7 @@ import { LocalStorage } from '@core/enums';
 import { LoadingService } from '@core/services/loading.service';
 import { MonobankService } from '@core/services/monobank.service';
 import { ThemeService } from '@core/services/theme.service';
+import { TransactionStore } from '@core/store/transaction-store.service';
 import { ToastService } from '@shared/components';
 import { first } from 'rxjs';
 
@@ -25,6 +26,7 @@ export class MainPageComponent implements OnInit {
     public readonly loadingService = inject(LoadingService);
     private readonly toastService = inject(ToastService);
     public readonly themeService = inject(ThemeService);
+    private readonly transactionStore = inject(TransactionStore);
     private readonly viewContainerRef = inject(ViewContainerRef);
 
     readonly sidenavOpen = signal(false);
@@ -44,6 +46,8 @@ export class MainPageComponent implements OnInit {
 
     ngOnInit(): void {
         this.toastService.init(this.viewContainerRef);
+        // Hydrate the local transaction cache so month views paint instantly.
+        void this.transactionStore.init();
         this.initClientInfoData();
         this.initTransactionsData();
 

@@ -6,6 +6,7 @@ import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { BehaviorSubject, catchError, first, map, mergeMap, Observable, of, retryWhen, scan, switchMap, tap, timer } from 'rxjs';
+import { TransactionStore } from '../store/transaction-store.service';
 import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
 
@@ -68,6 +69,7 @@ export class MonobankService {
     private readonly _rateLimitCooldown$ = new BehaviorSubject<number>(0);
     public readonly rateLimitCooldown$ = this._rateLimitCooldown$.asObservable();
     private readonly transactionSnapshotStorageKey = 'finance-transaction-snapshots';
+    private readonly transactionStore = inject(TransactionStore);
 
     constructor(
         private readonly router: Router,
@@ -294,6 +296,16 @@ export class MonobankService {
             this.loadingService.loading$.next(true);
         }
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
+        const storeYear = year ?? this.activeYear;
+
+        // Instant paint from the local cache while the network revalidates.
+        if (cardId && options?.store !== false) {
+            const cached = this.transactionStore.readMonth(cardId, storeYear, month);
+            if (cached && cached.length) {
+                this.currentTransactions$.next(cached);
+            }
+        }
+
         const tz = -new Date().getTimezoneOffset(); // e.g. 120 for UTC+2
         let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}`;
         if (year) {
@@ -326,16 +338,13 @@ export class MonobankService {
 
         return request$
             .pipe(
-                tap(({ data, status, message }) => {
-                    if (!options?.silent) {
-                        this.snackBar.open(message, '✅', {
-                            duration: 5000,
-                            horizontalPosition: 'right',
-                            verticalPosition: 'top',
-                            panelClass: ['green-snackbar'],
-                        });
-                    }
+                tap(({ data }) => {
+                    // No success toast on a normal fetch — month switches must be
+                    // quiet. Errors are surfaced by the HTTP error interceptor.
                     const uniqueTransactions = this.removeDuplicatedTransactionsById(data);
+                    if (cardId) {
+                        this.transactionStore.writeMonth(cardId, storeYear, month, uniqueTransactions);
+                    }
                     if (options?.store !== false) {
                         this.currentTransactions$.next(uniqueTransactions);
                     }
@@ -438,29 +447,15 @@ export class MonobankService {
     private removeDuplicatedTransactionsById(
         transactions: ITransaction[]
     ): ITransaction[] {
-        const duplicatedElementsCount: { [key: string]: number } = {};
-
-        transactions.forEach((e) => {
-            duplicatedElementsCount[e.id] =
-                duplicatedElementsCount[e.id] >= 0
-                    ? duplicatedElementsCount[e.id] + 1
-                    : 0;
-        });
-
-        const duplicatedElementsArr = Object.entries(duplicatedElementsCount)
-            .filter((el) => el[1])
-            .map((el) => el[0]);
-
-        duplicatedElementsArr.forEach((duplicated) => {
-            const firstDuplicatedElementIndex = transactions.findIndex(
-                (transaction) =>
-                    transaction?.id && transaction?.id === duplicated
-            );
-            console.log('Duplicated', duplicated);
-            transactions[firstDuplicatedElementIndex] = undefined as any;
-        });
-
-        return transactions.filter((transaction) => !!transaction);
+        // De-dupe by Monobank id in one pass, last write wins. Does not mutate the
+        // input and keeps the newest copy of any repeated id.
+        const byId = new Map<string, ITransaction>();
+        for (const transaction of transactions ?? []) {
+            if (transaction?.id) {
+                byId.set(transaction.id, transaction);
+            }
+        }
+        return Array.from(byId.values());
     }
 
     private getLocalStorageData(key: LocalStorage): any {
