@@ -6,7 +6,9 @@ import { Router } from '@angular/router';
 import { ChartType, LocalStorage, TransactionSortBy } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
-import { first, firstValueFrom, lastValueFrom, Observable, Subject } from 'rxjs';
+import { SyncStatusService } from '@core/services/sync-status.service';
+import { ToastService } from '@shared/components';
+import { first, firstValueFrom, Observable, Subject } from 'rxjs';
 import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
@@ -15,26 +17,6 @@ import {
     CardComponent, CategoryManagerComponent, ChartComponent, TransactionsComponent
 } from './components';
 import { FloatingToolbarComponent } from './components/floating-toolbar/floating-toolbar.component';
-
-type BulkNarration = {
-    eyebrow: string;
-    title: string;
-    subtitle: string;
-    icon: string;
-};
-
-type BulkLoadMeta = {
-    isUpToDate?: boolean;
-    nextAllowedAt?: number;
-    retryAfterSec?: number;
-    syncMode?: 'fresh-cache' | 'live' | 'cache-fallback';
-};
-
-type BulkLoadResult = {
-    data?: ITransaction[];
-    meta?: BulkLoadMeta;
-    syncMeta?: BulkLoadMeta;
-};
 
 @Component({
 selector: 'app-dashboard',
@@ -52,34 +34,19 @@ selector: 'app-dashboard',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class DashboardComponent implements OnInit {
-    private readonly bulkMonoCooldownSec = 60;
     private readonly monobankService = inject(MonobankService);
     private readonly categoryGroupService = inject(CategoryGroupService);
     private readonly router = inject(Router);
     readonly currencyDisplay = inject(CurrencyDisplayService);
+    readonly syncStatus = inject(SyncStatusService);
+    private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly transactions = signal<ITransaction[]>([]);
     readonly searchValue = signal('');
     readonly sortDirection = signal<'asc' | 'desc'>('desc');
     readonly sortBy = signal<TransactionSortBy>(TransactionSortBy.Date);
-    readonly isBulkLoading = signal(false);
-    readonly processedMonths = signal(0);
-    readonly emptyStreak = signal(0);
-    readonly rateLimitLeftSec = signal(0);
     readonly showHoldTransactions = signal(false);
-    readonly maxEmptyStreak = 2;
-    readonly bulkTargetMonths = signal(1);
-    readonly bulkCurrentMonthValue = signal(new Date().getMonth() + 1);
-    readonly bulkCurrentYearValue = signal(new Date().getFullYear());
-    readonly bulkNarration = signal<BulkNarration>({
-        eyebrow: 'Deep Sync Mode',
-        title: 'Opening the ledger vault',
-        subtitle: 'Preparing archived statements for a full sweep.',
-        icon: 'travel_explore',
-    });
-    readonly bulkLatestCount = signal(0);
-    readonly bulkLastOutcome = signal('Waiting for the first archive pass.');
 
     activeCardId$!: Observable<string>;
     clientInfo$!: Observable<IAccountInfo>;
@@ -180,7 +147,6 @@ export default class DashboardComponent implements OnInit {
     ];
     yearsMap: number[] = [];
 
-    private cancelBulkRequested = false;
     private readonly cancelPreviousRequest$ = new Subject<void>();
 
     @ViewChild('transactionsRef') transactionsRef!: TransactionsComponent;
@@ -204,13 +170,31 @@ export default class DashboardComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(info => this.clientInfoSignal.set(info));
 
-        this.monobankService.rateLimitCooldown$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(sec => this.rateLimitLeftSec.set(sec));
+        // Ambient background-sync status (backfill progress, month freshness).
+        this.syncStatus.start();
     }
 
     onCardClick(account: IAccount): void {
         this.monobankService.setActiveCardId(account.id);
+    }
+
+    /**
+     * Kick off a full server-side backfill. Returns immediately; the worker drains
+     * the queue in the background whether or not this tab stays open.
+     */
+    onBackfillClick(): void {
+        if (this.syncStatus.isBackfilling()) {
+            return;
+        }
+        this.syncStatus.startBackfill()
+            .pipe(first(), takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: ({ jobs }) => {
+                    this.toast.success(`Backfill started — ${jobs} months queued. You can close the tab.`);
+                    this.syncStatus.start();
+                },
+                error: () => this.toast.error('Could not start backfill. Try again.'),
+            });
     }
 
     onSelectMonth(month: number): void {
@@ -261,167 +245,6 @@ export default class DashboardComponent implements OnInit {
         this.router.navigate(['/transactions', transaction.id], {
             state: { transaction },
         });
-    }
-
-    get bulkProgressPercent(): number {
-        const total = Math.max(1, this.bulkTargetMonths());
-        return Math.max(0, Math.min(100, Math.round(this.processedMonths() / total * 100)));
-    }
-
-    async onLoadAllClick(): Promise<void> {
-        if (this.isBulkLoading() || this.rateLimitLeftSec() > 0) return;
-
-        const startYear = this.monobankService.activeYear;
-        const startMonth = this.monobankService.activeMonth;
-
-        this.isBulkLoading.set(true);
-        this.cancelBulkRequested = false;
-        this.processedMonths.set(0);
-        this.emptyStreak.set(0);
-        this.bulkTargetMonths.set(this.countBulkTargetMonths(startMonth, startYear));
-        this.bulkLatestCount.set(0);
-        this.bulkCurrentMonthValue.set(startMonth);
-        this.bulkCurrentYearValue.set(startYear);
-        this.bulkNarration.set({
-            eyebrow: 'Deep Sync Mode',
-            title: 'Opening the ledger vault',
-            subtitle: `Aligning the scanner with ${this.getPeriodLabel(startMonth, startYear)}.`,
-            icon: 'travel_explore',
-        });
-        this.bulkLastOutcome.set('Starting a fresh sweep through archived months.');
-
-        try {
-            let y = startYear;
-            let m = startMonth;
-
-            while (
-                !this.cancelBulkRequested &&
-                this.emptyStreak() < this.maxEmptyStreak &&
-                this.processedMonths() < 240 &&
-                y >= 2015
-            ) {
-                try {
-                    this.bulkCurrentMonthValue.set(m);
-                    this.bulkCurrentYearValue.set(y);
-                    this.bulkNarration.set(this.createScanningNarration(m, y));
-                    this.bulkLastOutcome.set(`Requesting live statements for ${this.getPeriodLabel(m, y)}.`);
-
-                    const syncResult = await lastValueFrom(
-                        this.monobankService.syncTransactionsMonth(
-                            m,
-                            y,
-                            { silent: true },
-                        ).pipe(first())
-                    );
-
-                    const syncMeta = syncResult?.meta;
-                    if (syncMeta?.isUpToDate === false) {
-                        this.bulkNarration.set({
-                            eyebrow: 'Mono Cooldown',
-                            title: 'Mono is catching its breath',
-                            subtitle: `We already have a cached snapshot for ${this.getPeriodLabel(m, y)}. Waiting ${this.bulkMonoCooldownSec}s before retrying this same month.`,
-                            icon: 'schedule',
-                        });
-                        this.bulkLastOutcome.set(`Cached fallback detected for ${this.getPeriodLabel(m, y)}. Retrying after cooldown.`);
-                        await this.waitForSeconds(this.bulkMonoCooldownSec);
-                        continue;
-                    }
-
-                    const result = await lastValueFrom(
-                        this.monobankService.getTransactions(
-                            m,
-                            y,
-                            {
-                                includeHold: this.showHoldTransactions(),
-                                silent: true,
-                            },
-                        ).pipe(first())
-                    );
-
-                    const data = result?.data ?? [];
-                    this.bulkLatestCount.set(Array.isArray(data) ? data.length : 0);
-                    if (Array.isArray(data) && data.length > 0) {
-                        this.emptyStreak.set(0);
-                        this.monobankService.mergeTransactions(data);
-                        this.bulkNarration.set({
-                            eyebrow: 'Archive Captured',
-                            title: `${data.length} transactions just flew in`,
-                            subtitle: `${this.getPeriodLabel(m, y)} is now glowing with fresh statement data.`,
-                            icon: 'auto_awesome',
-                        });
-                        this.bulkLastOutcome.set(`Captured ${data.length} transactions in ${this.getPeriodLabel(m, y)}.`);
-                    } else {
-                        this.emptyStreak.update(v => v + 1);
-                        this.bulkNarration.set({
-                            eyebrow: 'Quiet Airspace',
-                            title: 'This month looks calm',
-                            subtitle: `${this.getPeriodLabel(m, y)} came back nearly silent, but it has been checked live.`,
-                            icon: 'air',
-                        });
-                        this.bulkLastOutcome.set(`No new visible transactions for ${this.getPeriodLabel(m, y)}.`);
-                    }
-
-                    const nextPeriod = this.getPreviousPeriod(m, y);
-                    this.bulkNarration.set({
-                        eyebrow: 'Cooling The Engines',
-                        title: 'Preparing the next archive jump',
-                        subtitle: `Mono cooldown is fixed at ${this.bulkMonoCooldownSec}s. Next stop: ${this.getPeriodLabel(nextPeriod.month, nextPeriod.year)}.`,
-                        icon: 'hourglass_top',
-                    });
-                    this.bulkLastOutcome.set('Holding a full 60-second cooldown before the next Mono sync.');
-                    await this.waitForSeconds(this.bulkMonoCooldownSec);
-                } catch (err: any) {
-                    // On rate limit error, wait and retry this same month
-                    if (err?.status === 429 || (err?.error?.message ?? '').toString().toLowerCase().includes('too many')) {
-                        this.bulkNarration.set({
-                            eyebrow: 'Rate Limit Shield',
-                            title: 'Mono asked us to slow down',
-                            subtitle: `Cooldown detected while syncing ${this.getPeriodLabel(m, y)}. Waiting ${this.bulkMonoCooldownSec}s and retrying the same month.`,
-                            icon: 'shield',
-                        });
-                        this.bulkLastOutcome.set(`Rate limit hit for ${this.getPeriodLabel(m, y)}. Holding position.`);
-                        await this.waitForSeconds(this.bulkMonoCooldownSec);
-                        continue; // retry same month
-                    }
-                    // For non-429 errors, skip this month
-                    this.bulkNarration.set({
-                        eyebrow: 'Skip And Continue',
-                        title: 'This month refused to cooperate',
-                        subtitle: `Skipping ${this.getPeriodLabel(m, y)} after an unexpected error and moving deeper into the archive.`,
-                        icon: 'error_outline',
-                    });
-                    this.bulkLastOutcome.set(`Skipped ${this.getPeriodLabel(m, y)} because of an unexpected error.`);
-                    console.warn(`Bulk load error for ${y}/${m}:`, err);
-                }
-
-                this.processedMonths.update(v => v + 1);
-                if (m > 1) { m--; } else { m = 12; y--; }
-
-                if (this.transactionsRef) {
-                    this.transactionsRef.activeMonth = m;
-                    this.transactionsRef.activeYear = y;
-                }
-                this.monobankService.activeMonth = m;
-                this.monobankService.activeYear = y;
-            }
-        } catch (err) {
-            console.error('Bulk load failed:', err);
-        } finally {
-            if (this.cancelBulkRequested) {
-                this.bulkNarration.set({
-                    eyebrow: 'Sync Paused',
-                    title: 'Deep sync was cancelled',
-                    subtitle: 'The archive sweep stopped safely. You can resume from the current month anytime.',
-                    icon: 'pause_circle',
-                });
-                this.bulkLastOutcome.set('Cancelled by user.');
-            }
-            this.isBulkLoading.set(false);
-        }
-    }
-
-    onCancelLoadAll(): void {
-        this.cancelBulkRequested = true;
     }
 
     // ── Card Type Filter ──
@@ -491,96 +314,5 @@ export default class DashboardComponent implements OnInit {
 
         // Apply ordering change and persist via service
         this.categoryGroupService.changeOrdering(updated);
-    }
-
-    private getBulkSyncMeta(result: BulkLoadResult | null | undefined): BulkLoadMeta | undefined {
-        return result?.syncMeta ?? result?.meta;
-    }
-
-    private async waitForSeconds(seconds: number): Promise<void> {
-        if (seconds <= 0) {
-            return;
-        }
-
-        this.rateLimitLeftSec.set(seconds);
-        try {
-            await new Promise(resolve => setTimeout(resolve, seconds * 1000));
-        } finally {
-            this.rateLimitLeftSec.set(0);
-        }
-    }
-
-    readonly bulkCurrentPeriodLabel = computed(() =>
-        this.getPeriodLabel(this.bulkCurrentMonthValue(), this.bulkCurrentYearValue())
-    );
-
-    readonly bulkProgressLabel = computed(() =>
-        `${this.processedMonths()} of ${this.bulkTargetMonths()} archived months scanned`
-    );
-
-    readonly bulkAmbientLabel = computed(() => {
-        if (this.rateLimitLeftSec() > 0) {
-            return `Mono cooldown ${this.rateLimitLeftSec()}s`;
-        }
-        if (this.emptyStreak() > 0) {
-            return `${this.emptyStreak()} quiet month${this.emptyStreak() > 1 ? 's' : ''} in a row`;
-        }
-        if (this.bulkLatestCount() > 0) {
-            return `${this.bulkLatestCount()} transactions in the latest pass`;
-        }
-        return 'Live sync in motion';
-    });
-
-    readonly bulkHighlightChips = computed(() => [
-        this.bulkCurrentPeriodLabel(),
-        `${this.emptyStreak()} empty streak`,
-        `${this.processedMonths()} months done`,
-        this.rateLimitLeftSec() > 0 ? `Cooldown ${this.rateLimitLeftSec()}s` : 'Mono channel open',
-    ]);
-
-    private createScanningNarration(month: number, year: number): BulkNarration {
-        const moods: BulkNarration[] = [
-            {
-                eyebrow: 'Statement Radar',
-                title: 'Sweeping the archive sky',
-                subtitle: `Searching ${this.getPeriodLabel(month, year)} for hidden transfers, cashback sparks and card swipes.`,
-                icon: 'radar',
-            },
-            {
-                eyebrow: 'Receipt Telescope',
-                title: 'Zooming into forgotten payments',
-                subtitle: `Reading the tiny constellations inside ${this.getPeriodLabel(month, year)}.`,
-                icon: 'travel_explore',
-            },
-            {
-                eyebrow: 'Ledger Drift',
-                title: 'Catching transactions mid-flight',
-                subtitle: `Crossing ${this.getPeriodLabel(month, year)} with a full live sync pass from Mono.`,
-                icon: 'air',
-            },
-            {
-                eyebrow: 'Cashflow Aurora',
-                title: 'Lighting up the monthly timeline',
-                subtitle: `Watching income and spending traces wake up inside ${this.getPeriodLabel(month, year)}.`,
-                icon: 'auto_awesome',
-            },
-        ];
-        return moods[this.processedMonths() % moods.length];
-    }
-
-    private countBulkTargetMonths(month: number, year: number): number {
-        return ((year - 2015) * 12) + month;
-    }
-
-    private getPreviousPeriod(month: number, year: number): { month: number; year: number } {
-        if (month > 1) {
-            return { month: month - 1, year };
-        }
-        return { month: 12, year: year - 1 };
-    }
-
-    private getPeriodLabel(month: number, year: number): string {
-        const monthName = this.monthsMap.find(item => item.value === month)?.name ?? `M${month}`;
-        return `${monthName} ${year}`;
     }
 }
