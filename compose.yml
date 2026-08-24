@@ -1,3 +1,12 @@
+# Pin the compose project name.
+#
+# This file sets container_name, so the container is claimed by whichever project runs
+# compose — and the project name defaults to the DIRECTORY name. That means `docker
+# compose up` from /opt/mono-finance/src (project "src") and the same command run from
+# anywhere else disagree about who owns `finance-web`, and the second one fails with
+# "container name is already in use". Naming the project makes every caller agree.
+name: mono-finance
+
 services:
     web:
         build:
