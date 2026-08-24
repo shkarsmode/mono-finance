@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, HostListener, Input, Output } from '@angular/core';
 import { currencyCodesMap } from '@core/data';
 import { IAccount } from '@core/interfaces';
 import { MaskedCardPipe } from '../../../../pipes/masked-card.pipe';
@@ -18,10 +18,20 @@ export class CardComponent {
 
     @Output() public onClick: EventEmitter<IAccount> = new EventEmitter();
 
+    // The tile is a real control: focusable and operable from the keyboard.
+    @HostBinding('attr.role') public readonly role = 'button';
+    @HostBinding('attr.tabindex') public readonly tabindex = '0';
+
     @HostListener('click')
     public onCardClick = () => this.onClick.emit(this.account);
 
-    public isSmallScreen: boolean = window.innerWidth < 700;
+    @HostListener('keydown', ['$event'])
+    public onKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            this.onClick.emit(this.account);
+        }
+    }
 
     get currencyName(): string {
         return currencyCodesMap[this.account?.currencyCode]?.name ?? 'UAH';

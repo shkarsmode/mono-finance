@@ -1,185 +1,77 @@
+// ── Account tile ─────────────────────────────────────────────
+// A restrained paper tile, not a skeuomorphic bank card. The active
+// account is marked by an accent spine — never by dimming the others.
+
 :host {
-    display: block;
-    width: 320px;
-    height: 190px;
-    position: relative;
-    background: linear-gradient(135deg, #0f1724 0%, #1a2332 100%);
-    box-shadow: var(--shadow-2);
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 220px;
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 2px solid transparent;
     border-radius: var(--radius-md);
-    padding: var(--space-5);
     cursor: pointer;
-    transition: all var(--duration-normal) var(--ease-default);
-    flex-shrink: 0;
+    transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 
-    &:not(.active) { opacity: 0.5; }
-    &:hover { transform: translateY(-4px); opacity: 1; box-shadow: var(--shadow-3); }
+    &:hover { background: var(--hover); }
 
-    @media (max-width: 767px) {
-        width: 260px;
-        min-width: 260px;
-        height: 160px;
-        max-width: 260px;
-        padding: var(--space-4);
-        scroll-snap-align: center;
+    &.active {
+        border-left-color: var(--accent);
+        background: var(--surface);
     }
 }
 
-:host-context(.skeleton) {
-    background: linear-gradient(
-        90deg,
-        var(--color-skeleton) 25%,
-        var(--color-skeleton-shine) 50%,
-        var(--color-skeleton) 75%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-shimmer 1.5s ease-in-out infinite;
-    border-radius: var(--radius-sm);
-}
-
-:host-context(.white) {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-
-    .bank-name, .additional-name, .card-number, .world, .name {
-        color: #0f172a;
-    }
-    .chip, .pay-pass, .mastercard-icon { color: #475569; }
-}
-
-.top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-2);
-    min-height: 24px;
-    overflow: hidden;
-}
-
-.title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-}
-
-.bank-name {
-    color: #fff;
-    font-size: var(--text-base);
-    font-weight: 600;
-}
-
-.divider {
-    color: #475569;
-    font-size: var(--text-xs);
-}
-
-.additional-name {
-    font-size: var(--text-xs);
-    color: #64748b;
-}
-
-.pay-pass {
-    color: #64748b;
-    font-size: 22px;
-}
-
-.center {
-    display: flex;
-    justify-content: space-between;
-    min-height: 40px;
-    overflow: hidden;
-    align-items: flex-end;
-    margin-bottom: var(--space-3);
-}
-
-.chip {
-    color: #94a3b8;
-    font-size: 28px;
-}
-
-.world {
-    color: #475569;
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.card-number {
-    text-align: center;
-    font-size: var(--text-xl);
-    font-weight: 500;
-    color: #94a3b8;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    letter-spacing: 2px;
-    margin-bottom: var(--space-1);
-
-    @media (max-width: 767px) {
-        font-size: var(--text-sm);
-    }
-}
-
-.balance-line {
-    display: flex;
-    align-items: baseline;
-    min-height: 20px;
-    overflow: hidden;
-    justify-content: center;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
-}
-
-.balance-value {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    color: #e2e8f0;
-    font-variant-numeric: tabular-nums;
-
-    ::ng-deep .white & {
-        color: #0f172a;
+.acct {
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
     }
 
-    @media (max-width: 767px) {
-        font-size: var(--text-xl);
-    }
-}
-
-.balance-currency {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    color: #64748b;
-    text-transform: uppercase;
-}
-
-.bottom {
-    min-height: 24px;
-    overflow: hidden;
-
-    .name {
-        font-size: var(--text-xs);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        color: #94a3b8;
-        white-space: nowrap;
+    &__label {
+        font-size: var(--fs-meta);
+        font-weight: 600;
+        color: var(--ink-2);
+        text-transform: capitalize;
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__cur {
+        flex: none;
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+
+    &__pan {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+
+    &__balance {
+        margin-top: var(--space-2);
+        font-size: var(--fs-kpi);
+        font-weight: 600;
+        line-height: var(--lh-tight);
+        letter-spacing: var(--tracking-tight);
+        color: var(--ink);
+        white-space: nowrap;
+    }
+
+    &__meta {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
     }
 }
 
-.mastercard-icon {
-    font-size: 24px;
-    color: #94a3b8;
-}
+:host(.active) .acct__label { color: var(--ink); }
 
-@keyframes skeleton-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-@media (max-width: 767px) {
-    :host {
-        .center { display: none; }
-        .pay-pass { display: none; }
-        .name { font-size: 9px !important; }
-    }
+@media (max-width: 700px) {
+    :host { width: 176px; padding: var(--space-3); }
+    .acct__balance { font-size: var(--fs-h1); }
 }

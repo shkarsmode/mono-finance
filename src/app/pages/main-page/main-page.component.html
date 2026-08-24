@@ -1,75 +1,60 @@
-<!-- Global Loading Bar -->
+<!-- One loading bar for the whole app -->
 @if (loadingService.loading$ | async) {
-    <div class="global-loading-bar">
-        <div class="global-loading-bar__track"></div>
-    </div>
+    <div class="progress" role="progressbar" aria-label="Loading"><span class="progress__bar"></span></div>
 }
 
-<!-- Overlay for mobile sidenav -->
-@if (sidenavOpen()) {
-    <div class="overlay" (click)="closeSidenav()"></div>
-}
-
-<!-- Side Navigation (desktop always visible, mobile slide-in) -->
-<aside class="sidenav" [class.sidenav--open]="sidenavOpen()">
-    <div class="sidenav__logo">
-        <span class="sidenav__logo-icon">💰</span>
-        <span class="sidenav__logo-text">Finance</span>
+<!-- Left rail — always visible on desktop, hidden on mobile in favour of the bottom nav -->
+<aside class="rail">
+    <div class="rail__brand">
+        <span class="rail__mark">M</span>
+        <span class="rail__name">mono<span>·</span>finance</span>
     </div>
 
-    <nav class="sidenav__nav">
+    <nav class="rail__nav" aria-label="Main">
         @for (item of navItems; track item.path) {
-            <a class="sidenav__link"
-                [routerLink]="item.path"
-                routerLinkActive="sidenav__link--active"
-                (click)="closeSidenav()">
+            <a class="rail__link"
+               [routerLink]="item.path"
+               routerLinkActive="rail__link--active">
                 <span class="material-icons-round">{{ item.icon }}</span>
                 <span>{{ item.label }}</span>
             </a>
         }
     </nav>
 
-    <div class="sidenav__footer">
-        <button class="sidenav__theme-btn" (click)="toggleTheme()">
-            <span class="material-icons-round">
-                {{ isDark() ? 'light_mode' : 'dark_mode' }}
-            </span>
-            <span>{{ isDark() ? 'Light mode' : 'Dark mode' }}</span>
-        </button>
+    <span class="rail__spacer"></span>
+
+    <div class="rail__foot">
+        <span class="rail__sync">
+            <span class="rail__dot"></span>
+            Synced
+        </span>
     </div>
 </aside>
 
-<!-- Top Bar -->
 <div class="main-area">
     <header class="topbar">
-        <button class="topbar__burger" (click)="toggleSidenav()">
-            <span class="material-icons-round">menu</span>
-        </button>
+        <span class="topbar__spacer"></span>
 
-        <div class="topbar__spacer"></div>
-
-        <button class="topbar__action" (click)="syncData()" [disabled]="isSyncing()">
+        <button type="button" class="iconbtn" (click)="syncData()" [disabled]="isSyncing()" aria-label="Sync now">
             <span class="material-icons-round" [class.spinning]="isSyncing()">sync</span>
         </button>
-        <button class="topbar__action topbar__theme-desktop" (click)="toggleTheme()">
-            <span class="material-icons-round">
-                {{ isDark() ? 'light_mode' : 'dark_mode' }}
-            </span>
+        <!-- Appearance lives here and nowhere else -->
+        <button type="button" class="iconbtn" (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Switch to light appearance' : 'Switch to dark appearance'">
+            <span class="material-icons-round">{{ isDark() ? 'light_mode' : 'dark_mode' }}</span>
         </button>
     </header>
 
-    <!-- Page Content -->
     <main class="content">
         <router-outlet></router-outlet>
     </main>
 </div>
 
-<!-- Bottom Navigation (mobile only) -->
-<nav class="bottomnav">
-    @for (item of navItems; track item.path) {
+<!-- Mobile: five primary destinations -->
+<nav class="bottomnav" aria-label="Main">
+    @for (item of navItems.slice(0, 5); track item.path) {
         <a class="bottomnav__item"
-            [routerLink]="item.path"
-            routerLinkActive="bottomnav__item--active">
+           [routerLink]="item.path"
+           routerLinkActive="bottomnav__item--active">
             <span class="material-icons-round">{{ item.icon }}</span>
             <span class="bottomnav__label">{{ item.label }}</span>
         </a>

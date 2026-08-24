@@ -1,235 +1,68 @@
-<div class="login-wrapper">
-    <div class="login-card">
-        <div class="login-header">
-            <span class="login-logo material-icons-round">account_balance</span>
-            <h1 class="login-title">Finance</h1>
-            <p class="login-subtitle">Track your Monobank finances</p>
-        </div>
+<div class="auth">
+    <section class="auth__card">
+        <header class="auth__head">
+            <span class="auth__mark">M</span>
+            <h1 class="auth__title">mono<span>·</span>finance</h1>
+            <p class="auth__sub">Your Monobank ledger</p>
+        </header>
 
-        <!-- Tabs -->
-        <div class="tabs">
-            <button
-                class="tabs__item"
-                [class.tabs__item--active]="activeTab() === 'login'"
-                (click)="switchTab('login')"
-                type="button">
-                Sign in
-            </button>
-            <button
-                class="tabs__item"
-                [class.tabs__item--active]="activeTab() === 'register'"
-                (click)="switchTab('register')"
-                type="button">
-                Sign up
-            </button>
-        </div>
+        <form class="form" [formGroup]="loginForm" (ngSubmit)="login()">
+            <label class="field">
+                <span class="field__label micro">Email</span>
+                <input class="field__input"
+                       type="email"
+                       formControlName="email"
+                       autocomplete="username"
+                       placeholder="you@example.com" />
+                @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+                    <span class="field__err">Enter a valid email address.</span>
+                }
+            </label>
 
-        <!-- Login form -->
-        @if (activeTab() === 'login') {
-            <form class="login-form" [formGroup]="loginForm" (ngSubmit)="login()">
-                <div class="field">
-                    <label class="field__label" for="login-email">Email</label>
-                    <div class="field__input-wrap">
-                        <span class="field__icon material-icons-round">mail</span>
-                        <input
-                            class="field__input"
-                            id="login-email"
-                            formControlName="email"
-                            type="email"
-                            placeholder="you@example.com"
-                            autocomplete="email" />
-                    </div>
-                    @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
-                        <span class="field__error">Please enter a valid email</span>
-                    }
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="login-password">Password</label>
-                    <div class="field__input-wrap">
-                        <span class="field__icon material-icons-round">lock</span>
-                        <input
-                            class="field__input"
-                            id="login-password"
-                            formControlName="password"
-                            [type]="showPassword() ? 'text' : 'password'"
-                            placeholder="••••••••"
-                            autocomplete="current-password" />
-                        <button
-                            class="field__toggle"
-                            type="button"
+            <label class="field">
+                <span class="field__label micro">Password</span>
+                <span class="field__wrap">
+                    <input class="field__input"
+                           [type]="showPassword() ? 'text' : 'password'"
+                           formControlName="password"
+                           autocomplete="current-password"
+                           placeholder="••••••••" />
+                    <button type="button"
+                            class="field__reveal"
                             (click)="togglePassword()"
-                            tabindex="-1">
-                            <span class="material-icons-round">
-                                {{ showPassword() ? 'visibility_off' : 'visibility' }}
-                            </span>
-                        </button>
-                    </div>
-                    @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('minlength')) {
-                        <span class="field__error">Password must be at least 6 characters</span>
-                    }
-                </div>
-
-                @if (errorMessage()) {
-                    <div class="login-error">
-                        <span class="material-icons-round">error_outline</span>
-                        {{ errorMessage() }}
-                    </div>
-                }
-
-                <button
-                    class="login-btn"
-                    type="submit"
-                    [disabled]="isLoading()"
-                    [class.login-btn--loading]="isLoading()">
-                    @if (isLoading()) {
-                        <span class="login-btn__spinner"></span>
-                        Signing in…
-                    } @else {
-                        Sign in
-                    }
-                </button>
-            </form>
-        }
-
-        <!-- Registration form -->
-        @if (activeTab() === 'register') {
-            <form class="login-form" [formGroup]="registerForm" (ngSubmit)="register()">
-                <div class="field">
-                    <label class="field__label" for="reg-email">Email</label>
-                    <div class="field__input-wrap">
-                        <span class="field__icon material-icons-round">mail</span>
-                        <input
-                            class="field__input"
-                            id="reg-email"
-                            formControlName="email"
-                            type="email"
-                            placeholder="you@example.com"
-                            autocomplete="email" />
-                    </div>
-                    @if (registerForm.get('email')?.touched && registerForm.get('email')?.hasError('email')) {
-                        <span class="field__error">Please enter a valid email</span>
-                    }
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="reg-password">Password</label>
-                    <div class="field__input-wrap">
-                        <span class="field__icon material-icons-round">lock</span>
-                        <input
-                            class="field__input"
-                            id="reg-password"
-                            formControlName="password"
-                            [type]="showRegPassword() ? 'text' : 'password'"
-                            placeholder="••••••••"
-                            autocomplete="new-password" />
-                        <button
-                            class="field__toggle"
-                            type="button"
-                            (click)="toggleRegPassword()"
-                            tabindex="-1">
-                            <span class="material-icons-round">
-                                {{ showRegPassword() ? 'visibility_off' : 'visibility' }}
-                            </span>
-                        </button>
-                    </div>
-                    @if (registerForm.get('password')?.touched && registerForm.get('password')?.hasError('minlength')) {
-                        <span class="field__error">Password must be at least 6 characters</span>
-                    }
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="reg-token">
-                        Monobank Token
-                        <button
-                            class="field__hint-toggle"
-                            type="button"
-                            (click)="toggleTokenGuide()"
-                            tabindex="-1">
-                            <span class="material-icons-round">help_outline</span>
-                        </button>
-                    </label>
-
-                    @if (showTokenGuide()) {
-                        <div class="token-guide">
-                            <div class="token-guide__header">
-                                <span class="material-icons-round">info</span>
-                                How to get your Monobank token
-                            </div>
-                            <ol class="token-guide__steps">
-                                <li>Open Monobank app on your phone</li>
-                                <li>Go to <a href="https://api.monobank.ua/" target="_blank" rel="noopener noreferrer">api.monobank.ua</a> in your browser</li>
-                                <li>Scan the QR code with Monobank app</li>
-                                <li>Copy the token that appears on the page</li>
-                            </ol>
-                            <div class="token-guide__hint">
-                                <span class="material-icons-round">shield</span>
-                                <div>
-                                    <strong>This token is read-only.</strong>
-                                    It can only view your account info and transaction history. It cannot make payments, transfers, or modify your account in any way. Your money is completely safe.
-                                </div>
-                            </div>
-                            <div class="token-guide__hint token-guide__hint--info">
-                                <span class="material-icons-round">schedule</span>
-                                <div>
-                                    The token is valid for <strong>6 months</strong>. You can revoke it at any time in the Monobank app.
-                                </div>
-                            </div>
-                        </div>
-                    }
-
-                    <div class="field__input-wrap">
-                        <span class="field__icon material-icons-round">key</span>
-                        <input
-                            class="field__input"
-                            id="reg-token"
-                            formControlName="monobankToken"
-                            type="text"
-                            placeholder="uBsR8vS..."
-                            autocomplete="off" />
-                    </div>
-                    @if (registerForm.get('monobankToken')?.touched && registerForm.get('monobankToken')?.hasError('minlength')) {
-                        <span class="field__error">Token is too short</span>
-                    }
-                </div>
-
-                @if (errorMessage()) {
-                    <div class="login-error">
-                        <span class="material-icons-round">error_outline</span>
-                        {{ errorMessage() }}
-                    </div>
-                }
-
-                @if (successMessage()) {
-                    <div class="login-success">
-                        <span class="material-icons-round">check_circle</span>
-                        <div>
-                            <strong>{{ successMessage() }}</strong>
-                            <p class="login-success__sub">You'll be able to sign in once an admin approves your account.</p>
-                        </div>
-                    </div>
-                }
-
-                @if (!successMessage()) {
-                    <button
-                        class="login-btn"
-                        type="submit"
-                        [disabled]="isLoading()"
-                        [class.login-btn--loading]="isLoading()">
-                        @if (isLoading()) {
-                            <span class="login-btn__spinner"></span>
-                            Creating account…
-                        } @else {
-                            Create account
-                        }
+                            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                        <span class="material-icons-round">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
                     </button>
+                </span>
+                @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+                    <span class="field__err">Password is required.</span>
                 }
+            </label>
 
-                <div class="approval-notice">
-                    <span class="material-icons-round">hourglass_top</span>
-                    After registration, your account must be approved by an administrator before you can sign in.
-                </div>
-            </form>
-        }
-    </div>
+            @if (errorMessage()) {
+                <p class="alert" role="alert">{{ errorMessage() }}</p>
+            }
+
+            <button class="submit" type="submit" [disabled]="isLoading()">
+                {{ isLoading() ? 'Signing in…' : 'Sign in' }}
+            </button>
+        </form>
+
+        <!-- Kept: the token guide is useful when Monobank's token expires. -->
+        <div class="guide">
+            <button type="button" class="guide__toggle" (click)="toggleTokenGuide()" [attr.aria-expanded]="showTokenGuide()">
+                <span class="material-icons-round">{{ showTokenGuide() ? 'expand_less' : 'expand_more' }}</span>
+                Where do I get a Monobank token?
+            </button>
+            @if (showTokenGuide()) {
+                <ol class="guide__steps">
+                    <li>Open <span class="mono">api.monobank.ua</span> in a browser.</li>
+                    <li>Sign in by scanning the QR code with the Monobank app.</li>
+                    <li>Create a personal API token.</li>
+                    <li>Paste it into Profile → Monobank token.</li>
+                </ol>
+                <p class="guide__note">Tokens expire periodically — regenerate one the same way when syncing stops.</p>
+            }
+        </div>
+    </section>
 </div>

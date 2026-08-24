@@ -1,114 +1,180 @@
-// Light Theme
-[data-theme="light"],
-:root {
-    --color-background: #f5f6f8;
-    --color-surface: #ffffff;
-    --color-surface-elevated: #ffffff;
-    --color-surface-hover: #f0f1f4;
-    --color-surface-active: #e8e9ee;
+// ─────────────────────────────────────────────────────────────
+//  mono·finance — colour
+//  Rules that make the palette readable at a glance:
+//    · green / red mean ONLY income / expense. Never decoration.
+//    · the 12-hue category ramp is category identity, assigned by
+//      index and stable forever. It skips the green and red wedges
+//      so a category can never be mistaken for a sign.
+//    · primary buttons are INK, not brand colour. The accent is
+//      reserved for selection, focus and links.
+//    · every ink tier clears 4.5:1 on its own ground.
+// ─────────────────────────────────────────────────────────────
 
-    --color-text-primary: #0f1419;
-    --color-text-secondary: #5b6270;
-    --color-text-tertiary: #9199a6;
-    --color-text-inverse: #ffffff;
+:root,
+[data-theme="light"] {
+    color-scheme: light;
 
-    --color-border: #e4e6eb;
-    --color-border-strong: #ced1d8;
-    --color-divider: #edeef1;
+    --bg: #f2f4f7;
+    --surface: #ffffff;
+    --raised: #fafbfd;
+    --sunken: #edf0f4;
+    --hover: #f5f7fa;
 
-    --color-primary: #4361ee;
-    --color-primary-hover: #3651d4;
-    --color-primary-active: #2d44b5;
-    --color-primary-subtle: #eef1fd;
-    --color-primary-text: #ffffff;
+    --ink: #0b0f16;
+    --ink-2: #454e5c;
+    --ink-3: #67707e;
+    --ink-invert: #ffffff;
 
-    --color-success: #10b981;
-    --color-success-subtle: #ecfdf5;
-    --color-success-text: #065f46;
+    --line: #e2e6ec;
+    --line-2: #cfd5de;
 
-    --color-warn: #f59e0b;
-    --color-warn-subtle: #fffbeb;
-    --color-warn-text: #92400e;
+    --accent: #2f5ae0;
+    --accent-2: #2449be;
+    --accent-tint: #e8edfc;
+    --accent-ink: #ffffff;
 
-    --color-error: #ef4444;
-    --color-error-subtle: #fef2f2;
-    --color-error-text: #991b1b;
+    --pos: #0b7a4b;
+    --pos-tint: #e4f2ea;
+    --neg: #c13328;
+    --neg-tint: #fbeae8;
+    --warn: #8a5a0b;
+    --warn-tint: #f8efdb;
 
-    --color-income: #10b981;
-    --color-expense: #ef4444;
+    --btn: #0b0f16;
+    --btn-ink: #ffffff;
+    --btn-hover: #1c222c;
 
-    --color-expense-muted: #d97706;
-    --color-expense-muted-bg: rgba(245, 158, 11, 0.06);
-    --color-expense-muted-border: rgba(245, 158, 11, 0.35);
-    --color-income-muted: #059669;
-    --color-income-muted-bg: rgba(16, 185, 129, 0.06);
-    --color-income-muted-border: rgba(16, 185, 129, 0.35);
+    --skeleton: #e6eaf0;
+    --skeleton-shine: #f2f5f9;
+    --scrollbar: #cbd2dc;
 
-    --color-card-dark-bg: linear-gradient(135deg, #0f1419 0%, #1e2530 100%);
-    --color-card-white-bg: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
-    --color-card-dark-text: #c0c7d4;
-    --color-card-white-text: #0f1419;
-
-    --color-skeleton: #e4e6eb;
-    --color-skeleton-shine: #f5f6f8;
-
-    --color-scrollbar-track: transparent;
-    --color-scrollbar-thumb: #d0d3da;
+    // Category ramp — 12 fixed hues
+    --cat-1: #b4553f;
+    --cat-2: #9c7420;
+    --cat-3: #7a6142;
+    --cat-4: #2c7370;
+    --cat-5: #37699a;
+    --cat-6: #2c4e85;
+    --cat-7: #56789f;
+    --cat-8: #5d4b96;
+    --cat-9: #7c4a6e;
+    --cat-10: #93365c;
+    --cat-11: #68445a;
+    --cat-12: #57606b;
 }
 
-// Dark Theme
 [data-theme="dark"] {
-    --color-background: #0b0e14;
-    --color-surface: #141820;
-    --color-surface-elevated: #1a1f2a;
-    --color-surface-hover: #1e2433;
-    --color-surface-active: #252c3d;
+    color-scheme: dark;
 
-    --color-text-primary: #e8ebf0;
-    --color-text-secondary: #9199a6;
-    --color-text-tertiary: #5b6270;
-    --color-text-inverse: #0f1419;
+    --bg: #0b0e13;
+    --surface: #12161d;
+    --raised: #171c24;
+    --sunken: #0e1218;
+    --hover: #1a1f28;
 
-    --color-border: #262c38;
-    --color-border-strong: #3a4150;
-    --color-divider: #1e222c;
+    --ink: #e8ecf2;
+    --ink-2: #9ba5b4;
+    --ink-3: #7b8695;
+    --ink-invert: #0b0e13;
 
-    --color-primary: #6a7cff;
-    --color-primary-hover: #7e8eff;
-    --color-primary-active: #5566e8;
-    --color-primary-subtle: rgba(106, 124, 255, 0.12);
-    --color-primary-text: #ffffff;
+    --line: #212730;
+    --line-2: #2e3641;
 
-    --color-success: #34d399;
-    --color-success-subtle: rgba(52, 211, 153, 0.12);
-    --color-success-text: #6ee7b7;
+    --accent: #7c97f5;
+    --accent-2: #92a9f8;
+    --accent-tint: #172041;
+    --accent-ink: #0b0e13;
 
-    --color-warn: #fbbf24;
-    --color-warn-subtle: rgba(251, 191, 36, 0.12);
-    --color-warn-text: #fcd34d;
+    --pos: #45be85;
+    --pos-tint: #10261d;
+    --neg: #e77b70;
+    --neg-tint: #2a1917;
+    --warn: #d2a356;
+    --warn-tint: #2a2114;
 
-    --color-error: #f87171;
-    --color-error-subtle: rgba(248, 113, 113, 0.12);
-    --color-error-text: #fca5a5;
+    --btn: #e8ecf2;
+    --btn-ink: #0b0e13;
+    --btn-hover: #ffffff;
 
-    --color-income: #34d399;
-    --color-expense: #f87171;
+    --skeleton: #1a1f28;
+    --skeleton-shine: #232a34;
+    --scrollbar: #2e3641;
 
-    --color-expense-muted: #fbbf24;
-    --color-expense-muted-bg: rgba(251, 191, 36, 0.08);
-    --color-expense-muted-border: rgba(251, 191, 36, 0.25);
-    --color-income-muted: #34d399;
-    --color-income-muted-bg: rgba(52, 211, 153, 0.08);
-    --color-income-muted-border: rgba(52, 211, 153, 0.25);
+    --cat-1: #d0745c;
+    --cat-2: #c0923c;
+    --cat-3: #9a7f5d;
+    --cat-4: #4a9490;
+    --cat-5: #5788b9;
+    --cat-6: #5175ab;
+    --cat-7: #7c9ac0;
+    --cat-8: #8371b8;
+    --cat-9: #a06c90;
+    --cat-10: #ba5c80;
+    --cat-11: #8d6478;
+    --cat-12: #78818d;
+}
 
-    --color-card-dark-bg: linear-gradient(135deg, #1a1f2a 0%, #252c3d 100%);
-    --color-card-white-bg: linear-gradient(135deg, #1e2433 0%, #262c38 100%);
-    --color-card-dark-text: #c0c7d4;
-    --color-card-white-text: #e8ebf0;
+// ── Back-compat aliases ──────────────────────────────────────
+// Existing components still reference the old --color-* names.
+// Re-pointing them here means the whole app inherits the new
+// system immediately — including the old failing 2.9:1 tertiary,
+// which now resolves to an AA tier.
+:root {
+    --color-background: var(--bg);
+    --color-surface: var(--surface);
+    --color-surface-elevated: var(--raised);
+    --color-surface-hover: var(--hover);
+    --color-surface-active: var(--sunken);
 
-    --color-skeleton: #1e222c;
-    --color-skeleton-shine: #262c38;
+    --color-text-primary: var(--ink);
+    --color-text-secondary: var(--ink-2);
+    --color-text-tertiary: var(--ink-3);
+    --color-text-inverse: var(--ink-invert);
 
+    --color-border: var(--line);
+    --color-border-strong: var(--line-2);
+    --color-divider: var(--line);
+
+    --color-primary: var(--accent);
+    --color-primary-hover: var(--accent-2);
+    --color-primary-active: var(--accent-2);
+    --color-primary-subtle: var(--accent-tint);
+    --color-primary-text: var(--accent-ink);
+
+    --color-success: var(--pos);
+    --color-success-subtle: var(--pos-tint);
+    --color-success-text: var(--pos);
+    --color-error: var(--neg);
+    --color-error-subtle: var(--neg-tint);
+    --color-error-text: var(--neg);
+    --color-warn: var(--warn);
+    --color-warning: var(--warn);
+    --color-warn-subtle: var(--warn-tint);
+    --color-warning-subtle: var(--warn-tint);
+    --color-warn-text: var(--warn);
+
+    --color-income: var(--pos);
+    --color-expense: var(--neg);
+    --color-income-muted: var(--pos);
+    --color-income-muted-bg: var(--pos-tint);
+    --color-income-muted-border: var(--line-2);
+    --color-expense-muted: var(--warn);
+    --color-expense-muted-bg: var(--warn-tint);
+    --color-expense-muted-border: var(--line-2);
+
+    --color-card-dark-bg: var(--surface);
+    --color-card-white-bg: var(--surface);
+    --color-card-dark-text: var(--ink);
+    --color-card-white-text: var(--ink);
+
+    --color-skeleton: var(--skeleton);
+    --color-skeleton-shine: var(--skeleton-shine);
     --color-scrollbar-track: transparent;
-    --color-scrollbar-thumb: #3a4150;
+    --color-scrollbar-thumb: var(--scrollbar);
+
+    // spacing/radius names used by older component styles
+    --space-12: 96px;
+    --shadow-6: var(--shadow-pop);
+    --font-sans: var(--font-ui);
+    --radius-xl: var(--radius-lg);
 }

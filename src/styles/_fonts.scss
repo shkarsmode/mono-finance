@@ -1,26 +1,8 @@
-// Font loading — Space Grotesk (woff2, local)
-// Weights: 400 (normal), 500 (medium), 600 (semibold)
-
-@font-face {
-    font-family: "Space Grotesk";
-    src: url("/assets/fonts/SpaceGrotesk-Regular.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: "Space Grotesk";
-    src: url("/assets/fonts/SpaceGrotesk-Medium.woff2") format("woff2");
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: "Space Grotesk";
-    src: url("/assets/fonts/SpaceGrotesk-SemiBold.woff2") format("woff2");
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
-}
+// Type is loaded from Google Fonts in index.html:
+//   Archivo        — interface + figures (400/500/600/700)
+//   JetBrains Mono — machine values: MCC, IBAN, ids, balances
+// Fallback stacks live on the --font-* tokens in _tokens.scss.
+//
+// The three Space Grotesk woff2 files this app used to self-host were
+// byte-identical to each other, so every weight rendered at 400 and the
+// preloads paid for the same file three times. They are gone.

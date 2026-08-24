@@ -1,33 +1,12 @@
-<div class="top">
-    <div class="title">
-        <span class="bank-name">monobank</span>
-        <span class="divider">|</span>
-        <span class="additional-name">Universal Bank</span>
-    </div>
-    <span class="material-icons-round pay-pass">contactless</span>
-</div>
+<span class="acct__head">
+    <span class="acct__label">{{ account.type || 'account' }}</span>
+    <span class="acct__cur mono">{{ currencyName }}</span>
+</span>
 
-<!-- <div class="center">
-    <span class="material-icons-round chip">sim_card</span>
-    <div class="world">world</div>
-</div> -->
+<span class="acct__pan mono">{{ (account ? account.maskedPan[0] : '4444444444444444') | maskedCard }}</span>
 
-@if (isSmallScreen) {
-    <div class="balance-line">
-        <span class="balance-value">{{ balanceFormatted | number: '1.2-2' }}</span>
-        <span class="balance-currency">{{ currencyName }}</span>
-    </div>
-} @else {
-    <div class="card-number">
-        {{ (account ? account.maskedPan[0] : '4444444444444444') | maskedCard }}
-    </div>
-    <div class="balance-line">
-        <span class="balance-value">{{ balanceFormatted | number: '1.2-2' }}</span>
-        <span class="balance-currency">{{ currencyName }}</span>
-    </div>
+<span class="acct__balance num balance-cell">{{ balanceFormatted | number: '1.2-2' }}</span>
+
+@if (account.creditLimit) {
+    <span class="acct__meta num">credit limit {{ (account.creditLimit / 100) | number: '1.0-0' }}</span>
 }
-
-<div class="bottom">
-    <div class="name">{{ name || 'Cardholder' }}</div>
-    <span class="material-icons-round mastercard-icon">credit_card</span>
-</div>

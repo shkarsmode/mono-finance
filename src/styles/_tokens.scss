@@ -1,9 +1,51 @@
-// Design Tokens — Finance App
-// Grid: 8px base, spacing scale in multiples
-// Typography: Space Grotesk (geometric, minimal)
+// ─────────────────────────────────────────────────────────────
+//  mono·finance — design tokens (non-colour)
+//  Colour lives in _themes.scss. One source of truth; no other
+//  palette, scale or radius ramp may be defined anywhere else.
+// ─────────────────────────────────────────────────────────────
 
 :root {
-    // ── Spacing ──
+    // ── Type families ────────────────────────────────────────
+    // Archivo: sturdy grotesque, excellent tabular figures.
+    // JetBrains Mono: machine values — MCC, IBAN, ids, balances.
+    --font-ui: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --font-emoji: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+
+    // Back-compat aliases (older components still reference these)
+    --font-family-base: var(--font-ui);
+    --font-family-heading: var(--font-ui);
+    --font-family-mono: var(--font-mono);
+    --font-family-emoji: var(--font-emoji);
+
+    // ── Type scale ───────────────────────────────────────────
+    // Money leads: --fs-hero and --fs-kpi are figure sizes.
+    --fs-hero: 34px;
+    --fs-kpi: 26px;
+    --fs-h1: 22px;
+    --fs-h2: 17px;
+    --fs-h3: 15px;
+    --fs-body: 14px;
+    --fs-meta: 12.5px;
+    --fs-micro: 11px;
+
+    --lh-tight: 1.08;
+    --lh-snug: 1.28;
+    --lh-body: 1.5;
+
+    --tracking-tight: -0.022em;
+    --tracking-snug: -0.012em;
+    --tracking-micro: 0.06em;
+
+    // Back-compat size aliases
+    --text-xs: var(--fs-micro);
+    --text-sm: var(--fs-body);
+    --text-base: var(--fs-h3);
+    --text-lg: var(--fs-h2);
+    --text-xl: var(--fs-h1);
+    --text-2xl: var(--fs-kpi);
+
+    // ── Space (4px spine) ────────────────────────────────────
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -13,41 +55,47 @@
     --space-7: 48px;
     --space-8: 64px;
 
-    // ── Radius ──
-    --radius-sm: 10px;
-    --radius-md: 14px;
-    --radius-lg: 18px;
-    --radius-xl: 24px;
+    // ── Radius — tight, engineered ───────────────────────────
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
     --radius-full: 9999px;
 
-    // ── Shadows (very soft) ──
-    --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
-    --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-4: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+    // ── Elevation — hairlines carry structure; shadow only floats ──
+    --shadow-1: none;
+    --shadow-pop: 0 1px 2px rgba(8, 12, 20, 0.06), 0 12px 32px -12px rgba(8, 12, 20, 0.24);
+    --shadow-sticky: 0 1px 0 var(--color-border);
 
-    // ── Typography sizes ──
-    --text-xs: 12px;
-    --text-sm: 14px;
-    --text-base: 16px;
-    --text-lg: 18px;
-    --text-xl: 24px;
-    --text-2xl: 32px;
+    // Back-compat shadow aliases
+    --shadow-2: var(--shadow-pop);
+    --shadow-3: var(--shadow-pop);
+    --shadow-4: var(--shadow-pop);
 
-    // ── Font families ──
-    --font-family-base: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    --font-family-heading: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    --font-family-emoji: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    // ── Control metrics ──────────────────────────────────────
+    --control-sm: 28px;
+    --control-md: 32px;
+    --control-lg: 38px;
+    --row-comfortable: 44px;
+    --row-compact: 34px;
+    --rail-w: 216px;
+    --topbar-h: 54px;
 
-    // ── Transitions ──
-    --ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
-    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-    --duration-fast: 150ms;
-    --duration-normal: 220ms;
-    --duration-slow: 350ms;
+    // ── Motion ───────────────────────────────────────────────
+    --ease: cubic-bezier(0.2, 0, 0.13, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 120ms;
+    --dur: 180ms;
+    --dur-slow: 300ms;
 
-    // ── Z-index scale ──
+    // Back-compat motion aliases
+    --ease-default: var(--ease);
+    --ease-bounce: var(--ease-out);
+    --duration-fast: var(--dur-fast);
+    --duration-normal: var(--dur);
+    --duration-slow: var(--dur-slow);
+
+    // ── Z-index ──────────────────────────────────────────────
     --z-dropdown: 100;
     --z-sticky: 200;
     --z-fixed: 300;

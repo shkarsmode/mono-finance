@@ -40,8 +40,17 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     private chartFactoryInstance!: ChartFactory;
 
+    /** Re-read the design tokens and redraw when the appearance changes. */
+    private themeObserver?: MutationObserver;
+
     ngAfterViewInit(): void {
         this.init();
+
+        this.themeObserver = new MutationObserver(() => this.update());
+        this.themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme'],
+        });
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -91,6 +100,7 @@ export class ChartComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     ngOnDestroy(): void {
+        this.themeObserver?.disconnect();
         if (this.chartFactoryInstance) this.chartFactoryInstance.destroy();
     }
 }

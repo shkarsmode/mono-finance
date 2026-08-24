@@ -28,15 +28,29 @@ export interface MonthlyAggregate {
     tx: number;
 }
 
-const CHART_COLORS_MAP = {
-    [ChartType.Income]: '#36a2eb',
-    [ChartType.Expenses]: '#ff6384',
-} as const;
+/**
+ * Chart colour comes from the design tokens, never from Chart.js' demo
+ * palette — so income is the same green in a chart as in the table beside
+ * it, and both follow the active theme.
+ */
+function token(name: string, fallback: string): string {
+    if (typeof document === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+}
 
-const CHART_BG_COLORS_MAP = {
-    [ChartType.Income]: '#36a3eb53',
-    [ChartType.Expenses]: '#ff63854d',
-} as const;
+/** Same hue at low alpha for the area fill. */
+function tokenFill(name: string, fallback: string): string {
+    return `color-mix(in srgb, ${token(name, fallback)} 18%, transparent)`;
+}
+
+function chartStroke(type: ChartType): string {
+    return type === ChartType.Income ? token('--pos', '#0b7a4b') : token('--neg', '#c13328');
+}
+
+function chartFill(type: ChartType): string {
+    return type === ChartType.Income ? tokenFill('--pos', '#0b7a4b') : tokenFill('--neg', '#c13328');
+}
 
 type Mode = 'daily' | 'monthly';
 
@@ -112,8 +126,8 @@ export class ChartFactory {
                         pointHoverRadius: isMobile ? 5 : (this.mode === 'monthly' ? 9 : 10),
                         fill: true,
                         borderCapStyle: 'square',
-                        borderColor: CHART_COLORS_MAP[this.type],
-                        backgroundColor: CHART_BG_COLORS_MAP[this.type],
+                        borderColor: chartStroke(this.type),
+                        backgroundColor: chartFill(this.type),
                         tension: 0.25,
                     },
                 ],
@@ -121,13 +135,18 @@ export class ChartFactory {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'top' },
-                    title: { display: true, text: this.label },
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: this.label,
+                        color: token('--ink-2', '#454e5c'),
+                        font: { family: token('--font-ui', 'sans-serif'), size: 12, weight: 600 },
+                    },
                     tooltip: {
                         callbacks: {
                             label: (ctx) => {
                                 const v = ctx.parsed.y ?? 0;
-                                return `${this.type === ChartType.Income ? 'Доход' : 'Расход'}: ${this.fmt(v)} ${this.currency}`;
+                                return `${this.type === ChartType.Income ? 'Income' : 'Expense'}: ${this.fmt(v)} ${this.currency}`;
                             },
                         },
                     },
@@ -135,9 +154,21 @@ export class ChartFactory {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: this.resolveYMax(), // <-- new
+                        max: this.resolveYMax(),
+                        border: { color: token('--line', '#e2e6ec') },
+                        grid: { color: token('--line', '#e2e6ec') },
                         ticks: {
+                            color: token('--ink-3', '#67707e'),
+                            font: { family: token('--font-mono', 'monospace'), size: 10 },
                             callback: (v) => this.fmt(Number(v)),
+                        },
+                    },
+                    x: {
+                        border: { color: token('--line', '#e2e6ec') },
+                        grid: { display: false },
+                        ticks: {
+                            color: token('--ink-3', '#67707e'),
+                            font: { family: token('--font-mono', 'monospace'), size: 10 },
                         },
                     },
                 },
@@ -253,8 +284,8 @@ export class ChartFactory {
         this.chart.data.datasets.forEach(ds => {
             ds.label = this.label;
             ds.data = this.data;
-            (ds as any).borderColor = CHART_COLORS_MAP[this.type];
-            (ds as any).backgroundColor = CHART_BG_COLORS_MAP[this.type];
+            (ds as any).borderColor = chartStroke(this.type);
+            (ds as any).backgroundColor = chartFill(this.type);
         });
     
         const yScale = (this.chart.options.scales as any)?.y;

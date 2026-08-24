@@ -1,116 +1,102 @@
-<div class="top">
-    <div class="top__title">
-        <span class="material-icons-round">receipt_long</span>
-        {{ title }}
-    </div>
-    <div class="wrap-input">
-        <span class="wrap-input__icon material-icons-round">search</span>
-        <input
-            class="wrap-input__field"
-            placeholder="Search transactions…"
-            type="text"
-            #inputRef
-            [disabled]="isFilterByGroups"
-            (input)="onInputEvent($event)" />
-        @if (inputRef.value) {
-            <button class="wrap-input__clear" (click)="clearInputEvent()">
-                <span class="material-icons-round">close</span>
-            </button>
-        }
-    </div>
-</div>
+<section class="ledger">
 
-@if (allowGroupFilter && groups?.length) {
-    <div class="filters">
-        <mat-checkbox
-            (change)="onFilterGroupsChange($event)"
-            [checked]="isFilterByGroups">
-            {{ isFilterByGroups ? '' : 'Filter by groups' }}
-        </mat-checkbox>
-        @if (isFilterByGroups) {
-            <mat-form-field>
-                <mat-label>Groups</mat-label>
-                <mat-select (valueChange)="onSelectValueChange($event)" multiple>
-                    @for (group of groups; track group.title) {
-                        <mat-option [value]="group.keys.join()">
-                            <span>{{ group.emoji }}</span>
-                            <span>{{ group.title }}</span>
-                        </mat-option>
-                    }
-                </mat-select>
-            </mat-form-field>
-        }
-    </div>
-}
-
-<div class="table-wrap">
-    <table class="transactions">
-        <thead>
-            <tr>
-                <th [class.sort-active]="sortByValue === SortBy.Payment">
-                    <span (click)="onSortByEvent(SortBy.Payment)"
-                          [matBadge]="transactions?.length"
-                          matBadgeOverlap="false">Payment</span>
-                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
-                </th>
-                <th class="date-th" [class.sort-active]="sortByValue === SortBy.Date">
-                    <span (click)="onSortByEvent(SortBy.Date)">Date</span>
-                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
-                </th>
-                @if (!isSmallScreen) {
-                    <th class="status-th">Status</th>
-                }
-                <th class="amount-th" [class.sort-active]="sortByValue === SortBy.Amount">
-                    <span (click)="onSortByEvent(SortBy.Amount)">Amount</span>
-                    <span class="sort-icon material-icons-round" [class.rotate]="!isAscSortDirection">arrow_upward</span>
-                </th>
-                @if (!isSmallScreen) {
-                    <th class="amount-th">Balance</th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @for (transaction of transactions; track transaction.id) {
-                <tr [matTooltip]="transaction.comment ?? ''"
-                    matTooltipPosition="left"
-                    [class.hold-row]="transaction.hold"
-                    [class.clickable-row]="true"
-                    (click)="onTransactionClick(transaction)">
-                    <td class="desc-cell">
-                        {{ transaction.description }}
-                        @if (transaction.hold) {
-                            <span class="hold-badge">Hold</span>
-                        }
-                    </td>
-                    <td class="date-cell">
-                        @if (isSmallScreen) {
-                            {{ transaction.time * 1000 | date: 'd.MM' }}
-                        } @else {
-                            {{ transaction.time * 1000 | date: 'MMM d, y • HH:mm' }}
-                        }
-                    </td>
-                    @if (!isSmallScreen) {
-                        <td class="status-cell">
-                            <span class="material-icons-round status-arrow"
-                                  [class.income]="transaction.amount >= 0"
-                                  [class.expense]="transaction.amount < 0">
-                                {{ transaction.amount >= 0 ? 'arrow_upward' : 'arrow_downward' }}
-                            </span>
-                        </td>
-                    }
-                    <td class="amount-cell" [class.sent]="transaction.amount < 0">
-                        {{ transaction.amount | displayMoney: transaction.cardCurrencyCode }}
-                        @if (transaction.cashbackAmount > 0) {
-                            <span class="cashback">+{{ transaction.cashbackAmount | displayMoney: transaction.cardCurrencyCode : 0 : 2 }}</span>
-                        }
-                    </td>
-                    @if (!isSmallScreen) {
-                        <td class="balance-cell">
-                            {{ transaction.balance | displayMoney: transaction.cardCurrencyCode : 0 : 2 }}
-                        </td>
-                    }
-                </tr>
+    <header class="ledger__tools">
+        <label class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.6-3.6" /></svg>
+            <input #inputRef
+                   type="text"
+                   placeholder="Search merchant, MCC or comment"
+                   [value]="searchValue"
+                   (input)="onInputEvent($event)"
+                   aria-label="Search transactions" />
+            @if (inputRef.value) {
+                <button type="button" class="search__clear" (click)="clearInputEvent()" aria-label="Clear search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
             }
-        </tbody>
-    </table>
-</div>
+        </label>
+
+        <span class="ledger__count num">{{ count() }} tx</span>
+
+        <div class="seg" role="group" aria-label="Row density">
+            <button type="button" [class.seg--on]="!compact()" (click)="compact.set(false)">Comfortable</button>
+            <button type="button" [class.seg--on]="compact()" (click)="compact.set(true)">Compact</button>
+        </div>
+    </header>
+
+    <!-- column rule -->
+    <div class="ledger__head micro" [class.ledger__head--narrow]="isNarrow()">
+        <span></span>
+        <span>Merchant</span>
+        @if (!isNarrow()) { <span>Category</span> }
+        <span class="ta-r">Amount</span>
+        @if (!isNarrow()) { <span class="ta-r">Balance</span> }
+    </div>
+
+    <div class="ledger__body" [class.ledger__body--compact]="compact()">
+        @for (day of days(); track day.key) {
+            <!-- the day rule carries a running total, so scanning never needs arithmetic -->
+            <div class="dayrule">
+                <span class="dayrule__wd">{{ day.weekday }}</span>
+                <span class="dayrule__date num">{{ day.date }}</span>
+                <span class="dayrule__fill"></span>
+                <span class="dayrule__count num">{{ day.count }} tx</span>
+                <span class="dayrule__net num" [class.is-pos]="day.net > 0" [class.is-neg]="day.net < 0">
+                    {{ day.net | displayMoney: day.rows[0].tx.cardCurrencyCode }}
+                </span>
+            </div>
+
+            @for (row of day.rows; track row.tx.id) {
+                <div class="row"
+                     [class.row--narrow]="isNarrow()"
+                     [class.row--hold]="row.tx.hold"
+                     tabindex="0"
+                     role="button"
+                     [attr.aria-label]="'Open ' + row.tx.description"
+                     (click)="onTransactionClick(row.tx)"
+                     (keydown)="onRowKeydown($event, row.tx)">
+
+                    <span class="row__spine" [style.background]="row.categoryVar"></span>
+
+                    <span class="row__merchant">
+                        <span class="row__name">
+                            {{ row.tx.description }}
+                            @if (row.tx.hold) { <span class="tag tag--hold">Hold</span> }
+                        </span>
+                        <span class="row__meta num">
+                            {{ row.tx.time * 1000 | date: 'HH:mm' }}
+                            @if (row.tx.mcc) { <span class="mono">· MCC {{ row.tx.mcc }}</span> }
+                            @if (row.tx.comment) { <span class="row__comment">· {{ row.tx.comment }}</span> }
+                        </span>
+                    </span>
+
+                    @if (!isNarrow()) {
+                        <span class="row__cat">
+                            <span class="dot" [style.background]="row.categoryVar"></span>
+                            {{ row.categoryName ?? 'Uncategorized' }}
+                        </span>
+                    }
+
+                    <span class="row__amount num" [class.is-pos]="row.tx.amount > 0">
+                        {{ row.tx.amount | displayMoney: row.tx.cardCurrencyCode }}
+                        @if (row.tx.cashbackAmount > 0) {
+                            <span class="row__cashback num">+{{ row.tx.cashbackAmount | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}</span>
+                        }
+                    </span>
+
+                    @if (!isNarrow()) {
+                        <span class="row__balance num mono balance-cell">
+                            {{ row.tx.balance | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}
+                        </span>
+                    }
+                </div>
+            }
+        } @empty {
+            <div class="ledger__empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
+                <p>No transactions match this view.</p>
+                <span>Try a different month, card or search term.</span>
+            </div>
+        }
+    </div>
+</section>

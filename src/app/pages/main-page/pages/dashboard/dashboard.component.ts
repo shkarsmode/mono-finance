@@ -16,7 +16,6 @@ import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-so
 import {
     CardComponent, CategoryManagerComponent, ChartComponent, TransactionsComponent
 } from './components';
-import { FloatingToolbarComponent } from './components/floating-toolbar/floating-toolbar.component';
 
 @Component({
 selector: 'app-dashboard',
@@ -24,7 +23,7 @@ selector: 'app-dashboard',
     imports: [
         AsyncPipe, DatePipe, DecimalPipe,
         CardComponent, ChartComponent, TransactionsComponent,
-        CategoryManagerComponent, FloatingToolbarComponent,
+        CategoryManagerComponent,
         DisplayMoneyPipe, DisplayMoneyMajorPipe,
         TransactionsFilterPipe, TransactionsSortByPipe,
         DragDropModule,
@@ -91,6 +90,78 @@ export default class DashboardComponent implements OnInit {
     });
 
     readonly transactionCount = computed(() => this.transactions().length);
+
+    /** Net position for the period — the number the whole screen is about. */
+    readonly netTotal = computed(() => this.totalIncome() + this.totalExpenses());
+
+    /** Income's share of total flow, for the hero's proportional bar. */
+    readonly incomeShare = computed(() => {
+        const income = Math.abs(this.totalIncome());
+        const spend = Math.abs(this.totalExpenses());
+        const flow = income + spend;
+        return flow > 0 ? Math.round((income / flow) * 100) : 0;
+    });
+
+    readonly periodLabel = computed(() => {
+        const name = this.monthsMapFull[this.activeMonthSignal() - 1] ?? '';
+        return `${name} ${this.activeYearSignal()}`;
+    });
+
+    /** Categories ranked by spend, with a stable colour taken from their index. */
+    readonly rankedCategories = computed(() => {
+        const scored = this.groupsSignal()
+            .map((group, index) => ({
+                title: group.title,
+                emoji: group.emoji,
+                amount: Number(group.amount) || 0,
+                abs: Math.abs(Number(group.amount) || 0),
+                colorVar: `var(--cat-${(index % 12) + 1})`,
+            }))
+            .filter(item => item.abs > 0);
+
+        if (!scored.length) return [];
+
+        const max = Math.max(...scored.map(item => item.abs));
+        const total = scored.reduce((sum, item) => sum + item.abs, 0) || 1;
+
+        return scored
+            .sort((a, b) => b.abs - a.abs)
+            .slice(0, 6)
+            .map(item => ({
+                ...item,
+                width: Math.max(3, Math.round((item.abs / max) * 100)),
+                pct: Math.round((item.abs / total) * 100),
+            }));
+    });
+
+    private readonly monthsMapFull = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+
+    /** Step the period by whole months, clamped to the current month. */
+    stepPeriod(delta: number): void {
+        let month = this.activeMonth + delta;
+        let year = this.activeYear;
+        if (month > 12) { month = 1; year++; }
+        if (month < 1) { month = 12; year--; }
+
+        const now = new Date();
+        if (year > now.getFullYear() || (year === now.getFullYear() && month > now.getMonth() + 1)) {
+            return;
+        }
+        if (year < 2017) return;
+
+        this.activeYear = year;
+        this.activeYearSignal.set(year);
+        this.monobankService.activeYear = year;
+        this.onSelectMonth(month);
+    }
+
+    get canStepForward(): boolean {
+        const now = new Date();
+        return !(this.activeYear === now.getFullYear() && this.activeMonth === now.getMonth() + 1);
+    }
     readonly chartTransactions = computed(() =>
         this.transactions().map(transaction => this.currencyDisplay.convertTransactionForMinorUnitCharts(transaction))
     );
@@ -122,6 +193,9 @@ export default class DashboardComponent implements OnInit {
     readonly showCategoryDrawer = signal(false);
     readonly showFloatingToolbar = signal(true);
     readonly clientInfoSignal = signal<IAccountInfo | null>(null);
+    readonly groupsSignal = signal<ICategoryGroup[]>([]);
+    readonly activeMonthSignal = signal(new Date().getMonth() + 1);
+    readonly activeYearSignal = signal(new Date().getFullYear());
 
     // ── Card type filter chips ──
     readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
@@ -170,6 +244,10 @@ export default class DashboardComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(info => this.clientInfoSignal.set(info));
 
+        this.groups$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(groups => this.groupsSignal.set([...(groups ?? [])]));
+
         // Ambient background-sync status (backfill progress, month freshness).
         this.syncStatus.start();
     }
@@ -199,8 +277,8 @@ export default class DashboardComponent implements OnInit {
 
     onSelectMonth(month: number): void {
         this.activeMonth = month;
+        this.activeMonthSignal.set(month);
         this.monobankService.activeMonth = month;
-        if (this.transactionsRef) this.transactionsRef.activeMonth = month;
         this.cancelPreviousRequest$.next();
         this.monobankService
             .getTransactions(month, this.activeYear, { includeHold: this.showHoldTransactions() })
@@ -210,8 +288,8 @@ export default class DashboardComponent implements OnInit {
 
     onSelectYear(year: number): void {
         this.activeYear = year;
+        this.activeYearSignal.set(year);
         this.monobankService.activeYear = year;
-        if (this.transactionsRef) this.transactionsRef.activeYear = year;
         this.cancelPreviousRequest$.next();
         this.monobankService
             .getTransactions(this.activeMonth, year, { includeHold: this.showHoldTransactions() })

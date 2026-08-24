@@ -9,16 +9,63 @@ html,
 body {
     height: 100%;
     overflow: hidden;
-    font-family: var(--font-family-base);
-    font-size: var(--text-sm);
-    color: var(--color-text-primary);
-    background-color: var(--color-background);
-    transition: background-color var(--duration-normal) var(--ease-default),
-                color var(--duration-normal) var(--ease-default);
+    font-family: var(--font-ui);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--ink);
+    background-color: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .emoji {
     font-family: var(--font-family-emoji);
+}
+
+// ── Figures ──────────────────────────────────────────────────
+// Every amount, balance, KPI and axis tick. Tabular lining
+// numerals so a column of money forms a clean vertical rule.
+.num,
+.money,
+[data-num] {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variant-ligatures: none;
+}
+
+.mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+// Micro label — uppercase, tracked, always an AA ink tier.
+.micro {
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: var(--tracking-micro);
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+
+// ── Focus ────────────────────────────────────────────────────
+// One visible ring for the whole app. Two-stop so it reads on
+// any surface, light or dark.
+:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+    border-radius: var(--radius-xs);
+}
+
+// ── Motion ───────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 // ── Angular Material — override to match design tokens ──

@@ -1,0 +1,11 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "finance-web",
+            "runtimeExecutable": "npx",
+            "runtimeArgs": ["ng", "serve", "--port", "4270"],
+            "port": 4270
+        }
+    ]
+}

@@ -1,28 +1,74 @@
-<!-- Cards Section (white card first) -->
-<section class="cards-section">
-    <h2 class="section-title">Your Cards</h2>
+<!-- ── Period band: one shared time context for the whole screen ── -->
+<header class="period">
+    <div class="period__nav">
+        <button type="button" class="period__step" (click)="stepPeriod(-1)" aria-label="Previous month">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        </button>
+        <span class="period__label">{{ periodLabel() }}</span>
+        <button type="button" class="period__step" (click)="stepPeriod(1)" [disabled]="!canStepForward" aria-label="Next month">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+    </div>
 
-    <!-- Card type filter chips -->
+    <span class="period__fill"></span>
+
+    @if (syncStatus.isBackfilling()) {
+        <span class="capsule" role="status" aria-live="polite">
+            <span class="capsule__bar"><span class="capsule__fill" [style.width.%]="syncStatus.progressPercent()"></span></span>
+            <span class="capsule__text">{{ syncStatus.capsuleLabel() }}</span>
+        </span>
+    } @else {
+        <button type="button" class="btn btn--quiet" (click)="onBackfillClick()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
+            Backfill history
+        </button>
+    }
+
+    <button type="button" class="btn btn--quiet" [class.btn--on]="showHoldTransactions()" (click)="toggleShowHold()">
+        Hold
+    </button>
+</header>
+
+<!-- ── Hero: the net position for the period ── -->
+<section class="hero">
+    <div class="hero__net">
+        <span class="micro">Net this period</span>
+        <span class="hero__figure num" [class.is-pos]="netTotal() > 0" [class.is-neg]="netTotal() < 0">
+            {{ netTotal() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
+        </span>
+        <span class="hero__sub num">{{ transactionCount() }} transactions</span>
+    </div>
+
+    <div class="hero__flow">
+        <div class="flow__row">
+            <span class="flow__key"><i class="swatch swatch--pos"></i>Income</span>
+            <span class="flow__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+        </div>
+        <!-- one bar, two proportions: the ratio reads without arithmetic -->
+        <div class="flow__bar" role="img" [attr.aria-label]="'Income share ' + incomeShare() + ' percent'">
+            <span class="flow__bar-pos" [style.width.%]="incomeShare()"></span>
+        </div>
+        <div class="flow__row">
+            <span class="flow__key"><i class="swatch swatch--neg"></i>Spent</span>
+            <span class="flow__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+        </div>
+    </div>
+</section>
+
+<!-- ── Accounts ── -->
+<section class="accounts">
     @if (availableCardTypes().length > 1) {
-        <div class="card-type-chips">
+        <div class="accounts__filters">
             @for (type of availableCardTypes(); track type) {
-                <button
-                    class="card-type-chip"
-                    [class.card-type-chip--active]="cardTypeFilters().has(type)"
-                    (click)="toggleCardTypeFilter(type)">
-                    {{ type }}
-                </button>
+                <button type="button" class="chip" [class.chip--on]="cardTypeFilters().has(type)" (click)="toggleCardTypeFilter(type)">{{ type }}</button>
             }
             @if (cardTypeFilters().size > 0) {
-                <button class="card-type-chip card-type-chip--clear" (click)="clearCardTypeFilters()">
-                    <span class="material-icons-round">close</span>
-                    Clear
-                </button>
+                <button type="button" class="chip chip--clear" (click)="clearCardTypeFilters()">Clear</button>
             }
         </div>
     }
 
-    <div class="cards-row">
+    <div class="accounts__row">
         @for (account of sortedAccounts(); track account.id) {
             <app-card
                 [class.active]="account.id === (activeCardId$ | async)"
@@ -32,45 +78,36 @@
                 (onClick)="onCardClick($event)">
             </app-card>
         } @empty {
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
+            <div class="acct-skeleton"></div>
+            <div class="acct-skeleton"></div>
+            <div class="acct-skeleton"></div>
         }
     </div>
 </section>
 
-<!-- Sync toolbar: one-click server backfill + ambient progress -->
-<section class="sync-section">
-    <button
-        class="bulk-btn"
-        type="button"
-        (click)="onBackfillClick()"
-        [disabled]="syncStatus.isBackfilling()">
-        @if (syncStatus.isBackfilling()) {
-            <span class="bulk-btn__spinner"></span>
-            Syncing history in background…
+<!-- ── KPI strip: one instrument, divided ── -->
+<section class="kpis">
+    <div class="kpi">
+        <span class="micro">Spent</span>
+        <span class="kpi__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+    </div>
+    <div class="kpi">
+        <span class="micro">Income</span>
+        <span class="kpi__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+    </div>
+    <div class="kpi">
+        <span class="micro">Avg / active day</span>
+        <span class="kpi__val num">{{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 2 }}</span>
+    </div>
+    <div class="kpi">
+        <span class="micro">Largest</span>
+        @if (biggestExpense(); as biggest) {
+            <span class="kpi__val num">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode }}</span>
+            <span class="kpi__sub">{{ biggest.description }}</span>
         } @else {
-            <span class="material-icons-round">cloud_sync</span>
-            Backfill full history
+            <span class="kpi__val num">—</span>
         }
-    </button>
-
-    <button
-        class="hold-toggle"
-        type="button"
-        [class.hold-toggle--active]="showHoldTransactions()"
-        (click)="toggleShowHold()">
-        <span class="material-icons-round">{{ showHoldTransactions() ? 'visibility' : 'visibility_off' }}</span>
-        Hold transactions
-    </button>
-
-    @if (syncStatus.isBackfilling()) {
-        <div class="sync-capsule" role="status" aria-live="polite">
-            <div class="sync-capsule__bar">
-                <div class="sync-capsule__fill" [style.width.%]="syncStatus.progressPercent()"></div>
-            </div>
-            <span class="sync-capsule__label">{{ syncStatus.capsuleLabel() }}</span>
-        </div>
-    }
+    </div>
 </section>
 
 <!-- Category Drawer Trigger (always accessible) -->
@@ -87,52 +124,6 @@
 
 <!-- Charts & Transactions -->
 @if (transactions().length) {
-    <section class="insights-section">
-        <h2 class="section-title">
-            <span class="material-icons-round">insights</span>
-            Quick Insights
-        </h2>
-        <div class="insights-grid">
-            <div class="insight-card insight-card--expense">
-                <span class="insight-card__icon material-icons-round">trending_down</span>
-                <div class="insight-card__content">
-                    <span class="insight-card__label">Total Expenses</span>
-                    <span class="insight-card__value expense">
-                        {{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
-                    </span>
-                </div>
-            </div>
-            <div class="insight-card insight-card--income">
-                <span class="insight-card__icon material-icons-round">trending_up</span>
-                <div class="insight-card__content">
-                    <span class="insight-card__label">Total Income</span>
-                    <span class="insight-card__value income">
-                        {{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
-                    </span>
-                </div>
-            </div>
-            <div class="insight-card">
-                <span class="insight-card__icon material-icons-round">today</span>
-                <div class="insight-card__content">
-                    <span class="insight-card__label">Avg. Daily Spend</span>
-                    <span class="insight-card__value">
-                        {{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 2 }}
-                    </span>
-                </div>
-            </div>
-            @if (biggestExpense(); as biggest) {
-                <div class="insight-card insight-card--highlight">
-                    <span class="insight-card__icon material-icons-round">priority_high</span>
-                    <div class="insight-card__content">
-                        <span class="insight-card__label">Biggest Expense</span>
-                        <span class="insight-card__value expense">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode }}</span>
-                        <span class="insight-card__sub">{{ biggest.description }}</span>
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
-    
     <div class="dashboard-grid">
         <app-transactions
             [groups]="groups$ | async"
@@ -239,19 +230,6 @@
     </aside>
 }
 
-<!-- Floating Toolbar (month / year / sort) -->
-<app-floating-toolbar
-    [activeMonth]="activeMonth"
-    [activeYear]="activeYear"
-    [currentMonth]="currentMonth"
-    [currentYear]="currentYear"
-    [years]="yearsMap"
-    [sortBy]="sortBy()"
-    [sortDirection]="sortDirection()"
-    (monthChange)="onSelectMonth($event)"
-    (yearChange)="onSelectYear($event)"
-    (sortChange)="onSortTransactionsBy($event)">
-</app-floating-toolbar>
 
 <!-- Category Editor Modal -->
 @if (showCategoryEditor()) {

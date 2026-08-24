@@ -40,12 +40,10 @@
                             "src/assets"
                         ],
                         "styles": [
-                            "@angular/material/prebuilt-themes/deeppurple-amber.css",
                             "src/styles.scss"
                         ],
                         "stylePreprocessorOptions": {
                             "includePaths": [
-                                "src/assets/scss",
                                 "src/styles"
                             ]
                         },
@@ -56,8 +54,8 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "5mb",
-                                    "maximumError": "10mb"
+                                    "maximumWarning": "1.2mb",
+                                    "maximumError": "2mb"
                                 },
                                 {
                                     "type": "anyComponentStyle",
