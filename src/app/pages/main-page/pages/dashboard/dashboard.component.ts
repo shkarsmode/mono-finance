@@ -45,7 +45,7 @@ export default class DashboardComponent implements OnInit {
     readonly searchValue = signal('');
     readonly sortDirection = signal<'asc' | 'desc'>('desc');
     readonly sortBy = signal<TransactionSortBy>(TransactionSortBy.Date);
-    readonly showHoldTransactions = signal(false);
+    readonly showHoldTransactions = signal(this.monobankService.showHold);
 
     activeCardId$!: Observable<string>;
     clientInfo$!: Observable<IAccountInfo>;
@@ -299,6 +299,7 @@ export default class DashboardComponent implements OnInit {
 
     toggleShowHold(): void {
         this.showHoldTransactions.update(v => !v);
+        this.monobankService.setShowHold(this.showHoldTransactions());
         this.monobankService
             .getTransactions(this.activeMonth, this.activeYear, { includeHold: this.showHoldTransactions() })
             .pipe(first(), takeUntilDestroyed(this.destroyRef))

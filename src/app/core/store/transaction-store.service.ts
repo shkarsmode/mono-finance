@@ -55,19 +55,19 @@ export class TransactionStore {
     }
 
     /** Synchronous read from the mirror. Returns null when the month is uncached. */
-    public readMonth(cardId: string, year: number, month: number): ITransaction[] | null {
-        const blob = this.mirror.get(this.key(cardId, year, month));
+    public readMonth(cardId: string, year: number, month: number, includeHold = false): ITransaction[] | null {
+        const blob = this.mirror.get(this.key(cardId, year, month, includeHold));
         return blob ? blob.rows : null;
     }
 
-    public monthMeta(cardId: string, year: number, month: number): { syncedAt: number; count: number } | null {
-        const blob = this.mirror.get(this.key(cardId, year, month));
+    public monthMeta(cardId: string, year: number, month: number, includeHold = false): { syncedAt: number; count: number } | null {
+        const blob = this.mirror.get(this.key(cardId, year, month, includeHold));
         return blob ? { syncedAt: blob.syncedAt, count: blob.rows.length } : null;
     }
 
     /** Replace a month slice (server deletions must propagate, so this replaces, not merges). */
-    public writeMonth(cardId: string, year: number, month: number, rows: ITransaction[]): void {
-        const blob: MonthBlob = { key: this.key(cardId, year, month), cardId, year, month, rows, syncedAt: Date.now() };
+    public writeMonth(cardId: string, year: number, month: number, rows: ITransaction[], includeHold = false): void {
+        const blob: MonthBlob = { key: this.key(cardId, year, month, includeHold), cardId, year, month, rows, syncedAt: Date.now() };
         this.mirror.set(blob.key, blob);
         this.persist(blob);
     }
@@ -101,7 +101,7 @@ export class TransactionStore {
         }
     }
 
-    private key(cardId: string, year: number, month: number): MonthKey {
-        return `${cardId}:${year}-${month}`;
+    private key(cardId: string, year: number, month: number, includeHold: boolean): MonthKey {
+        return `${cardId}:${year}-${month}${includeHold ? ':hold' : ''}`;
     }
 }

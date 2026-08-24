@@ -8,4 +8,5 @@ export enum LocalStorage {
     UpdatedMonobankDataAt = 'updatedMonobankDataAt',
     MyCategoryGroups = 'myCategoryGroups',
     CardTypeFilters = 'cardTypeFilters',
+    ShowHoldTransactions = 'finance-show-hold',
 }

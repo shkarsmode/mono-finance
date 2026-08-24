@@ -71,6 +71,21 @@ export class MonobankService {
     private readonly transactionSnapshotStorageKey = 'finance-transaction-snapshots';
     private readonly transactionStore = inject(TransactionStore);
 
+    /**
+     * Whether hold (pending) transactions are shown. Persisted, because it is a
+     * standing preference — it used to reset to off on every reload.
+     */
+    private _showHold = localStorage.getItem(LocalStorage.ShowHoldTransactions) === 'true';
+
+    public get showHold(): boolean {
+        return this._showHold;
+    }
+
+    public setShowHold(value: boolean): void {
+        this._showHold = value;
+        localStorage.setItem(LocalStorage.ShowHoldTransactions, String(value));
+    }
+
     constructor(
         private readonly router: Router,
         private readonly http: HttpClient,
@@ -297,10 +312,13 @@ export class MonobankService {
         }
         const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
         const storeYear = year ?? this.activeYear;
+        // Falls back to the standing preference, so a card switch or a first load
+        // honours the user's hold choice without every call site passing it.
+        const includeHold = options?.includeHold ?? this._showHold;
 
         // Instant paint from the local cache while the network revalidates.
         if (cardId && options?.store !== false) {
-            const cached = this.transactionStore.readMonth(cardId, storeYear, month);
+            const cached = this.transactionStore.readMonth(cardId, storeYear, month, includeHold);
             if (cached && cached.length) {
                 this.currentTransactions$.next(cached);
             }
@@ -312,7 +330,7 @@ export class MonobankService {
             transactionsApiUrl += `/${+year}`;
         }
         transactionsApiUrl += `?tz=${tz}`;
-        if (options?.includeHold) {
+        if (includeHold) {
             transactionsApiUrl += `&includeHold=true`;
         }
 
@@ -343,7 +361,7 @@ export class MonobankService {
                     // quiet. Errors are surfaced by the HTTP error interceptor.
                     const uniqueTransactions = this.removeDuplicatedTransactionsById(data);
                     if (cardId) {
-                        this.transactionStore.writeMonth(cardId, storeYear, month, uniqueTransactions);
+                        this.transactionStore.writeMonth(cardId, storeYear, month, uniqueTransactions, includeHold);
                     }
                     if (options?.store !== false) {
                         this.currentTransactions$.next(uniqueTransactions);
