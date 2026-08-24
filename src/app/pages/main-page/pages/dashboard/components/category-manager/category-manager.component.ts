@@ -131,8 +131,7 @@ import { ICategoryGroup } from '@core/interfaces';
         .backdrop {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
+            background: rgb(0 0 0 / .45);
         }
 
         .panel {
@@ -347,7 +346,7 @@ import { ICategoryGroup } from '@core/interfaces';
             color: var(--color-primary);
             transition: all var(--duration-fast);
             .material-icons-round { font-size: 12px; }
-            &:hover { background: var(--color-primary); color: #fff; }
+            &:hover { background: var(--accent-tint); color: var(--ink); }
         }
 
         .chips-input {
@@ -399,7 +398,7 @@ import { ICategoryGroup } from '@core/interfaces';
 
         .btn--primary {
             background: var(--color-primary);
-            color: #fff;
+            color: var(--btn-ink);
             &:hover:not(:disabled) { background: var(--color-primary-hover); }
             &:disabled { opacity: 0.5; cursor: not-allowed; }
         }

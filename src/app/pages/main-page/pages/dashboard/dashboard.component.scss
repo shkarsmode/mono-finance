@@ -368,8 +368,7 @@
 .drawer-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
+    background: rgb(0 0 0 / .45);
     z-index: var(--z-modal);
     animation: drawer-fade-in 0.2s ease;
 }

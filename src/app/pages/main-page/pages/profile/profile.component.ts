@@ -334,8 +334,8 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #fff;
-            box-shadow: var(--shadow-1);
+            background: var(--surface);
+            box-shadow: var(--shadow-pop);
             transition: transform var(--duration-fast) var(--ease-default);
         }
 
@@ -482,8 +482,8 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
             border: 1px solid transparent;
 
             &:hover {
-                background: var(--color-error);
-                color: #fff;
+                background: var(--neg);
+                color: var(--ink-invert);
             }
         }
 

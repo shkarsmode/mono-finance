@@ -119,9 +119,9 @@
     }
 
     &.primary {
-        background: var(--color-primary);
-        border-color: var(--color-primary);
-        color: #fff;
+        background: var(--btn);
+        border-color: var(--btn);
+        color: var(--btn-ink);
 
         &:hover {
             filter: brightness(1.1);

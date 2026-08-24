@@ -47,8 +47,8 @@
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-3) var(--space-5);
-    background: var(--color-primary);
-    color: #fff;
+    background: var(--btn);
+    color: var(--btn-ink);
     border: none;
     border-radius: var(--radius-sm);
     font-size: var(--text-sm);
@@ -65,8 +65,8 @@
     &__spinner {
         width: 16px;
         height: 16px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-top-color: #fff;
+        border: 2px solid color-mix(in srgb, var(--btn-ink) 30%, transparent);
+        border-top-color: var(--btn-ink);
         border-radius: 50%;
         animation: spin 0.6s linear infinite;
     }
@@ -306,8 +306,8 @@
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        background: var(--surface);
+        box-shadow: var(--shadow-pop);
         transition: transform var(--duration-fast);
     }
 
