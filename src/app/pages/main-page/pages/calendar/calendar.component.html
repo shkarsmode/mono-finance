@@ -1,172 +1,132 @@
-<section class="calendar-page">
-    <header class="calendar-header">
-        <div>
-            <h1 class="page-title">
-                <span class="material-icons-round">calendar_month</span>
-                Money Calendar
-            </h1>
-            <p class="page-subtitle">
-                Month overview with daily heat, selected-day summary and the active card feed below.
-            </p>
-        </div>
-
-        <div class="month-nav">
-            <button class="nav-btn" type="button" (click)="prevMonth()">
+<section class="page">
+    <header class="page__head">
+        <h1 class="page__title">Calendar</h1>
+        <div class="period">
+            <button type="button" class="period__step" (click)="prevMonth()" aria-label="Previous month">
                 <span class="material-icons-round">chevron_left</span>
             </button>
-            <span class="month-label">{{ monthName() }} {{ activeYear() }}</span>
-            <button class="nav-btn" type="button" (click)="nextMonth()">
+            <span class="period__label num">{{ monthName() }} {{ activeYear() }}</span>
+            <button type="button" class="period__step" (click)="nextMonth()" aria-label="Next month">
                 <span class="material-icons-round">chevron_right</span>
             </button>
         </div>
     </header>
 
     @if (loading()) {
-        <section class="calendar-loading">
-            <div class="calendar-loading__hero">
-                <div class="calendar-loading__badge">Preparing the month view</div>
-                <div class="calendar-loading__headline"></div>
-                <div class="calendar-loading__subline"></div>
-            </div>
+        <div class="totals"><div class="sk sk--strip"></div></div>
+        <div class="sk sk--grid"></div>
+    } @else if (calendarData()) {
+        @if (calendarData()!; as data) {
 
-            <div class="totals-skeleton">
-                @for (i of [1, 2, 3, 4]; track i) {
-                    <div class="totals-skeleton__item"></div>
+        <div class="totals">
+            <div class="totals__cell">
+                <span class="micro">Income</span>
+                <span class="totals__val num is-pos">{{ data.totals.income / 100 | displayMoneyMajor: 980 }}</span>
+            </div>
+            <div class="totals__cell">
+                <span class="micro">Spent</span>
+                <span class="totals__val num">{{ data.totals.expense / 100 | displayMoneyMajor: 980 }}</span>
+            </div>
+            <div class="totals__cell">
+                <span class="micro">Avg / active day</span>
+                <span class="totals__val num">{{ data.totals.avgDailySpend / 100 | displayMoneyMajor: 980 }}</span>
+            </div>
+            <div class="totals__cell">
+                <span class="micro">Transactions</span>
+                <span class="totals__val num">{{ data.totals.txCount }}</span>
+            </div>
+        </div>
+
+        <section class="cal">
+            <div class="cal__grid">
+                @for (weekday of weekdays; track weekday) {
+                    <span class="cal__wd micro">{{ weekday }}</span>
+                }
+
+                @for (cell of calendarGrid(); track $index) {
+                    @if (cell) {
+                        <button type="button"
+                                class="day"
+                                [class.day--active]="cell.txCount > 0"
+                                [class.day--selected]="selectedDay()?.date === cell.date"
+                                [attr.data-heat]="heatLevel(cell)"
+                                [attr.aria-pressed]="selectedDay()?.date === cell.date"
+                                [disabled]="cell.txCount === 0"
+                                (click)="selectDay(cell)">
+                            <span class="day__n num">{{ cell.dayOfMonth }}</span>
+                            @if (cell.txCount > 0) {
+                                <span class="day__amt num">{{ cell.expense / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
+                            }
+                        </button>
+                    } @else {
+                        <span class="day day--blank"></span>
+                    }
                 }
             </div>
 
-            <div class="calendar-skeleton">
-                @for (i of [1, 2, 3, 4, 5]; track i) {
-                    <div class="skeleton-row">
-                        @for (j of [1, 2, 3, 4, 5, 6, 7]; track j) {
-                            <div class="skeleton-cell"></div>
-                        }
-                    </div>
+            <!-- a legend, so the heat actually means something -->
+            <div class="legend">
+                <span class="micro">Less</span>
+                <span class="legend__swatch" data-heat="0"></span>
+                @for (step of heatSteps; track step) {
+                    <span class="legend__swatch" [attr.data-heat]="step"></span>
                 }
-            </div>
-
-            <div class="transactions-skeleton">
-                @for (i of [1, 2, 3]; track i) {
-                    <div class="transactions-skeleton__row"></div>
-                }
+                <span class="micro">More</span>
+                <span class="legend__spacer"></span>
+                <span class="micro">Daily spend</span>
             </div>
         </section>
-    } @else if (calendarData()) {
-        <div class="totals-bar">
-            <div class="total-item">
-                <span class="total-label">Income</span>
-                <span class="total-value income">{{ calendarData()!.totals.income / 100 | displayMoneyMajor: 980 }}</span>
-            </div>
-            <div class="total-item">
-                <span class="total-label">Expenses</span>
-                <span class="total-value expense">{{ calendarData()!.totals.expense / 100 | displayMoneyMajor: 980 }}</span>
-            </div>
-            <div class="total-item">
-                <span class="total-label">Avg Daily</span>
-                <span class="total-value">{{ calendarData()!.totals.avgDailySpend / 100 | displayMoneyMajor: 980 }}</span>
-            </div>
-            <div class="total-item">
-                <span class="total-label">Transactions</span>
-                <span class="total-value">{{ calendarData()!.totals.txCount }}</span>
-            </div>
-        </div>
-
-        <div class="calendar-grid">
-            @for (weekday of weekdays; track weekday) {
-                <div class="weekday-header">{{ weekday }}</div>
-            }
-
-            @for (cell of calendarGrid(); track $index) {
-                @if (cell) {
-                    <div class="day-cell"
-                         [class.has-data]="cell.txCount > 0"
-                         [class.selected]="selectedDay()?.date === cell.date"
-                         [attr.data-heat]="heatLevel(cell)"
-                         (click)="selectDay(cell)">
-                        <span class="day-number">{{ cell.dayOfMonth }}</span>
-                        @if (cell.txCount > 0) {
-                            <span class="day-expense">-{{ cell.expense / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
-                            @if (cell.income > 0) {
-                                <span class="day-income">+{{ cell.income / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
-                            }
-                        }
-                    </div>
-                } @else {
-                    <div class="day-cell day-cell--blank"></div>
-                }
-            }
-        </div>
 
         @if (selectedDay(); as day) {
-            <div class="day-detail">
-                <div class="day-detail__heading">
-                    <div>
-                        <h3 class="day-detail__date">{{ day.date }}</h3>
-                        <p class="day-detail__subtitle">{{ selectedDaySummary() }}</p>
+            <section class="detail">
+                <header class="detail__head">
+                    <h2 class="detail__title">{{ selectedDayLabel() }}</h2>
+                    <button type="button" class="detail__clear" (click)="selectDay(day)">Clear selection</button>
+                </header>
+                <div class="detail__grid">
+                    <div class="detail__cell">
+                        <span class="micro">Spent</span>
+                        <span class="detail__val num">{{ day.expense / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
-                </div>
-
-                <div class="day-detail__grid">
-                    <div class="detail-stat">
-                        <span class="detail-stat__label">Expenses</span>
-                        <span class="detail-stat__value expense">{{ day.expense / 100 | displayMoneyMajor: 980 }}</span>
+                    <div class="detail__cell">
+                        <span class="micro">Income</span>
+                        <span class="detail__val num is-pos">{{ day.income / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
-                    <div class="detail-stat">
-                        <span class="detail-stat__label">Income</span>
-                        <span class="detail-stat__value income">{{ day.income / 100 | displayMoneyMajor: 980 }}</span>
-                    </div>
-                    <div class="detail-stat">
-                        <span class="detail-stat__label">Net</span>
-                        <span class="detail-stat__value" [class.income]="day.net > 0" [class.expense]="day.net < 0">
+                    <div class="detail__cell">
+                        <span class="micro">Net</span>
+                        <span class="detail__val num" [class.is-pos]="day.net > 0" [class.is-neg]="day.net < 0">
                             {{ day.net / 100 | displayMoneyMajor: 980 }}
                         </span>
                     </div>
-                    <div class="detail-stat">
-                        <span class="detail-stat__label">Transactions</span>
-                        <span class="detail-stat__value">{{ day.txCount }}</span>
+                    <div class="detail__cell">
+                        <span class="micro">Transactions</span>
+                        <span class="detail__val num">{{ day.txCount }}</span>
                     </div>
                 </div>
-
                 @if (day.topMerchant) {
-                    <p class="day-detail__merchant">
-                        <span class="material-icons-round">storefront</span>
-                        Top merchant: <strong>{{ day.topMerchant }}</strong>
-                    </p>
+                    <p class="detail__merchant">Top merchant · <strong>{{ day.topMerchant }}</strong></p>
                 }
-            </div>
+            </section>
         }
 
-        <section class="calendar-transactions">
-            <div class="calendar-transactions__header">
-                <div>
-                    <h2 class="section-title">
-                        <span class="material-icons-round">receipt_long</span>
-                        Month transactions
-                    </h2>
-                    <p class="calendar-transactions__subtitle">
-                        Full feed for the active card in {{ monthName() }} {{ activeYear() }}.
-                    </p>
-                </div>
-                <div class="calendar-transactions__meta">
-                    <span class="calendar-transactions__badge">{{ monthTransactions().length }} rows</span>
-                    @if (selectedDaySummary(); as summary) {
-                        <span class="calendar-transactions__badge calendar-transactions__badge--soft">{{ summary }}</span>
-                    }
-                </div>
-            </div>
+        <section class="feed">
+            <header class="feed__head">
+                <h2 class="feed__title">
+                    {{ selectedDay() ? 'Transactions on ' + selectedDayLabel() : 'Transactions in ' + monthName() }}
+                </h2>
+                <span class="feed__count num">{{ visibleTransactions().length }} of {{ monthTransactions().length }}</span>
+            </header>
 
             @if (transactionError()) {
-                <div class="calendar-transactions__empty">
-                    <span class="material-icons-round">credit_card_off</span>
+                <div class="empty">
                     <p>{{ transactionError() }}</p>
                 </div>
-            } @else if (monthTransactions().length) {
+            } @else if (visibleTransactions().length) {
                 <app-transactions
                     [allowGroupFilter]="false"
-                    [title]="'Active Card Feed'"
                     [sortByValue]="transactionSortBy()"
                     [transactions]="
-                        monthTransactions()
+                        visibleTransactions()
                             | transactionsFilter: transactionSearch()
                             | transactionsSortBy: transactionSortBy() : transactionSortDirection()
                     "
@@ -175,11 +135,11 @@
                     (openTransaction)="onOpenTransaction($event)">
                 </app-transactions>
             } @else {
-                <div class="calendar-transactions__empty">
-                    <span class="material-icons-round">event_busy</span>
-                    <p>No active-card transactions were found for this month.</p>
+                <div class="empty">
+                    <p>No transactions {{ selectedDay() ? 'on this day' : 'this month' }}.</p>
                 </div>
             }
         </section>
+        }
     }
 </section>

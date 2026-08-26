@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 
@@ -51,6 +51,54 @@ export default class InsightsComponent implements OnInit {
                 this.error.set(err?.error?.message ?? 'Failed to load insights');
                 this.loading.set(false);
             },
+        });
+    }
+
+    /** Critical first and visually dominant — a burst of "info" must not bury it. */
+    readonly bands = computed(() => {
+        const all = this.insights().filter(i => !this.dismissed().has(i.id));
+        const order: Array<Insight['severity']> = ['critical', 'warn', 'info'];
+        return order
+            .map(severity => ({
+                severity,
+                label: severity === 'critical' ? 'Needs attention' : severity === 'warn' ? 'Worth a look' : 'For information',
+                items: all.filter(i => i.severity === severity),
+            }))
+            .filter(band => band.items.length > 0);
+    });
+
+    readonly dismissed = signal<Set<string>>(new Set());
+    readonly visibleCount = computed(() => this.bands().reduce((n, b) => n + b.items.length, 0));
+
+    dismiss(id: string): void {
+        const next = new Set(this.dismissed());
+        next.add(id);
+        this.dismissed.set(next);
+    }
+
+    /** "new-merchant" is not a label a person should read. */
+    typeLabel(type: string): string {
+        switch (type) {
+            case 'anomaly': return 'Unusual day';
+            case 'comparison': return 'Vs last month';
+            case 'new-merchant': return 'New merchant';
+            case 'burst': return 'Spending burst';
+            case 'trend': return 'Trend';
+            case 'milestone': return 'Milestone';
+            default: return 'Insight';
+        }
+    }
+
+    /** Direction is stated in words too, so colour is never the only signal. */
+    changeLabel(insight: Insight): string | null {
+        if (insight.changePercent === undefined || insight.changePercent === null) return null;
+        const pct = Math.abs(Math.round(insight.changePercent));
+        return `${insight.changePercent >= 0 ? '↑' : '↓'} ${pct}% vs last month`;
+    }
+
+    detectedLabel(insight: Insight): string {
+        return new Date(insight.detectedAt * 1000).toLocaleString(undefined, {
+            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
         });
     }
 

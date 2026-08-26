@@ -1,73 +1,69 @@
-<section class="insights-page">
-    <h1 class="page-title">
-        <span class="material-icons-round">psychology</span>
-        Insights & Anomalies
-    </h1>
-    <p class="page-subtitle">AI-powered analysis of your spending patterns</p>
+<section class="page">
+    <header class="page__head">
+        <h1 class="page__title">Insights</h1>
+        @if (!loading() && !error()) {
+            <span class="page__count num">{{ visibleCount() }} active</span>
+        }
+        <span class="page__fill"></span>
+        <button type="button" class="btn" (click)="loadInsights()" [disabled]="loading()">
+            <span class="material-icons-round">refresh</span>
+            Refresh
+        </button>
+    </header>
 
     @if (loading()) {
-        <div class="insights-loading">
-            @for (i of [1, 2, 3, 4]; track i) {
-                <div class="insight-skeleton"></div>
-            }
-        </div>
+        <div class="sk"></div>
+        <div class="sk"></div>
     } @else if (error()) {
-        <div class="insights-error">
-            <span class="material-icons-round">error_outline</span>
+        <div class="empty">
             <p>{{ error() }}</p>
-            <button class="retry-btn" (click)="loadInsights()">
-                <span class="material-icons-round">refresh</span>
-                Retry
-            </button>
+            <button type="button" class="btn" (click)="loadInsights()">Try again</button>
         </div>
-    } @else if (insights().length === 0) {
-        <div class="insights-empty">
-            <span class="material-icons-round">auto_awesome</span>
-            <h3>No insights yet</h3>
-            <p>Load more transactions to unlock spending insights and anomaly detection</p>
+    } @else if (!visibleCount()) {
+        <div class="empty">
+            <p>Nothing stands out this period.</p>
+            <span>Insights appear when spending deviates from your usual pattern.</span>
         </div>
     } @else {
-        <div class="insights-list">
-            @for (insight of insights(); track insight.id) {
-                <div class="insight-item" [class]="'insight-item--' + insight.severity">
-                    <div class="insight-item__icon-wrap" [class]="'insight-item__icon-wrap--' + insight.severity">
-                        <span class="material-icons-round">{{ typeIcon(insight.type) }}</span>
-                    </div>
-                    <div class="insight-item__body">
-                        <div class="insight-item__header">
-                            <span class="insight-item__type">{{ insight.type }}</span>
-                            <span class="insight-item__severity" [class]="'severity--' + insight.severity">
-                                <span class="material-icons-round">{{ severityIcon(insight.severity) }}</span>
-                                {{ insight.severity }}
-                            </span>
-                        </div>
-                        <h3 class="insight-item__title">{{ insight.title }}</h3>
-                        <p class="insight-item__description">{{ insight.description }}</p>
-                        @if (insight.value !== undefined) {
-                            <div class="insight-item__metrics">
-                                <span class="metric">
-                                    <span class="metric__label">Current</span>
-                                    <span class="metric__value">{{ insight.value | displayMoney: 980 : 0 : 2 }}</span>
-                                </span>
-                                @if (insight.previousValue !== undefined) {
-                                    <span class="metric">
-                                        <span class="metric__label">Previous</span>
-                                        <span class="metric__value">{{ insight.previousValue | displayMoney: 980 : 0 : 2 }}</span>
-                                    </span>
-                                }
-                                @if (insight.changePercent !== undefined) {
-                                    <span class="metric">
-                                        <span class="metric__label">Change</span>
-                                        <span class="metric__value" [class.positive]="insight.changePercent < 0" [class.negative]="insight.changePercent > 0">
-                                            {{ insight.changePercent > 0 ? '+' : '' }}{{ insight.changePercent }}%
-                                        </span>
-                                    </span>
+        @for (band of bands(); track band.severity) {
+            <section class="band" [attr.data-severity]="band.severity">
+                <h2 class="band__title micro">{{ band.label }} · {{ band.items.length }}</h2>
+
+                <div class="band__list">
+                    @for (insight of band.items; track insight.id) {
+                        <article class="card" [attr.data-severity]="insight.severity">
+                            <span class="card__rule"></span>
+
+                            <div class="card__body">
+                                <div class="card__top">
+                                    <span class="card__type micro">{{ typeLabel(insight.type) }}</span>
+                                    <span class="card__when num">{{ detectedLabel(insight) }}</span>
+                                    <button type="button" class="card__dismiss" (click)="dismiss(insight.id)" aria-label="Dismiss insight">
+                                        <span class="material-icons-round">close</span>
+                                    </button>
+                                </div>
+
+                                <h3 class="card__title">{{ insight.title }}</h3>
+                                <p class="card__desc">{{ insight.description }}</p>
+
+                                @if (insight.value !== undefined || changeLabel(insight)) {
+                                    <div class="card__figures">
+                                        @if (insight.value !== undefined) {
+                                            <span class="card__value num">{{ insight.value | displayMoney: 980 }}</span>
+                                        }
+                                        @if (insight.previousValue !== undefined) {
+                                            <span class="card__prev num">was {{ insight.previousValue | displayMoney: 980 }}</span>
+                                        }
+                                        @if (changeLabel(insight); as change) {
+                                            <span class="card__change" [class.is-up]="(insight.changePercent ?? 0) >= 0">{{ change }}</span>
+                                        }
+                                    </div>
                                 }
                             </div>
-                        }
-                    </div>
+                        </article>
+                    }
                 </div>
-            }
-        </div>
+            </section>
+        }
     }
 </section>

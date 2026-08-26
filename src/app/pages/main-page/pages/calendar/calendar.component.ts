@@ -96,14 +96,34 @@ export default class CalendarComponent implements OnInit {
         return Math.max(1, ...data.days.map(day => day.expense));
     });
 
-    readonly selectedDaySummary = computed(() => {
+    /** A readable heading, not the raw ISO string. */
+    readonly selectedDayLabel = computed(() => {
         const day = this.selectedDay();
-        if (!day) {
-            return null;
-        }
-
-        return `${day.date} - ${day.txCount} tx`;
+        if (!day) return null;
+        const parsed = new Date(`${day.date}T00:00:00`);
+        return parsed.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
     });
+
+    /**
+     * Selecting a day filters the feed to that day. Previously the day detail and the
+     * feed below it disagreed: the summary described one day while the list showed the
+     * whole month.
+     */
+    readonly visibleTransactions = computed(() => {
+        const day = this.selectedDay();
+        const rows = this.monthTransactions();
+        if (!day) return rows;
+        return rows.filter(row => this.toDateKey(row.time) === day.date);
+    });
+
+    private toDateKey(unixSeconds: number): string {
+        const d = new Date(unixSeconds * 1000);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    /** 0 = no spend, 1..5 = the five steps of the heat ramp. */
+    readonly heatSteps = [1, 2, 3, 4, 5];
 
     ngOnInit(): void {
         this.loadMonth();
@@ -156,8 +176,8 @@ export default class CalendarComponent implements OnInit {
     }
 
     heatLevel(day: CalendarDay): number {
-        if (day.expense === 0) return 0;
-        return Math.min(4, Math.ceil((day.expense / this.maxExpense()) * 4));
+        if (day.expense <= 0) return 0;
+        return Math.min(5, Math.max(1, Math.ceil((day.expense / this.maxExpense()) * 5)));
     }
 
     onSearchTransactions(value: string): void {
