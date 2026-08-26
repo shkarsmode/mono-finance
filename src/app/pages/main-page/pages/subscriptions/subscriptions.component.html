@@ -1,150 +1,115 @@
-<section class="subs-header">
-    <div class="subs-header__left">
-        <h1 class="page-title">
-            <span class="material-icons-round">autorenew</span>
-            Subscriptions
-        </h1>
-        <p class="page-subtitle">Detected recurring payments from your transaction history</p>
+<section class="page">
+    <header class="page__head">
+        <h1 class="page__title">Subscriptions</h1>
+        <span class="page__fill"></span>
+        <button type="button" class="btn" (click)="onDetect()" [disabled]="isDetecting()">
+            <span class="material-icons-round" [class.spin]="isDetecting()">autorenew</span>
+            {{ isDetecting() ? 'Detecting…' : 'Detect' }}
+        </button>
+    </header>
+
+    <div class="totals">
+        <div class="totals__cell">
+            <span class="micro">Per month</span>
+            <span class="totals__val num">{{ totalMonthly() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+            <span class="totals__hint">weekly plans counted at their monthly rate</span>
+        </div>
+        <div class="totals__cell">
+            <span class="micro">Active</span>
+            <span class="totals__val num">{{ activeSubs().length }}</span>
+        </div>
+        <div class="totals__cell">
+            <span class="micro">Due this week</span>
+            <span class="totals__val num">{{ upcomingSubs().length }}</span>
+        </div>
     </div>
 
-    <button class="detect-btn" (click)="onDetect()" [disabled]="isDetecting()">
-        @if (isDetecting()) {
-            <span class="detect-btn__spinner"></span>
-            Analyzing…
-        } @else {
-            <span class="material-icons-round">search</span>
-            Detect subscriptions
+    @if (isLoading()) {
+        <div class="sk"></div><div class="sk"></div>
+    } @else if (!subscriptions()?.length) {
+        <div class="empty">
+            <p>No recurring payments detected yet.</p>
+            <span>Press Detect to scan the last 90 days for repeating charges.</span>
+        </div>
+    } @else {
+
+        @if (upcomingSubs().length) {
+            <section class="group">
+                <h2 class="group__title micro">Coming up · next 7 days</h2>
+                <div class="upcoming">
+                    @for (sub of upcomingSubs(); track sub.id) {
+                        <div class="upcoming__row">
+                            <span class="upcoming__name">{{ sub.title }}</span>
+                            <span class="upcoming__when num">{{ toDate(sub.nextExpectedAt) | date: 'd MMM y' }}</span>
+                            <span class="upcoming__amt num">{{ sub.averageAmount | displayMoney: sub.currency }}</span>
+                        </div>
+                    }
+                </div>
+            </section>
         }
-    </button>
+
+        @if (confidentSubs().length) {
+            <section class="group">
+                <h2 class="group__title micro">Active · {{ confidentSubs().length }}</h2>
+                <div class="list">
+                    @for (sub of confidentSubs(); track sub.id) {
+                        <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub }"></ng-container>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (reviewSubs().length) {
+            <section class="group">
+                <h2 class="group__title micro">Needs review · {{ reviewSubs().length }}</h2>
+                <p class="group__note">Detected from few occurrences — confirm these are really recurring.</p>
+                <div class="list">
+                    @for (sub of reviewSubs(); track sub.id) {
+                        <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub, review: true }"></ng-container>
+                    }
+                </div>
+            </section>
+        }
+
+        @if (pausedSubs().length) {
+            <section class="group">
+                <h2 class="group__title micro">Paused · {{ pausedSubs().length }}</h2>
+                <div class="list">
+                    @for (sub of pausedSubs(); track sub.id) {
+                        <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub }"></ng-container>
+                    }
+                </div>
+            </section>
+        }
+    }
 </section>
 
-<!-- Summary Cards -->
-@if (subscriptions().length) {
-    <div class="summary-row">
-        <div class="summary-card">
-            <span class="summary-card__icon material-icons-round">calendar_month</span>
-            <div class="summary-card__info">
-                <span class="summary-card__value">
-                    {{ totalMonthly() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
-                </span>
-                <span class="summary-card__label">Monthly total</span>
+<ng-template #subCard let-sub let-review="review">
+    <article class="sub" [class.sub--paused]="!sub.isActive">
+        <div class="sub__main">
+            <div class="sub__top">
+                <span class="sub__name">{{ sub.title }}</span>
+                <span class="chip">{{ getCadenceLabel(sub.cadence) }}</span>
+                @if (review) { <span class="chip chip--review">Review</span> }
+            </div>
+            <div class="sub__meta num">
+                @if (toDate(sub.lastSeenAt); as last) { <span>last {{ last | date: 'd MMM y' }}</span> }
+                @if (toDate(sub.nextExpectedAt); as next) { <span>· next {{ next | date: 'd MMM y' }}</span> }
+                <span>· {{ sub.occurrenceCount }}×</span>
             </div>
         </div>
-        <div class="summary-card">
-            <span class="summary-card__icon material-icons-round">subscriptions</span>
-            <div class="summary-card__info">
-                <span class="summary-card__value">{{ activeSubs().length }}</span>
-                <span class="summary-card__label">Active subscriptions</span>
-            </div>
-        </div>
-        <div class="summary-card">
-            <span class="summary-card__icon material-icons-round">upcoming</span>
-            <div class="summary-card__info">
-                <span class="summary-card__value">{{ upcomingSubs().length }}</span>
-                <span class="summary-card__label">Due this week</span>
-            </div>
-        </div>
-    </div>
-}
 
-<!-- Upcoming This Week -->
-@if (upcomingSubs().length) {
-    <section class="upcoming-section">
-        <h2 class="section-title">
-            <span class="material-icons-round">notifications_active</span>
-            Coming Up
-        </h2>
-        <div class="upcoming-list">
-            @for (sub of upcomingSubs(); track sub.id) {
-                <div class="upcoming-item">
-                    <div class="upcoming-item__left">
-                        <span class="material-icons-round upcoming-item__icon">{{ getCadenceIcon(sub.cadence) }}</span>
-                        <div>
-                            <span class="upcoming-item__title">{{ sub.title }}</span>
-                            <span class="upcoming-item__date">{{ sub.nextExpectedAt | date: 'MMM d' }}</span>
-                        </div>
-                    </div>
-                    <span class="upcoming-item__amount">
-                        {{ sub.averageAmount | displayMoney: sub.currency }}
-                    </span>
-                </div>
-            }
-        </div>
-    </section>
-}
+        <span class="sub__amount num">{{ sub.averageAmount | displayMoney: sub.currency }}</span>
 
-<!-- Loading State -->
-@if (isLoading()) {
-    <div class="skeleton-list">
-        @for (i of [1,2,3,4,5]; track i) {
-            <div class="skeleton-row"></div>
-        }
-    </div>
-} @else if (!subscriptions().length) {
-    <div class="empty-state">
-        <span class="material-icons-round">manage_search</span>
-        <h3>No subscriptions detected</h3>
-        <p>Click "Detect subscriptions" to analyze your transaction history and find recurring payments</p>
-    </div>
-} @else {
-    <!-- All Subscriptions -->
-    <section class="subs-list-section">
-        <h2 class="section-title">All Subscriptions</h2>
-        <div class="subs-grid">
-            @for (sub of subscriptions(); track sub.id) {
-                <div class="sub-card" [class.sub-card--inactive]="!sub.isActive">
-                    <div class="sub-card__header">
-                        <div class="sub-card__title-group">
-                            <span class="sub-card__title">{{ sub.title }}</span>
-                            <span class="sub-card__cadence"
-                                  [class]="'cadence-' + sub.cadence">
-                                {{ getCadenceLabel(sub.cadence) }}
-                            </span>
-                        </div>
-                        <button class="sub-card__toggle"
-                                [class.active]="sub.isActive"
-                                (click)="onToggle(sub)">
-                            <span class="sub-card__toggle-track">
-                                <span class="sub-card__toggle-thumb"></span>
-                            </span>
-                        </button>
-                    </div>
-
-                    <div class="sub-card__amount">
-                        {{ sub.averageAmount | displayMoney: sub.currency }}
-                        <span class="sub-card__currency">{{ getCurrencyName(sub.currency) }}</span>
-                    </div>
-
-                    <div class="sub-card__meta">
-                        <div class="sub-card__meta-item">
-                            <span class="material-icons-round">event</span>
-                            Last: {{ sub.lastSeenAt | date: 'MMM d, y' }}
-                        </div>
-                        @if (sub.nextExpectedAt) {
-                            <div class="sub-card__meta-item">
-                                <span class="material-icons-round">upcoming</span>
-                                Next: {{ sub.nextExpectedAt | date: 'MMM d' }}
-                            </div>
-                        }
-                        <div class="sub-card__meta-item">
-                            <span class="material-icons-round">repeat</span>
-                            {{ sub.occurrenceCount }} times
-                        </div>
-                    </div>
-
-                    <div class="sub-card__confidence">
-                        <div class="confidence-bar">
-                            <div class="confidence-bar__fill"
-                                 [class]="getConfidenceClass(sub.confidence)"
-                                 [style.width.%]="sub.confidence * 100">
-                            </div>
-                        </div>
-                        <span class="confidence-label">
-                            {{ (sub.confidence * 100) | number: '1.0-0' }}% confidence
-                        </span>
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
-}
+        <!-- a labeled switch: the old control was a bare thumb with no text and no aria -->
+        <button type="button"
+                class="toggle"
+                [class.toggle--on]="sub.isActive"
+                (click)="onToggle(sub)"
+                [attr.aria-pressed]="sub.isActive"
+                [attr.aria-label]="sub.isActive ? 'Pause ' + sub.title : 'Activate ' + sub.title">
+            <span class="toggle__track"><span class="toggle__thumb"></span></span>
+            <span class="toggle__label">{{ sub.isActive ? 'Active' : 'Paused' }}</span>
+        </button>
+    </article>
+</ng-template>

@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@angular/core';
 import { currencyCodesMap } from '@core/data';
 import { CurrencyDisplayService } from '@core/services';
@@ -10,7 +10,7 @@ import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-ma
 @Component({
     selector: 'app-subscriptions',
     standalone: true,
-    imports: [DatePipe, DecimalPipe, DisplayMoneyPipe, DisplayMoneyMajorPipe],
+    imports: [DatePipe, DecimalPipe, NgTemplateOutlet, DisplayMoneyPipe, DisplayMoneyMajorPipe],
     templateUrl: './subscriptions.component.html',
     styleUrl: './subscriptions.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,20 +27,46 @@ export default class SubscriptionsComponent implements OnInit {
         (this.subscriptions() ?? []).filter(s => s?.isActive)
     );
 
-    readonly totalMonthly = computed(() => {
-        return this.activeSubs()
-            .filter(s => s.cadence === 'monthly')
-            .reduce((sum, s) => sum + this.currencyDisplay.convertMinorAmount(Math.abs(s.averageAmount), s.currency), 0);
-    });
+    readonly pausedSubs = computed(() => (this.subscriptions() ?? []).filter(s => s && !s.isActive));
+
+    /** Low-confidence detections are flagged for review instead of shown as fact. */
+    readonly confidentSubs = computed(() => this.activeSubs().filter(s => (s.confidence ?? 0) >= 0.5));
+    readonly reviewSubs = computed(() => this.activeSubs().filter(s => (s.confidence ?? 0) < 0.5));
+
+    /**
+     * The real monthly cost. This used to count only cadence === 'monthly', so a weekly
+     * subscription — the expensive kind — was left out entirely and the headline figure
+     * understated what actually leaves the account each month.
+     */
+    readonly totalMonthly = computed(() =>
+        this.activeSubs().reduce((sum, s) => sum + this.monthlyEquivalent(s), 0)
+    );
+
+    monthlyEquivalent(sub: ISubscription): number {
+        const amount = this.currencyDisplay.convertMinorAmount(Math.abs(sub.averageAmount), sub.currency);
+        if (sub.cadence === 'weekly') return amount * 52 / 12;
+        return amount;
+    }
+
+    /**
+     * lastSeenAt / nextExpectedAt are bigint columns, so they arrive as a string of
+     * UNIX SECONDS. Passing that straight to new Date() produced an Invalid Date, which
+     * silently emptied the "Coming Up" list.
+     */
+    toDate(value: string | number | null | undefined): Date | null {
+        if (value === null || value === undefined || value === '') return null;
+        const n = Number(value);
+        if (!Number.isFinite(n)) return null;
+        return new Date(n < 1e12 ? n * 1000 : n);
+    }
 
     readonly upcomingSubs = computed(() => {
-        const now = Date.now();
-        const weekFromNow = now + 7 * 24 * 60 * 60 * 1000;
+        const weekFromNow = Date.now() + 7 * 24 * 60 * 60 * 1000;
         return this.activeSubs()
-            .filter(s => s.nextExpectedAt && new Date(s.nextExpectedAt).getTime() <= weekFromNow)
-            .sort((a, b) =>
-                new Date(a.nextExpectedAt!).getTime() - new Date(b.nextExpectedAt!).getTime()
-            );
+            .map(s => ({ sub: s, at: this.toDate(s.nextExpectedAt)?.getTime() ?? null }))
+            .filter(x => x.at !== null && x.at <= weekFromNow)
+            .sort((a, b) => (a.at as number) - (b.at as number))
+            .map(x => x.sub);
     });
 
     ngOnInit(): void {
