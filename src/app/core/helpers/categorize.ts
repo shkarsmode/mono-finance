@@ -9,23 +9,37 @@ import { ICategoryGroup, ITransaction } from '@core/interfaces';
  *
  * Resolution, most specific first:
  *   1. a transaction pinned to a category by id;
- *   2. the LONGEST text key that the description, merchant or counterparty
+ *   2. a system rule (`test`) — e.g. "this is your own money moving";
+ *   3. the LONGEST text key that the description, merchant or counterparty
  *      contains — "Дія | Штрафи" beats "Дія", whatever order the categories are in;
  *      equal lengths fall back to category order;
- *   3. the first category (in order) holding the transaction's MCC;
- *   4. otherwise uncategorized.
+ *   4. the first category (in order) holding the transaction's MCC — a single code
+ *      ("5411") or a range ("3000-3999");
+ *   5. otherwise uncategorized.
+ *
+ * A category with a `direction` only takes credits ('in') or debits ('out'), so
+ * "transfers in" and "transfers to people" can share MCC 4829.
+ *
+ * A text key starting with "^" matches only the START of the description —
+ * "^Платіж" catches "Платіж FOXTROT" (an installment) without catching every
+ * description that merely contains the word. Being anchored, these keys are more
+ * specific than any plain key and are tried before them.
  */
 
 export const UNCATEGORIZED = -1;
 
-const MCC_KEY = /^\d+$/;
+const MCC_KEY = /^\d{3,4}$/;
+const MCC_RANGE = /^(\d{3,4})\s*-\s*(\d{3,4})$/;
+
+type Direction = 'in' | 'out' | undefined;
 
 interface Compiled {
     pinned: Map<string, number>;
+    tests: Array<{ test: (tx: ITransaction) => boolean; index: number; dir: Direction }>;
     /** Sorted longest-first, ties by category index. */
-    text: Array<{ key: string; index: number }>;
+    text: Array<{ key: string; raw: string; index: number; dir: Direction; starts: boolean }>;
     /** In category order. */
-    mcc: Array<{ codes: Set<number>; index: number }>;
+    mcc: Array<{ codes: Set<number>; ranges: Array<[number, number]>; index: number; dir: Direction }>;
 }
 
 const compiledCache = new WeakMap<readonly ICategoryGroup[], Compiled>();
@@ -35,27 +49,35 @@ function compile(groups: readonly ICategoryGroup[]): Compiled {
     if (cached) return cached;
 
     const pinned = new Map<string, number>();
+    const tests: Compiled['tests'] = [];
     const text: Compiled['text'] = [];
     const mcc: Compiled['mcc'] = [];
 
     groups.forEach((group, index) => {
+        const dir = group.direction;
         for (const id of group.txIds ?? []) {
             if (!pinned.has(id)) pinned.set(id, index);
         }
+        if (group.test) tests.push({ test: group.test, index, dir });
 
         const codes = new Set<number>();
+        const ranges: Array<[number, number]> = [];
         for (const raw of group.keys ?? []) {
             const key = String(raw ?? '').trim();
             if (!key) continue;
-            if (MCC_KEY.test(key)) codes.add(Number(key));
-            else text.push({ key: key.toLocaleLowerCase(), index });
+            const range = MCC_RANGE.exec(key);
+            if (range) ranges.push([Number(range[1]), Number(range[2])]);
+            else if (MCC_KEY.test(key)) codes.add(Number(key));
+            else if (key.startsWith('^') && key.length > 1) {
+                text.push({ key: key.slice(1).toLocaleLowerCase(), raw: key, index, dir, starts: true });
+            } else text.push({ key: key.toLocaleLowerCase(), raw: key, index, dir, starts: false });
         }
-        if (codes.size) mcc.push({ codes, index });
+        if (codes.size || ranges.length) mcc.push({ codes, ranges, index, dir });
     });
 
-    text.sort((a, b) => b.key.length - a.key.length || a.index - b.index);
+    text.sort((a, b) => Number(b.starts) - Number(a.starts) || b.key.length - a.key.length || a.index - b.index);
 
-    const result = { pinned, text, mcc };
+    const result = { pinned, tests, text, mcc };
     compiledCache.set(groups, result);
     return result;
 }
@@ -66,24 +88,67 @@ function haystack(tx: ITransaction): string[] {
         .filter(Boolean);
 }
 
-/** Index of the winning category, or UNCATEGORIZED. */
-export function categoryIndexOf(tx: ITransaction, groups: readonly ICategoryGroup[]): number {
-    if (!groups?.length) return UNCATEGORIZED;
+function fits(dir: Direction, tx: ITransaction): boolean {
+    if (!dir) return true;
+    const amount = Number(tx.amount) || 0;
+    return dir === 'in' ? amount > 0 : amount < 0;
+}
+
+/** fields[0] is the description — "^" keys look only at its start. */
+function textHit(entry: Compiled['text'][number], fields: string[]): boolean {
+    if (entry.starts) return (fields[0] ?? '').startsWith(entry.key);
+    return fields.some(field => field.includes(entry.key));
+}
+
+function mccHit(entry: Compiled['mcc'][number], tx: ITransaction): boolean {
+    for (const code of [tx.mcc, tx.originalMcc]) {
+        if (!code) continue;
+        if (entry.codes.has(code)) return true;
+        if (entry.ranges.some(([from, to]) => code >= from && code <= to)) return true;
+    }
+    return false;
+}
+
+/** A key that is an MCC code ("5411") or an MCC range ("3000-3999"). */
+export function isMccKey(key: string): boolean {
+    const k = String(key ?? '').trim();
+    return MCC_KEY.test(k) || MCC_RANGE.test(k);
+}
+
+export type MatchReason =
+    | { by: 'pin' }
+    | { by: 'system' }
+    | { by: 'text'; key: string }
+    | { by: 'mcc'; mcc: number }
+    | { by: 'none' };
+
+/** The winning category AND why it won — the ledger shows the reason on hover. */
+export function explainCategory(tx: ITransaction, groups: readonly ICategoryGroup[]): { index: number; reason: MatchReason } {
+    if (!groups?.length) return { index: UNCATEGORIZED, reason: { by: 'none' } };
     const compiled = compile(groups);
 
     const pin = compiled.pinned.get(tx.id);
-    if (pin !== undefined) return pin;
+    if (pin !== undefined) return { index: pin, reason: { by: 'pin' } };
+
+    for (const { test, index, dir } of compiled.tests) {
+        if (fits(dir, tx) && test(tx)) return { index, reason: { by: 'system' } };
+    }
 
     const fields = haystack(tx);
-    for (const { key, index } of compiled.text) {
-        if (fields.some(field => field.includes(key))) return index;
+    for (const entry of compiled.text) {
+        if (fits(entry.dir, tx) && textHit(entry, fields)) return { index: entry.index, reason: { by: 'text', key: entry.raw } };
     }
 
-    for (const { codes, index } of compiled.mcc) {
-        if (codes.has(tx.mcc) || codes.has(tx.originalMcc)) return index;
+    for (const entry of compiled.mcc) {
+        if (fits(entry.dir, tx) && mccHit(entry, tx)) return { index: entry.index, reason: { by: 'mcc', mcc: tx.mcc || tx.originalMcc } };
     }
 
-    return UNCATEGORIZED;
+    return { index: UNCATEGORIZED, reason: { by: 'none' } };
+}
+
+/** Index of the winning category, or UNCATEGORIZED. */
+export function categoryIndexOf(tx: ITransaction, groups: readonly ICategoryGroup[]): number {
+    return explainCategory(tx, groups).index;
 }
 
 /** Every category whose rules match — the winner plus any it beat. */
@@ -95,12 +160,15 @@ export function matchingIndexes(tx: ITransaction, groups: readonly ICategoryGrou
     const pin = compiled.pinned.get(tx.id);
     if (pin !== undefined) hits.add(pin);
 
-    const fields = haystack(tx);
-    for (const { key, index } of compiled.text) {
-        if (fields.some(field => field.includes(key))) hits.add(index);
+    for (const { test, index, dir } of compiled.tests) {
+        if (fits(dir, tx) && test(tx)) hits.add(index);
     }
-    for (const { codes, index } of compiled.mcc) {
-        if (codes.has(tx.mcc) || codes.has(tx.originalMcc)) hits.add(index);
+    const fields = haystack(tx);
+    for (const entry of compiled.text) {
+        if (fits(entry.dir, tx) && textHit(entry, fields)) hits.add(entry.index);
+    }
+    for (const entry of compiled.mcc) {
+        if (fits(entry.dir, tx) && mccHit(entry, tx)) hits.add(entry.index);
     }
     return Array.from(hits);
 }
@@ -220,6 +288,7 @@ export function toDefinitions(groups: readonly ICategoryGroup[]): ICategoryGroup
         };
         if (group.txIds?.length) definition.txIds = [...group.txIds];
         if (group.excluded) definition.excluded = true;
+        if (group.direction) definition.direction = group.direction;
         return definition;
     });
 }

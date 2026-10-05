@@ -20,11 +20,17 @@ describe('CategoryGroupService', () => {
 
     function make() {
         const currentTransactions$ = new BehaviorSubject<any[]>([]);
-        const monobank: any = { currentTransactions$, categoryGroups$: new BehaviorSubject<any[]>([]) };
+        const monobank: any = {
+            currentTransactions$,
+            categoryGroups$: new BehaviorSubject<any[]>([]),
+            clientInfo$: new BehaviorSubject<any>(null),
+        };
         const http: any = { post: () => ({ pipe: () => ({ subscribe: () => undefined }) }) };
         const loading: any = { loading$: { next: () => undefined } };
         const toast: any = { error: () => undefined };
         const service = new CategoryGroupService(http, monobank, '/api', loading, toast);
+        // these specs exercise YOUR categories; the automatic set is covered in auto-categories.spec
+        service.setMode('mine');
         return { service, monobank, currentTransactions$ };
     }
 
@@ -88,5 +94,28 @@ describe('CategoryGroupService', () => {
         currentTransactions$.next([tx({ description: 'anything', amount: -500 })]);
 
         expect(service.categoryGroups$.getValue()[0].amount).toBe(0);
+    });
+
+    it('shows the automatic categories in auto mode and recognises own money from the profile', () => {
+        const { service, monobank, currentTransactions$ } = make();
+        service.setMode('auto');
+        monobank.clientInfo$.next({ name: 'Петренко Олена', ownJars: ['Хата'], jars: [] });
+        currentTransactions$.next([
+            tx({ description: 'Поповнення «Хата»', amount: -500000 }),
+            tx({ description: 'Сільпо', mcc: 5411, amount: -84260 }),
+        ]);
+
+        const groups = service.categoryGroups$.getValue();
+        expect(groups.find(g => g.title === 'Own money')?.amount).toBe(-500000);
+        expect(groups.find(g => g.title === 'Groceries')?.amount).toBe(-84260);
+    });
+
+    it('remembers the chosen modes', () => {
+        const { service } = make();
+        service.setMode('auto');
+        service.setCountMode('all');
+        expect(localStorage.getItem('finance-category-mode')).toBe('auto');
+        expect(localStorage.getItem('finance-count-mode')).toBe('all');
+        service.setCountMode('real');
     });
 });

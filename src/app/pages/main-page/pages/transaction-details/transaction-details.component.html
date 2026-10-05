@@ -11,6 +11,8 @@
                     <div class="hero__tags">
                         <span class="tag" [class.tag--pos]="tx.amount > 0">{{ tx.amount > 0 ? 'Income' : 'Expense' }}</span>
                         @if (tx.hold) { <span class="tag tag--hold">Hold</span> }
+                        @if (flow() === 'internal') { <span class="tag">Own money · not counted</span> }
+                        @if (flow() === 'refund') { <span class="tag tag--refund">Refund · reduces spending</span> }
                     </div>
                     <h1 class="hero__title">{{ tx.description }}</h1>
                     <p class="hero__when num">{{ tx.time * 1000 | date: 'EEEE, d MMMM y · HH:mm' }}</p>
@@ -26,6 +28,18 @@
             <!-- the one thing you are most likely to change here -->
             <div class="catrow">
                 <span class="micro">Category</span>
+                @if (categoryMode() === 'auto') {
+                    <span class="cat cat--static">
+                        <span class="dot" [style.background]="categoryColor()"></span>
+                        @if (category(); as c) {
+                            @if (c.emoji) { <span class="emoji">{{ c.emoji }}</span> }
+                            {{ c.title }}
+                        } @else {
+                            Other
+                        }
+                    </span>
+                    <span class="catrow__note">{{ categoryReason() }} · automatic</span>
+                } @else {
                 <button type="button" class="cat" [class.cat--none]="!category()" [class.cat--open]="!!pickerOrigin()"
                         (click)="togglePicker($event)"
                         [attr.aria-label]="category() ? 'Category ' + category()!.title + ' — change' : 'Categorize this transaction'">
@@ -38,6 +52,7 @@
                     }
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
+                }
                 @if (category() && category()!.excluded) { <span class="catrow__note">not counted in Spent and Income</span> }
             </div>
 

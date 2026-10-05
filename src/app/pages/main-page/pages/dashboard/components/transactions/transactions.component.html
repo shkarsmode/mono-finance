@@ -40,8 +40,17 @@
     </header>
 
     <!-- active filter / sort, each one click away from undone -->
-    @if (filterLabel() || sort().key !== 'date') {
+    @if (filterLabel() || sort().key !== 'date' || dayFilter()) {
         <div class="ledger__state">
+            @if (dayFilter()) {
+                <span class="pill">
+                    {{ dayFilterLabel() }}
+                    <span class="pill__meta num">{{ count() }} tx · {{ visibleNet() | displayMoney: currencyCode() }}</span>
+                    <button type="button" class="pill__x" (click)="clearDay()" aria-label="Show the whole month">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                    </button>
+                </span>
+            }
             @if (filterLabel(); as label) {
                 <span class="pill">
                     <span class="dot" [style.background]="filterColor()"></span>
@@ -93,7 +102,16 @@
     <div class="ledger__body" [class.ledger__body--compact]="compact()">
         @for (section of sections(); track section.key) {
             @if (grouped()) {
-                <div class="rule">
+                <div class="rule"
+                     [class.rule--day]="sort().key === 'date'"
+                     [class.rule--on]="dayFilter() === section.key"
+                     [attr.role]="sort().key === 'date' ? 'button' : null"
+                     [attr.tabindex]="sort().key === 'date' ? 0 : null"
+                     [attr.aria-pressed]="sort().key === 'date' ? dayFilter() === section.key : null"
+                     [attr.title]="sort().key === 'date' ? (dayFilter() === section.key ? 'Show the whole month' : 'Show only this day') : null"
+                     (click)="toggleDay(section)"
+                     (keydown.enter)="toggleDay(section)"
+                     (keydown.space)="$event.preventDefault(); toggleDay(section)">
                     @if (section.color) { <span class="dot" [style.background]="section.color"></span> }
                     <span class="rule__title">{{ section.title }}</span>
                     @if (section.subtitle) { <span class="rule__sub num">{{ section.subtitle }}</span> }
@@ -106,89 +124,47 @@
             }
 
             @for (row of section.rows; track row.tx.id) {
-                <div class="row"
-                     [class.row--hold]="row.tx.hold"
-                     tabindex="0"
-                     role="row"
-                     [attr.aria-label]="row.tx.description"
-                     (click)="onTransactionClick(row.tx)"
-                     (keydown)="onRowKeydown($event, row.tx)">
-
-                    <span class="row__spine" [style.background]="row.color"></span>
-
-                    @if (!isNarrow()) {
-                        <span class="row__date num">
-                            @if (sort().key === 'date') {
-                                {{ row.tx.time * 1000 | date: 'HH:mm' }}
-                            } @else {
-                                <span>{{ row.tx.time * 1000 | date: 'd MMM' }}</span>
-                                <span class="row__date-sub">{{ row.tx.time * 1000 | date: 'HH:mm' }}</span>
-                            }
-                        </span>
-                    }
-
-                    <span class="row__merchant">
-                        <span class="row__name">
-                            {{ row.tx.description }}
-                            @if (row.tx.hold) { <span class="tag tag--hold">Hold</span> }
-                        </span>
-                        <span class="row__meta num">
-                            @if (isNarrow()) {
-                                <span>{{ row.tx.time * 1000 | date: sort().key === 'date' ? 'HH:mm' : 'd MMM · HH:mm' }}</span>
-                            }
-                            @if (row.tx.mcc) { <span class="mono">MCC {{ row.tx.mcc }}</span> }
-                            @if (row.tx.comment) { <span class="row__comment">{{ row.tx.comment }}</span> }
-                        </span>
-                        @if (isNarrow()) {
-                            <button type="button" class="cat cat--inline"
-                                    [class.cat--none]="row.index === -1"
-                                    (click)="openPicker($event, row)"
-                                    [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
-                                <span class="dot" [style.background]="row.color"></span>
-                                {{ row.category ?? 'Categorize' }}
-                            </button>
-                        }
-                    </span>
-
-                    @if (!isNarrow()) {
-                        <span class="row__cat">
-                            <button type="button" class="cat"
-                                    [class.cat--none]="row.index === -1"
-                                    [class.cat--open]="picker()?.row?.tx?.id === row.tx.id"
-                                    (click)="openPicker($event, row)"
-                                    [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
-                                @if (row.index === -1) {
-                                    <svg class="cat__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                                    Categorize
-                                } @else {
-                                    <span class="dot" [style.background]="row.color"></span>
-                                    <span class="cat__name">{{ row.category }}</span>
-                                    <svg class="cat__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-                                }
-                            </button>
-                        </span>
-                    }
-
-                    <span class="row__amount num" [class.is-pos]="row.tx.amount > 0">
-                        {{ row.tx.amount | displayMoney: row.tx.cardCurrencyCode }}
-                        @if (row.tx.cashbackAmount > 0) {
-                            <span class="row__cashback num">+{{ row.tx.cashbackAmount | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}</span>
-                        }
-                    </span>
-
-                    @if (!isNarrow()) {
-                        <span class="row__balance num mono balance-cell">
-                            {{ row.tx.balance | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}
-                        </span>
-                    }
-                </div>
+                <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }"></ng-container>
             }
+
         } @empty {
             <div class="ledger__empty">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
                 <p>No transactions match this view.</p>
                 <span>Try a different month, card, category or search.</span>
             </div>
+        }
+
+        @if (roundUps(); as ru) {
+            <!-- dozens of 3–7 ₴ round-ups say nothing one by one: one line for the whole view -->
+            <button type="button"
+                    class="row row--roundup"
+                    [class.row--roundup-open]="roundUpsOpen()"
+                    [attr.aria-expanded]="roundUpsOpen()"
+                    (click)="roundUpsOpen.set(!roundUpsOpen())">
+                <span class="row__spine"></span>
+                @if (!isNarrow()) { <span class="row__date"></span> }
+                <span class="row__merchant">
+                    <span class="row__name">
+                        <svg class="ru__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                        Round-ups → {{ ru.jar }}
+                    </span>
+                    <span class="row__meta num">
+                        <span>{{ ru.count }} small transfers into the jar</span>
+                        <span>{{ roundUpsOpen() ? 'hide' : 'show' }}</span>
+                    </span>
+                </span>
+                @if (!isNarrow()) {
+                    <span class="row__cat"><span class="cat cat--static"><span class="dot" style="background: var(--line-2)"></span>own money</span></span>
+                }
+                <span class="row__amount num">{{ ru.net | displayMoney: currencyCode() }}</span>
+                @if (!isNarrow()) { <span class="row__balance"></span> }
+            </button>
+            @if (roundUpsOpen()) {
+                @for (row of ru.rows; track row.tx.id) {
+                    <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }"></ng-container>
+                }
+            }
         }
     </div>
 </section>
@@ -211,4 +187,102 @@
             (close)="closePicker()">
         </app-category-picker>
     }
+</ng-template>
+
+<ng-template #rowTpl let-row>
+    <div class="row"
+         [class.row--hold]="row.tx.hold"
+         [class.row--internal]="countMode() === 'real' && row.flow === 'internal'"
+         tabindex="0"
+         role="row"
+         [attr.aria-label]="row.tx.description"
+         (click)="onTransactionClick(row.tx)"
+         (keydown)="onRowKeydown($event, row.tx)">
+
+        <span class="row__spine" [style.background]="row.color"></span>
+
+        @if (!isNarrow()) {
+            <span class="row__date num">
+                @if (sort().key === 'date') {
+                    {{ row.tx.time * 1000 | date: 'HH:mm' }}
+                } @else {
+                    <span>{{ row.tx.time * 1000 | date: 'd MMM' }}</span>
+                    <span class="row__date-sub">{{ row.tx.time * 1000 | date: 'HH:mm' }}</span>
+                }
+            </span>
+        }
+
+        <span class="row__merchant">
+            <span class="row__name">
+                {{ row.tx.description }}
+                @if (row.tx.hold) { <span class="tag tag--hold">Hold</span> }
+                @if (countMode() === 'real' && row.flow === 'internal') {
+                    <span class="tag tag--own" title="Moved between your own jars, cards or accounts — not counted">own money</span>
+                }
+                @if (countMode() === 'real' && row.flow === 'refund') {
+                    <span class="tag tag--refund" title="Reduces spending, not counted as income">refund</span>
+                }
+            </span>
+            <span class="row__meta num">
+                @if (isNarrow()) {
+                    <span>{{ row.tx.time * 1000 | date: sort().key === 'date' ? 'HH:mm' : 'd MMM · HH:mm' }}</span>
+                }
+                @if (row.tx.mcc) { <span class="mono">MCC {{ row.tx.mcc }}</span> }
+                @if (row.tx.comment) { <span class="row__comment">{{ row.tx.comment }}</span> }
+            </span>
+            @if (isNarrow() && categoryMode() === 'auto') {
+                <span class="cat cat--inline cat--static" [title]="row.reason">
+                    <span class="dot" [style.background]="row.color"></span>
+                    {{ row.category ?? 'Other' }}
+                </span>
+            } @else if (isNarrow()) {
+                <button type="button" class="cat cat--inline"
+                        [class.cat--none]="row.index === -1"
+                        (click)="openPicker($event, row)"
+                        [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
+                    <span class="dot" [style.background]="row.color"></span>
+                    {{ row.category ?? 'Categorize' }}
+                </button>
+            }
+        </span>
+
+        @if (!isNarrow() && categoryMode() === 'auto') {
+            <span class="row__cat">
+                <span class="cat cat--static" [title]="row.reason">
+                    <span class="dot" [style.background]="row.color"></span>
+                    <span class="cat__name">{{ row.category ?? 'Other' }}</span>
+                </span>
+            </span>
+        } @else if (!isNarrow()) {
+            <span class="row__cat">
+                <button type="button" class="cat"
+                        [class.cat--none]="row.index === -1"
+                        [class.cat--open]="picker()?.row?.tx?.id === row.tx.id"
+                        (click)="openPicker($event, row)"
+                        [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
+                    @if (row.index === -1) {
+                        <svg class="cat__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                        Categorize
+                    } @else {
+                        <span class="dot" [style.background]="row.color"></span>
+                        <span class="cat__name">{{ row.category }}</span>
+                        <svg class="cat__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                    }
+                </button>
+            </span>
+        }
+
+        <span class="row__amount num" [class.is-pos]="row.tx.amount > 0">
+            {{ row.tx.amount | displayMoney: row.tx.cardCurrencyCode }}
+            @if (row.tx.cashbackAmount > 0) {
+                <span class="row__cashback num">+{{ row.tx.cashbackAmount | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}</span>
+            }
+        </span>
+
+        @if (!isNarrow()) {
+            <span class="row__balance num mono balance-cell">
+                {{ row.tx.balance | displayMoney: row.tx.cardCurrencyCode : 0 : 2 }}
+            </span>
+        }
+    </div>
 </ng-template>

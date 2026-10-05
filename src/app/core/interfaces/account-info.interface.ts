@@ -7,6 +7,8 @@ export interface IAccountInfo {
     jars: IJar[];
     managedClients?: IManagedClient[];
     categoryGroups?: any[];
+    /** Your jars, current and historical — tells own-jar top-ups from donations. */
+    ownJars?: string[];
     _meta?: {
         clientInfoUpdatedAt: number;
         clientInfoNextRefreshAt: number;

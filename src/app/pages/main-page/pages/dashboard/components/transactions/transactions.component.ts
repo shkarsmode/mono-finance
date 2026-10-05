@@ -1,12 +1,14 @@
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import {
     ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, HostListener, inject, Input, Output,
     signal, ViewChild,
 } from '@angular/core';
 import {
-    AssignMode, categoryColor, categoryIndexOf, merchantLabel, UNCATEGORIZED,
+    AssignMode, categoryColor, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
+import { Flow, flowOf, isRoundUp, roundUpJar } from '@core/helpers/flows';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService } from '@core/services/category-group.service';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
@@ -17,12 +19,17 @@ type SortDir = 'asc' | 'desc';
 
 /** Sentinel for "show only uncategorized" in the category filter. */
 export const UNCATEGORIZED_FILTER = '\u0000uncategorized';
+/** Sentinel for "show only money that moved between your own accounts". */
+export const INTERNAL_FILTER = '\u0000internal';
 
 type LedgerRow = {
     tx: ITransaction;
     index: number;
     category: string | null;
     color: string;
+    /** Why this category — shown on hover in the automatic mode. */
+    reason: string;
+    flow: Flow;
 };
 
 type LedgerSection = {
@@ -73,7 +80,7 @@ function readCompact(): boolean {
 @Component({
     selector: 'app-transactions',
     standalone: true,
-    imports: [DatePipe, DisplayMoneyPipe, OverlayModule, CategoryPickerComponent],
+    imports: [DatePipe, NgTemplateOutlet, DisplayMoneyPipe, OverlayModule, CategoryPickerComponent],
     templateUrl: './transactions.component.html',
     styleUrl: './transactions.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,6 +88,11 @@ function readCompact(): boolean {
 export class TransactionsComponent {
     private readonly categories = inject(CategoryGroupService);
     private readonly toast = inject(ToastService);
+
+    /** 'auto' categories are read-only here; 'mine' can be changed from the row. */
+    public readonly categoryMode = toSignal(this.categories.mode$, { requireSync: true });
+    public readonly countMode = toSignal(this.categories.countMode$, { requireSync: true });
+    private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
 
     @Input() public searchValue = '';
     @Input() public set groups(value: ICategoryGroup[] | null) {
@@ -134,23 +146,48 @@ export class TransactionsComponent {
 
     private readonly rows = computed<LedgerRow[]>(() => {
         const groups = this.groupList();
+        const ctx = this.flowContext();
         return this.txList().map(tx => {
-            const index = categoryIndexOf(tx, groups);
+            const { index, reason } = explainCategory(tx, groups);
             return {
                 tx,
                 index,
                 category: index === UNCATEGORIZED ? null : groups[index]?.title ?? null,
                 color: categoryColor(index),
+                reason: describe(reason),
+                flow: flowOf(tx, ctx),
             };
         });
     });
 
+    /** A day picked from the day rule, as "YYYY-M-D"; null for the whole month. */
+    public readonly dayFilter = signal<string | null>(null);
+    public readonly dayFilterLabel = signal('');
+
     private readonly visibleRows = computed<LedgerRow[]>(() => {
         const filter = this.filter();
-        if (filter === null) return this.rows();
-        if (filter === UNCATEGORIZED_FILTER) return this.rows().filter(row => row.index === UNCATEGORIZED);
-        return this.rows().filter(row => row.category === filter);
+        const day = this.dayFilter();
+        let rows = this.rows();
+        if (day !== null) rows = rows.filter(row => dayKey(row.tx.time) === day);
+        if (filter === null) return rows;
+        if (filter === UNCATEGORIZED_FILTER) return rows.filter(row => row.index === UNCATEGORIZED);
+        if (filter === INTERNAL_FILTER) return rows.filter(row => row.flow === 'internal');
+        return rows.filter(row => row.category === filter);
     });
+
+    public toggleDay(section: { key: string; title: string; subtitle?: string }): void {
+        if (this.sort().key !== 'date') return;
+        if (this.dayFilter() === section.key) {
+            this.dayFilter.set(null);
+        } else {
+            this.dayFilter.set(section.key);
+            this.dayFilterLabel.set(`${section.title}, ${section.subtitle ?? ''}`.trim());
+        }
+    }
+
+    public clearDay(): void {
+        this.dayFilter.set(null);
+    }
 
     public readonly count = computed(() => this.visibleRows().length);
     public readonly visibleNet = computed(() =>
@@ -161,12 +198,15 @@ export class TransactionsComponent {
     public readonly filterLabel = computed(() => {
         const filter = this.filter();
         if (filter === null) return null;
-        return filter === UNCATEGORIZED_FILTER ? 'Uncategorized' : filter;
+        if (filter === INTERNAL_FILTER) return 'Between your accounts';
+        if (filter === UNCATEGORIZED_FILTER) return this.categoryMode() === 'auto' ? 'Other' : 'Uncategorized';
+        return filter;
     });
 
     public readonly filterColor = computed(() => {
         const filter = this.filter();
         if (filter === null || filter === UNCATEGORIZED_FILTER) return categoryColor(UNCATEGORIZED);
+        if (filter === INTERNAL_FILTER) return 'var(--line-2)';
         return categoryColor(this.groupList().findIndex(g => g.title === filter));
     });
 
@@ -176,9 +216,33 @@ export class TransactionsComponent {
         return key === 'date' || key === 'category' || key === 'merchant';
     });
 
+    /**
+     * Monobank's automatic round-ups (dozens of 3–7 ₴ debits into a jar) fold into a
+     * single line for the whole view. Not while searching — then they are wanted —
+     * and not when they are all there is to show.
+     */
+    public readonly roundUps = computed(() => {
+        const rows = this.visibleRows();
+        if (this.searchValue?.trim()) return null;
+        const folded = rows.filter(row => isRoundUp(row.tx));
+        if (folded.length < 2 || folded.length === rows.length) return null;
+        return {
+            count: folded.length,
+            net: folded.reduce((sum, row) => sum + (Number(row.tx.amount) || 0), 0),
+            jar: roundUpJar(folded[0].tx),
+            rows: [...folded].sort((a, b) => b.tx.time - a.tx.time),
+        };
+    });
+
+    public readonly roundUpsOpen = signal(false);
+
+    private readonly listedRows = computed(() =>
+        this.roundUps() ? this.visibleRows().filter(row => !isRoundUp(row.tx)) : this.visibleRows(),
+    );
+
     public readonly sections = computed<LedgerSection[]>(() => {
         const { key, dir } = this.sort();
-        const rows = this.visibleRows();
+        const rows = this.listedRows();
         const sign = dir === 'asc' ? 1 : -1;
         const byTimeDesc = (a: LedgerRow, b: LedgerRow) => b.tx.time - a.tx.time;
         const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
@@ -199,7 +263,7 @@ export class TransactionsComponent {
 
             if (key === 'date') {
                 const d = new Date(row.tx.time * 1000);
-                id = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                id = dayKey(row.tx.time);
                 title = d.toLocaleDateString(undefined, { weekday: 'short' });
                 subtitle = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
             } else if (key === 'category') {
@@ -319,6 +383,7 @@ export class TransactionsComponent {
 
     public openPicker(event: Event, row: LedgerRow): void {
         event.stopPropagation();
+        if (this.categoryMode() !== 'mine') return;
         const origin = event.currentTarget as HTMLElement;
         this.picker.set(this.picker()?.row.tx.id === row.tx.id ? null : { row, origin });
     }
@@ -351,5 +416,20 @@ export class TransactionsComponent {
         this.toast.success(mode === 'merchant' && merchant
             ? `Every “${merchant}” → ${title}`
             : `Moved to ${title}`);
+    }
+}
+
+function dayKey(unixSeconds: number): string {
+    const d = new Date(unixSeconds * 1000);
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function describe(reason: MatchReason): string {
+    switch (reason.by) {
+        case 'pin': return 'Pinned to this category';
+        case 'system': return 'Recognised automatically';
+        case 'text': return `Matched “${reason.key}”`;
+        case 'mcc': return `By MCC ${reason.mcc}`;
+        default: return 'No rule matched';
     }
 }

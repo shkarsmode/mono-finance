@@ -45,11 +45,23 @@
     }
 
     &__label {
-        padding: 0 var(--space-4);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        height: 100%;
+        padding: 0 var(--space-3) 0 var(--space-4);
+        border: 0;
+        background: none;
+        color: var(--ink);
+        font: inherit;
         font-size: var(--fs-h2);
         font-weight: 600;
         letter-spacing: var(--tracking-snug);
         white-space: nowrap;
+        cursor: pointer;
+
+        svg { width: 14px; height: 14px; fill: none; stroke: var(--ink-3); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        &:hover { background: var(--hover); }
     }
 
     &__fill { flex: 1; }
@@ -203,6 +215,57 @@
 
     &--pos { background: var(--pos); }
     &--neg { background: var(--neg); }
+    &--own { background: var(--line-2); }
+}
+
+.flow__own {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+    padding-top: var(--space-2);
+    border-top: 1px dashed var(--line);
+
+    .flow__key { color: var(--ink-3); }
+}
+
+.flow__own-val {
+    font-size: var(--fs-meta);
+    color: var(--ink-3);
+    white-space: nowrap;
+}
+
+// counting switch under the hero figure
+.seg {
+    display: inline-flex;
+    align-self: flex-start;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+
+    button {
+        height: 26px;
+        padding: 0 var(--space-3);
+        border: 0;
+        background: none;
+        font: inherit;
+        font-size: var(--fs-micro);
+        font-weight: 500;
+        color: var(--ink-3);
+        cursor: pointer;
+
+        & + button { border-left: 1px solid var(--line); }
+        &:hover { color: var(--ink); background: var(--hover); }
+    }
+
+    .seg--on {
+        background: var(--accent-tint);
+        color: var(--ink);
+        font-weight: 600;
+    }
+
+    &--hero { margin-top: var(--space-2); }
 }
 
 // ── Accounts ─────────────────────────────────────────────────
@@ -313,14 +376,6 @@
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(3) { border-left: 0; }
     .kpi:nth-child(n + 3) { border-top: 1px solid var(--line); }
-}
-
-.kpis__note {
-    margin: calc(var(--space-2) * -1) 0 var(--space-4);
-    font-size: var(--fs-micro);
-    color: var(--ink-3);
-
-    strong { color: var(--ink-2); font-weight: 600; }
 }
 
 // ── Board: ledger + side column ──────────────────────────────

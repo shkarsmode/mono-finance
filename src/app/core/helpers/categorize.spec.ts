@@ -57,6 +57,19 @@ describe('categorize', () => {
             expect(categoryIndexOf(tx({ id: 't2', description: 'Сільпо' }), groups)).toBe(0);
         });
 
+        it('matches a "^" key only at the start of the description', () => {
+            const groups = [group('Installments', ['^Платіж']), group('Electronics', ['FOXTROT'])];
+            expect(categoryIndexOf(tx({ description: 'Платіж FOXTROT' }), groups)).toBe(0);
+            expect(categoryIndexOf(tx({ description: 'FOXTROT Платіж' }), groups)).toBe(1);
+        });
+
+        it('treats "3000-3999" as an MCC range and honours a category direction', () => {
+            const groups = [group('Travel', ['3000-3999']), group('In', ['4829'], { direction: 'in' }), group('Out', ['4829'], { direction: 'out' })];
+            expect(categoryIndexOf(tx({ description: 'Ryanair', mcc: 3246 }), groups)).toBe(0);
+            expect(categoryIndexOf(tx({ description: 'Від: X', mcc: 4829, amount: 500 }), groups)).toBe(1);
+            expect(categoryIndexOf(tx({ description: 'Переказ', mcc: 4829, amount: -500 }), groups)).toBe(2);
+        });
+
         it('returns UNCATEGORIZED when nothing matches, and ignores blank keys', () => {
             const groups = [group('Some', ['', '  '])];
             expect(categoryIndexOf(tx({ description: 'anything' }), groups)).toBe(UNCATEGORIZED);

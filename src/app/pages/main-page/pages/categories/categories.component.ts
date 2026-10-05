@@ -5,12 +5,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
-    AssignMode, categoryColor, categoryIndexOf, matchingIndexes, merchantLabel, UNCATEGORIZED,
+    AssignMode, categoryColor, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
-import { CategoryGroupService } from '@core/services/category-group.service';
+import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
 import { MonobankService } from '@core/services/monobank.service';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
+import { flowOf } from '@core/helpers/flows';
 import { Observable } from 'rxjs';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
@@ -19,16 +20,6 @@ const INBOX = '\u0000inbox';
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-/**
- * Descriptions Monobank writes for money moving between your own pockets — jar
- * top-ups and withdrawals, round-ups, own-card transfers. Used only to SUGGEST a
- * "not counted" category; nothing is excluded until you say so.
- */
-const OWN_MONEY = [
-    /^Поповнення «/i, /^Часткове зняття банки/i, /^Виплата банки/i, /^Округлення балансу/i,
-    /^Reserve$/i, /^З (Білої|Чорної|доларової|євро) картки/i, /^На (Білу|Чорну) картку/i, /^Зняття з банки/i,
 ];
 
 type MerchantBucket = {
@@ -40,7 +31,7 @@ type MerchantBucket = {
     ownMoney: boolean;
 };
 
-type RuleView = { key: string; kind: 'Merchant' | 'MCC'; hits: number };
+type RuleView = { key: string; raw: string; kind: 'Merchant' | 'MCC' | 'Starts'; hits: number };
 
 @Component({
     selector: 'app-categories',
@@ -57,6 +48,28 @@ export default class CategoriesComponent {
     private readonly router = inject(Router);
 
     readonly INBOX = INBOX;
+    private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
+    readonly mode = toSignal(this.categories.mode$, { requireSync: true });
+    readonly readonly = computed(() => this.mode() === 'auto');
+    readonly mineCount = toSignal(this.categories.serverGroups$, { initialValue: [] as ICategoryGroup[] });
+    readonly confirmReplace = signal(false);
+
+    setMode(mode: CategoryMode): void {
+        this.categories.setMode(mode);
+        this.select(INBOX);
+    }
+
+    /** Copy the automatic set into yours: everything, only what is missing, or one category. */
+    adopt(how: 'replace' | 'append', only?: string): void {
+        if (how === 'replace' && this.mineCount().length && !this.confirmReplace()) {
+            this.confirmReplace.set(true);
+            setTimeout(() => this.confirmReplace.set(false), 4000);
+            return;
+        }
+        this.confirmReplace.set(false);
+        this.categories.adoptAuto(how, only ? [only] : undefined);
+        this.toast.success(only ? `“${only}” copied to your categories` : 'Copied — switch to Mine to edit them');
+    }
     readonly groups = toSignal(this.categories.categoryGroups$, { initialValue: [] as ICategoryGroup[] });
     readonly transactions = toSignal(
         this.monobank.currentTransactions$ as Observable<ITransaction[]>,
@@ -110,7 +123,7 @@ export default class CategoriesComponent {
             const id = label.toLocaleLowerCase();
             let bucket = buckets.get(id);
             if (!bucket) {
-                bucket = { label, count: 0, net: 0, last: 0, sample: tx, ownMoney: OWN_MONEY.some(re => re.test(label)) };
+                bucket = { label, count: 0, net: 0, last: 0, sample: tx, ownMoney: flowOf(tx, this.flowContext()) === 'internal' };
                 buckets.set(id, bucket);
             }
             bucket.count += 1;
@@ -232,13 +245,17 @@ export default class CategoriesComponent {
         const txs = this.transactions();
         return (group.keys ?? []).map(key => {
             const k = String(key).trim();
-            const isMcc = /^\d+$/.test(k);
-            const needle = k.toLocaleLowerCase();
+            const isMcc = isMccKey(k);
+            const starts = !isMcc && k.startsWith('^');
+            const needle = (starts ? k.slice(1) : k).toLocaleLowerCase();
+            const [from, to] = k.includes('-') ? k.split('-').map(Number) : [Number(k), Number(k)];
             const hits = txs.filter(tx => isMcc
-                ? tx.mcc === Number(k) || tx.originalMcc === Number(k)
-                : [tx.description, tx.merchantName, tx.counterName].some(f => (f ?? '').toLocaleLowerCase().includes(needle)),
+                ? [tx.mcc, tx.originalMcc].some(code => code >= from && code <= to)
+                : starts
+                    ? (tx.description ?? '').toLocaleLowerCase().startsWith(needle)
+                    : [tx.description, tx.merchantName, tx.counterName].some(f => (f ?? '').toLocaleLowerCase().includes(needle)),
             ).length;
-            return { key, kind: isMcc ? 'MCC' : 'Merchant', hits };
+            return { key: starts ? k.slice(1) : key, raw: key, kind: isMcc ? 'MCC' : starts ? 'Starts' : 'Merchant', hits };
         });
     });
 

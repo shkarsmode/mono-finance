@@ -4,7 +4,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
-import { AssignMode, categoryColor, categoryIndexOf, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { AssignMode, categoryColor, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { flowOf } from '@core/helpers/flows';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
@@ -40,9 +41,30 @@ export default class TransactionDetailsComponent implements OnInit {
     );
 
     // ── category ─────────────────────────────────────────────
-    readonly categoryIndex = computed(() => {
+    readonly categoryMode = toSignal(this.categories.mode$, { requireSync: true });
+    private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
+
+    private readonly explained = computed(() => {
         const tx = this.transaction();
-        return tx ? categoryIndexOf(tx, this.groups()) : UNCATEGORIZED;
+        return tx ? explainCategory(tx, this.groups()) : { index: UNCATEGORIZED, reason: { by: 'none' as const } };
+    });
+    readonly categoryIndex = computed(() => this.explained().index);
+
+    /** Why it landed there — the automatic categories are read-only, so say how they decided. */
+    readonly categoryReason = computed(() => {
+        const reason = this.explained().reason;
+        switch (reason.by) {
+            case 'pin': return 'pinned';
+            case 'system': return 'recognised automatically';
+            case 'text': return `matched “${reason.key}”`;
+            case 'mcc': return `by MCC ${reason.mcc}`;
+            default: return 'no rule matched';
+        }
+    });
+
+    readonly flow = computed(() => {
+        const tx = this.transaction();
+        return tx ? flowOf(tx, this.flowContext()) : 'spend';
     });
     readonly category = computed(() => this.groups()[this.categoryIndex()] ?? null);
     readonly categoryColor = computed(() => categoryColor(this.categoryIndex()));
@@ -137,6 +159,7 @@ export default class TransactionDetailsComponent implements OnInit {
     ];
 
     togglePicker(event: Event): void {
+        if (this.categoryMode() !== 'mine') return;
         const origin = event.currentTarget as HTMLElement;
         this.pickerOrigin.set(this.pickerOrigin() ? null : origin);
     }

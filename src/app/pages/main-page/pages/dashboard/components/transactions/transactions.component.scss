@@ -273,6 +273,17 @@
 }
 
 // ── section rule (day / category / merchant) ─────────────────
+.rule--day {
+    cursor: pointer;
+    &:hover { background: var(--hover); }
+}
+
+.rule--on {
+    background: var(--accent-tint);
+    box-shadow: inset 2px 0 0 var(--accent);
+    &:hover { background: var(--accent-tint); }
+}
+
 .rule {
     display: flex;
     align-items: center;
@@ -496,6 +507,57 @@
         background: var(--warn-tint);
         color: var(--warn);
     }
+
+    &--own {
+        background: var(--sunken);
+        color: var(--ink-3);
+    }
+
+    &--refund {
+        background: var(--accent-tint);
+        color: var(--accent);
+    }
+}
+
+// Round-ups folded into one line.
+.row--roundup {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--raised);
+    font: inherit;
+    text-align: left;
+    color: inherit;
+
+    .row__name { color: var(--ink-2); font-weight: 500; }
+    .row__amount { color: var(--ink-3); font-weight: 500; }
+    .row__spine { background: var(--line-2); }
+
+    .ru__chev {
+        width: 13px;
+        height: 13px;
+        flex: none;
+        fill: none;
+        stroke: var(--ink-3);
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    &:hover { background: var(--hover); }
+}
+
+.row--roundup-open .ru__chev { transform: rotate(90deg); }
+
+// Money that only changed pockets: still listed, visibly not counted.
+.row--internal {
+    .row__amount { color: var(--ink-3); font-weight: 500; }
+    .row__spine { background: var(--line-2) !important; }
+}
+
+.cat--static {
+    cursor: default;
+    &:hover { border-color: transparent; background: none; color: var(--ink-2); }
 }
 
 // ── narrow ───────────────────────────────────────────────────

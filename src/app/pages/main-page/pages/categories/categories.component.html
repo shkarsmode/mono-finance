@@ -2,15 +2,37 @@
     <header class="page__head">
         <div>
             <h1 class="page__title">Categories</h1>
-            <p class="page__sub">
-                A pinned transaction wins, then the <strong>longest</strong> matching merchant rule, then MCC rules in list order.
-                Figures are for <span class="num">{{ periodLabel }}</span>.
-            </p>
+            @if (readonly()) {
+                <p class="page__sub">
+                    <strong>Automatic</strong> — built from MCC codes and merchant names, checked against two years of your
+                    statement. Own money is recognised and left out. Figures are for <span class="num">{{ periodLabel }}</span>.
+                </p>
+            } @else {
+                <p class="page__sub">
+                    A pinned transaction wins, then the <strong>longest</strong> matching merchant rule, then MCC rules in list order.
+                    Figures are for <span class="num">{{ periodLabel }}</span>.
+                </p>
+            }
         </div>
-        <button type="button" class="btn btn--primary" (click)="createCategory()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-            New category
-        </button>
+        <div class="page__actions">
+            <div class="seg" role="group" aria-label="Which categories">
+                <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Auto</button>
+                <button type="button" [class.seg--on]="mode() === 'mine'" (click)="setMode('mine')">Mine</button>
+            </div>
+            @if (readonly()) {
+                <button type="button" class="btn" (click)="adopt('append')" title="Adds the automatic categories you do not have yet">
+                    Add missing to Mine
+                </button>
+                <button type="button" class="btn btn--primary" [class.btn--confirm]="confirmReplace()" (click)="adopt('replace')">
+                    {{ confirmReplace() ? 'Click again — replaces yours' : (mineCount().length ? 'Replace Mine with these' : 'Start Mine from these') }}
+                </button>
+            } @else {
+                <button type="button" class="btn btn--primary" (click)="createCategory()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+                    New category
+                </button>
+            }
+        </div>
     </header>
 
     <div class="split">
@@ -21,18 +43,18 @@
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z" /></svg>
                 </span>
                 <span class="item__main">
-                    <span class="item__title">Uncategorized</span>
+                    <span class="item__title">{{ readonly() ? 'Other' : 'Uncategorized' }}</span>
                     <span class="item__meta num">{{ uncategorized().length }} tx · {{ plural(inbox().length, 'merchant', 'merchants') }}</span>
                 </span>
                 <span class="item__val num">{{ uncategorizedNet() | displayMoney: currency() }}</span>
             </button>
 
-            <div class="list__rule micro">Your categories · drag to reorder</div>
+            <div class="list__rule micro">{{ readonly() ? 'Automatic categories' : 'Your categories · drag to reorder' }}</div>
 
             <div cdkDropList (cdkDropListDropped)="onDrop($event)" class="list__drop">
                 @for (group of groups(); track group.title; let i = $index) {
-                    <div class="item" cdkDrag cdkDragLockAxis="y" [class.item--on]="selected() === group.title">
-                        <span class="item__handle" cdkDragHandle aria-label="Drag to reorder">
+                    <div class="item" cdkDrag cdkDragLockAxis="y" [cdkDragDisabled]="readonly()" [class.item--on]="selected() === group.title">
+                        <span class="item__handle" cdkDragHandle aria-label="Drag to reorder" [class.item__handle--off]="readonly()">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="1.3" /><circle cx="15" cy="7" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="9" cy="17" r="1.3" /><circle cx="15" cy="17" r="1.3" /></svg>
                         </span>
                         <button type="button" class="item__btn" (click)="select(group.title)">
@@ -43,7 +65,7 @@
                                     {{ group.title }}
                                 </span>
                                 <span class="item__meta num">
-                                    {{ group.count ?? 0 }} tx · {{ plural(group.keys.length, 'rule', 'rules') }}
+                                    {{ group.count ?? 0 }} tx · {{ group.test && !group.keys.length ? 'automatic' : plural(group.keys.length, 'rule', 'rules') }}
                                     @if (group.excluded) { · <span class="badge">not counted</span> }
                                 </span>
                             </span>
@@ -62,11 +84,11 @@
             @if (selected() === INBOX) {
                 <section class="panel">
                     <header class="panel__head">
-                        <h2 class="panel__title">Uncategorized merchants</h2>
+                        <h2 class="panel__title">{{ readonly() ? 'Not matched by any rule' : 'Uncategorized merchants' }}</h2>
                         <span class="panel__meta num">{{ uncategorized().length }} transactions</span>
                     </header>
 
-                    @if (ownMoneyBuckets().length) {
+                    @if (!readonly() && ownMoneyBuckets().length) {
                         <div class="suggest">
                             <div class="suggest__text">
                                 <strong>{{ ownMoneyBuckets().length }} of these look like money moving between your own pockets</strong>
@@ -87,12 +109,14 @@
                                         <span class="merchant__meta num">{{ bucket.count }} tx · last {{ bucket.last * 1000 | date: 'd MMM' }}</span>
                                     </span>
                                     <span class="merchant__val num" [class.is-pos]="bucket.net > 0">{{ bucket.net | displayMoney: currency() }}</span>
-                                    <button type="button" class="btn btn--small"
-                                            [class.btn--open]="picker()?.bucket?.label === bucket.label"
-                                            (click)="openPicker($event, bucket)">
-                                        Assign
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-                                    </button>
+                                    @if (!readonly()) {
+                                        <button type="button" class="btn btn--small"
+                                                [class.btn--open]="picker()?.bucket?.label === bucket.label"
+                                                (click)="openPicker($event, bucket)">
+                                            Assign
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                                        </button>
+                                    }
                                 </li>
                             }
                         </ul>
@@ -106,6 +130,18 @@
             } @else if (selectedGroup()) {
                 @if (selectedGroup(); as group) {
                 <section class="panel">
+                    @if (readonly()) {
+                        <header class="editor__head">
+                            <span class="dot dot--lg" [style.background]="color(selectedIndex())"></span>
+                            <h2 class="editor__title">
+                                @if (group.emoji) { <span class="emoji">{{ group.emoji }}</span> }
+                                {{ group.title }}
+                            </h2>
+                            @if (group.excluded) { <span class="badge">not counted</span> }
+                            <button type="button" class="btn" (click)="adopt('append', group.title)">Copy to Mine</button>
+                        </header>
+                        @if (group.note) { <p class="editor__note">{{ group.note }}</p> }
+                    } @else {
                     <header class="editor__head">
                         <span class="dot dot--lg" [style.background]="color(selectedIndex())"></span>
                         <input class="editor__emoji" [value]="group.emoji" maxlength="4" placeholder="🙂"
@@ -116,6 +152,7 @@
                             {{ confirmDelete() ? 'Click again to delete' : 'Delete' }}
                         </button>
                     </header>
+                    }
 
                     <div class="figures">
                         <div><span class="micro">Spent</span><span class="figures__v num">{{ -(group.spent ?? 0) | displayMoney: currency() }}</span></div>
@@ -123,6 +160,7 @@
                         <div><span class="micro">Transactions</span><span class="figures__v num">{{ group.count ?? 0 }}</span></div>
                     </div>
 
+                    @if (!readonly()) {
                     <label class="switch">
                         <input type="checkbox" [checked]="!group.excluded" (change)="toggleCounted()" />
                         <span class="switch__track"><span class="switch__thumb"></span></span>
@@ -131,23 +169,30 @@
                             <span>Turn off for jars, own-card transfers and other money that only changes pockets.</span>
                         </span>
                     </label>
+                    }
 
                     <div class="block">
                         <h3 class="block__title micro">Rules</h3>
+                        @if (group.test) {
+                            <p class="block__empty">Plus a built-in rule: {{ group.title === 'Own money' ? 'your jars, your other cards, deposits and your own name at other banks' : 'recognised from the statement wording' }}.</p>
+                        }
                         @if (rules().length) {
                             <ul class="rules">
-                                @for (rule of rules(); track rule.key) {
+                                @for (rule of rules(); track rule.raw) {
                                     <li class="rule">
-                                        <span class="rule__kind">{{ rule.kind === 'MCC' ? 'MCC is' : 'contains' }}</span>
+                                        <span class="rule__kind">{{ rule.kind === 'MCC' ? 'MCC is' : rule.kind === 'Starts' ? 'starts with' : 'contains' }}</span>
                                         <span class="rule__key" [class.mono]="rule.kind === 'MCC'">{{ rule.key }}</span>
                                         <span class="rule__hits num" [class.rule__hits--zero]="!rule.hits">{{ rule.hits }} this month</span>
-                                        <button type="button" class="rule__x" (click)="removeRule(rule.key)" [attr.aria-label]="'Remove rule ' + rule.key">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                                        </button>
+                                        @if (!readonly()) {
+                                            <button type="button" class="rule__x" (click)="removeRule(rule.raw)" [attr.aria-label]="'Remove rule ' + rule.key">
+                                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                                            </button>
+                                        }
                                     </li>
                                 }
                             </ul>
                         }
+                        @if (!readonly()) {
                         <form class="addrule" (submit)="addRule($event)">
                             <input type="text" list="merchant-suggestions" placeholder="Merchant text or 4-digit MCC"
                                    [value]="ruleDraft()" (input)="onRuleInput($event)" aria-label="New rule" />
@@ -156,6 +201,7 @@
                                 @for (s of suggestions(); track s) { <option [value]="s"></option> }
                             </datalist>
                         </form>
+                        }
                     </div>
 
                     @if (pinned().length) {

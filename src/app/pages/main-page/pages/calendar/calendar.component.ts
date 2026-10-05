@@ -62,8 +62,9 @@ export default class CalendarComponent implements OnInit {
     readonly calendarData = signal<CalendarMonth | null>(null);
     readonly loadingCalendar = signal(true);
     readonly loadingTransactions = signal(true);
-    readonly activeYear = signal(new Date().getFullYear());
-    readonly activeMonth = signal(new Date().getMonth() + 1);
+    // the same month the rest of the app is looking at
+    readonly activeYear = signal(this.monobankService.activeYear);
+    readonly activeMonth = signal(this.monobankService.activeMonth);
     readonly selectedDay = signal<CalendarDay | null>(null);
     readonly monthTransactions = signal<ITransaction[]>([]);
     readonly transactionSearch = signal('');
@@ -128,6 +129,7 @@ export default class CalendarComponent implements OnInit {
     }
 
     loadMonth(): void {
+        this.monobankService.setPeriod(this.activeMonth(), this.activeYear());
         this.loadingCalendar.set(true);
         this.loadingTransactions.set(true);
         this.transactionError.set(null);
@@ -162,6 +164,10 @@ export default class CalendarComponent implements OnInit {
             month = 1;
             year++;
         }
+
+        // no months from the future
+        const now = new Date();
+        if (year > now.getFullYear() || (year === now.getFullYear() && month > now.getMonth() + 1)) return;
 
         this.activeMonth.set(month);
         this.activeYear.set(year);

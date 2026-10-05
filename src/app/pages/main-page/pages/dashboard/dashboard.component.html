@@ -4,7 +4,11 @@
         <button type="button" class="period__step" (click)="stepPeriod(-1)" aria-label="Previous month">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
         </button>
-        <span class="period__label">{{ periodLabel() }}</span>
+        <button type="button" class="period__label" cdkOverlayOrigin #periodOrigin="cdkOverlayOrigin"
+                (click)="pickerOpen.set(!pickerOpen())" [attr.aria-expanded]="pickerOpen()" aria-haspopup="dialog">
+            {{ periodLabel() }}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
         <button type="button" class="period__step" (click)="stepPeriod(1)" [disabled]="!canStepForward" aria-label="Next month">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
@@ -29,6 +33,21 @@
     </button>
 </header>
 
+<ng-template cdkConnectedOverlay
+             [cdkConnectedOverlayOrigin]="periodOrigin"
+             [cdkConnectedOverlayOpen]="pickerOpen()"
+             [cdkConnectedOverlayPositions]="pickerPositions"
+             [cdkConnectedOverlayPush]="true"
+             (overlayOutsideClick)="pickerOpen.set(false)"
+             (detach)="pickerOpen.set(false)">
+    <app-month-picker
+        [month]="activeMonthSignal()"
+        [year]="activeYearSignal()"
+        (pick)="onPickMonth($event)"
+        (close)="pickerOpen.set(false)">
+    </app-month-picker>
+</ng-template>
+
 <!-- ── Hero: the net position for the period ── -->
 <section class="hero">
     <div class="hero__net">
@@ -37,6 +56,12 @@
             {{ netTotal() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
         </span>
         <span class="hero__sub num">{{ transactionCount() }} transactions</span>
+        <div class="seg seg--hero" role="group" aria-label="How totals are counted">
+            <button type="button" [class.seg--on]="countMode() === 'real'" (click)="setCountMode('real')"
+                    title="Leaves out money moving between your own jars, cards and accounts; refunds reduce spending">Real</button>
+            <button type="button" [class.seg--on]="countMode() === 'all'" (click)="setCountMode('all')"
+                    title="Every debit and credit, exactly as the statement has them">All operations</button>
+        </div>
     </div>
 
     <div class="hero__flow">
@@ -52,6 +77,16 @@
             <span class="flow__key"><i class="swatch swatch--neg"></i>Spent</span>
             <span class="flow__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
         </div>
+        @if (countMode() === 'real' && (internalOut() || internalIn())) {
+            <!-- shown, not hidden: the money that only changed pockets -->
+            <div class="flow__own">
+                <span class="flow__key"><i class="swatch swatch--own"></i>Between your accounts</span>
+                <span class="flow__own-val num">
+                    −{{ internalOut() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
+                    · +{{ internalIn() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
+                </span>
+            </div>
+        }
     </div>
 </section>
 
@@ -110,11 +145,6 @@
     </div>
 </section>
 
-@if (excludedNames().length) {
-    <p class="kpis__note">
-        Spent and Income leave out <strong>{{ excludedNames().join(', ') }}</strong> — money moving between your own pockets.
-    </p>
-}
 
 @if (transactions().length) {
     <div class="board">
@@ -133,8 +163,11 @@
                 [transactions]="transactions()"
                 [groups]="groupsSignal()"
                 [active]="categoryFilter()"
-                [currency]="transactions().length ? transactions()[0].cardCurrencyCode : 980"
-                (select)="onCategoryFilter($event)">
+                [currency]="currency()"
+                [countMode]="countMode()"
+                [categoryMode]="categoryMode()"
+                (select)="onCategoryFilter($event)"
+                (categoryModeChange)="setCategoryMode($event)">
             </app-category-breakdown>
 
             @defer (on viewport) {

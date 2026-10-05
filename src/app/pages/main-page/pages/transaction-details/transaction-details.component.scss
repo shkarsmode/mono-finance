@@ -104,6 +104,7 @@
 
     &--pos { background: var(--pos-tint); color: var(--pos); }
     &--hold { background: var(--warn-tint); color: var(--warn); }
+    &--refund { background: var(--accent-tint); color: var(--accent); }
 }
 
 // ── category ─────────────────────────────────────────────────
@@ -138,6 +139,7 @@
 
     &:hover, &--open { border-color: var(--accent); }
     &--none { color: var(--accent); }
+    &--static { cursor: default; &:hover { border-color: var(--line-2); } }
 }
 
 .dot { width: 9px; height: 9px; border-radius: 2px; flex: none; }

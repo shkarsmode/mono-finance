@@ -64,6 +64,39 @@ export class MonobankService {
     public activeMonth: number = new Date().getMonth() + 1;
     public activeYear: number = new Date().getFullYear();
 
+    /**
+     * The month every screen is looking at. It lives here, not in a page, so leaving
+     * the dashboard (to open a transaction, say) and coming back keeps June 2024 as
+     * June 2024 — the page used to restart at the current month while still showing
+     * June's data.
+     */
+    public readonly period$ = new BehaviorSubject<{ month: number; year: number }>({
+        month: this.activeMonth,
+        year: this.activeYear,
+    });
+
+    /** The request whose answer the screen is waiting for; older answers are dropped. */
+    private wantedKey: string | null = null;
+    /** What currentTransactions$ holds right now. */
+    private loadedKey: string | null = null;
+
+    public setPeriod(month: number, year: number): void {
+        this.activeMonth = month;
+        this.activeYear = year;
+        const current = this.period$.getValue();
+        if (current.month !== month || current.year !== year) this.period$.next({ month, year });
+    }
+
+    /** True when the screen already holds this month for the active card. */
+    public isLoaded(month: number, year: number): boolean {
+        const cardId = localStorage.getItem(LocalStorage.MonobankActiveCardId);
+        return this.loadedKey !== null && this.loadedKey === this.periodKey(cardId, month, year, this._showHold);
+    }
+
+    private periodKey(cardId: string | null, month: number, year: number, includeHold: boolean): string {
+        return `${cardId}|${year}|${month}|${includeHold ? 1 : 0}`;
+    }
+
     public readonly loadingService: LoadingService = inject(LoadingService);
     private readonly toast = inject(ToastService);
 
@@ -209,7 +242,8 @@ export class MonobankService {
         );
         if (!activeCardId) return;
 
-        this.getTransactions(this.activeMonth).pipe(first()).subscribe();
+        // the year matters: without it, June 2024 fetched June of THIS year
+        this.getTransactions(this.activeMonth, this.activeYear).pipe(first()).subscribe();
     }
 
     private setDefaultCardBasedOnAmount(clientInfo: IAccountInfo): void {
@@ -316,28 +350,26 @@ export class MonobankService {
         // honours the user's hold choice without every call site passing it.
         const includeHold = options?.includeHold ?? this._showHold;
 
+        const requestKey = this.periodKey(cardId, month, storeYear, includeHold);
+        if (options?.store !== false) this.wantedKey = requestKey;
+
         // Instant paint from the local cache while the network revalidates.
         if (cardId && options?.store !== false) {
             const cached = this.transactionStore.readMonth(cardId, storeYear, month, includeHold);
             if (cached && cached.length) {
                 this.currentTransactions$.next(cached);
+                this.loadedKey = requestKey;
             }
         }
 
         const tz = -new Date().getTimezoneOffset(); // e.g. 120 for UTC+2
-        let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}`;
-        if (year) {
-            transactionsApiUrl += `/${+year}`;
-        }
+        let transactionsApiUrl = `${this.basePathApi}/transaction/${cardId}/${month}/${+storeYear}`;
         transactionsApiUrl += `?tz=${tz}`;
         if (includeHold) {
             transactionsApiUrl += `&includeHold=true`;
         }
 
-        let syncApiUrl = `${this.basePathApi}/transaction/sync/${cardId}?month=${month}&tz=${tz}`;
-        if (year) {
-            syncApiUrl += `&year=${+year}`;
-        }
+        const syncApiUrl = `${this.basePathApi}/transaction/sync/${cardId}?month=${month}&tz=${tz}&year=${+storeYear}`;
 
         const request$ = options?.forceSync
             ? this.http.post<TransactionSyncResponse>(syncApiUrl, {}).pipe(
@@ -363,8 +395,11 @@ export class MonobankService {
                     if (cardId) {
                         this.transactionStore.writeMonth(cardId, storeYear, month, uniqueTransactions, includeHold);
                     }
-                    if (options?.store !== false) {
+                    // A slow answer for a month the user already left must not
+                    // overwrite the month they are looking at.
+                    if (options?.store !== false && this.wantedKey === requestKey) {
                         this.currentTransactions$.next(uniqueTransactions);
+                        this.loadedKey = requestKey;
                     }
                 }),
                 tap(() => {
