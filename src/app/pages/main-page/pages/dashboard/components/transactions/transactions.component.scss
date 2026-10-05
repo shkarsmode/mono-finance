@@ -1,6 +1,6 @@
 // ── The ledger ───────────────────────────────────────────────
-// One continuous ruled sheet. Structure comes from hairlines and
-// alignment, never from boxes inside boxes.
+// One continuous ruled sheet. Every column header sorts; the grouping
+// follows the sort (days, categories, merchants, or one flat list).
 
 :host {
     display: block;
@@ -11,7 +11,7 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
-    overflow: hidden;
+    overflow: clip;
 }
 
 // ── tools ────────────────────────────────────────────────────
@@ -30,7 +30,7 @@
     align-items: center;
     gap: var(--space-2);
     height: var(--control-md);
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-2) 0 var(--space-3);
     background: var(--sunken);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
@@ -41,7 +41,7 @@
         border-color: var(--accent);
     }
 
-    svg {
+    > svg {
         width: 15px;
         height: 15px;
         flex: none;
@@ -62,14 +62,32 @@
         color: var(--ink);
 
         &::placeholder { color: var(--ink-3); }
+        // the field itself shows focus (accent border) — no second ring
+        &:focus-visible { box-shadow: none; }
     }
+
+    &__kbd {
+        flex: none;
+        display: grid;
+        place-items: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        border: 1px solid var(--line-2);
+        border-radius: 4px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--ink-3);
+    }
+
+    &:focus-within .search__kbd { display: none; }
 }
 
 .search__clear {
     display: grid;
     place-items: center;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border: 0;
     border-radius: var(--radius-xs);
     background: none;
@@ -78,12 +96,6 @@
 
     svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
     &:hover { color: var(--ink); background: var(--hover); }
-}
-
-.ledger__count {
-    flex: none;
-    font-size: var(--fs-meta);
-    color: var(--ink-3);
 }
 
 .seg {
@@ -115,61 +127,180 @@
     }
 }
 
-// ── shared grid ──────────────────────────────────────────────
-// The head rule and every row share one track definition, so the
-// columns line up down the whole sheet.
-%ledger-grid {
-    display: grid;
-    grid-template-columns: 3px minmax(0, 1fr) 150px 140px 116px;
+// Phone: a native select — the column headers are not on screen.
+.sortsel {
+    flex: none;
+    display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
+
+    select {
+        height: var(--control-md);
+        padding: 0 var(--space-2);
+        border: 1px solid var(--line-2);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink);
+        font: inherit;
+        font-size: 16px; // stops iOS zooming the page on focus
+    }
+
+    &__dir {
+        display: grid;
+        place-items: center;
+        width: var(--control-md);
+        height: var(--control-md);
+        border: 1px solid var(--line-2);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink-2);
+        cursor: pointer;
+
+        svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    }
 }
 
-%ledger-grid-narrow {
-    grid-template-columns: 3px minmax(0, 1fr) 120px;
+.flip { transform: rotate(180deg); }
+
+// ── state pills (filter, sort) ───────────────────────────────
+.ledger__state {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--line);
+    background: var(--raised);
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 26px;
+    padding: 0 var(--space-1) 0 var(--space-3);
+    border-radius: var(--radius-full);
+    background: var(--accent-tint);
+    color: var(--ink);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+
+    &__meta {
+        font-weight: 500;
+        color: var(--ink-2);
+    }
+
+    &__x {
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        color: var(--ink-2);
+        cursor: pointer;
+
+        svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+        &:hover { background: var(--surface); color: var(--ink); }
+    }
+
+    &--quiet {
+        background: var(--surface);
+        border: 1px solid var(--line-2);
+        color: var(--ink-2);
+        font-weight: 500;
+    }
+}
+
+// ── shared grid ──────────────────────────────────────────────
+// The header and every row share one track list, so the columns line up
+// down the whole sheet.
+%grid {
+    display: grid;
+    grid-template-columns: 3px 58px minmax(0, 1fr) 176px 136px 112px;
+    align-items: center;
+    column-gap: var(--space-3);
 }
 
 .ledger__head {
-    @extend %ledger-grid;
-    padding: var(--space-2) var(--space-4) var(--space-2) 0;
+    @extend %grid;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: 0 var(--space-3) 0 0;
     background: var(--raised);
     border-bottom: 1px solid var(--line);
-    color: var(--ink-3);
-
-    > span:nth-child(2) { padding-left: var(--space-4); }
-
-    &--narrow { @extend %ledger-grid-narrow; }
 }
 
 .ta-r { text-align: right; }
 
-// ── day rule ─────────────────────────────────────────────────
-.dayrule {
-    position: sticky;
-    top: 0;
-    z-index: 2;
+.th {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--ink-3);
+
+    .micro { color: inherit; transition: color var(--dur-fast) var(--ease); }
+
+    &__arrow {
+        width: 13px;
+        height: 13px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0;
+        transition: opacity var(--dur-fast) var(--ease);
+    }
+
+    &:hover { color: var(--ink); }
+    &:hover .th__arrow { opacity: .55; }
+
+    &--on {
+        color: var(--ink);
+        .th__arrow { opacity: 1; color: var(--accent); }
+    }
+
+    // right-aligned columns put the arrow on the left, next to the edge of the figures
+    &--right { flex-direction: row-reverse; }
+}
+
+// ── section rule (day / category / merchant) ─────────────────
+.rule {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) var(--space-4);
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
     background: var(--sunken);
     border-bottom: 1px solid var(--line);
 
-    &__wd {
+    &__title {
         font-size: var(--fs-meta);
         font-weight: 600;
         color: var(--ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    &__date {
+    &__sub {
         font-size: var(--fs-meta);
         color: var(--ink-2);
     }
     &__fill { flex: 1; }
     &__count {
+        flex: none;
         font-size: var(--fs-micro);
         color: var(--ink-3);
     }
     &__net {
+        flex: none;
         font-size: var(--fs-meta);
         font-weight: 600;
         color: var(--ink-2);
@@ -180,21 +311,19 @@
 }
 
 // ── row ──────────────────────────────────────────────────────
-.ledger__body--compact .row { --row-y: var(--space-1); }
+.ledger__body--compact .row { --row-y: 5px; }
 
 .row {
-    @extend %ledger-grid;
+    @extend %grid;
     --row-y: var(--space-3);
 
-    padding: var(--row-y) var(--space-4) var(--row-y) 0;
+    padding: var(--row-y) var(--space-3) var(--row-y) 0;
     border-bottom: 1px solid var(--line);
     cursor: pointer;
     transition: background var(--dur-fast) var(--ease);
 
     &:last-child { border-bottom: 0; }
     &:hover { background: var(--hover); }
-
-    &--narrow { @extend %ledger-grid-narrow; }
 
     &__spine {
         align-self: stretch;
@@ -203,9 +332,22 @@
         border-radius: 0 2px 2px 0;
     }
 
+    &__date {
+        display: flex;
+        flex-direction: column;
+        font-size: var(--fs-meta);
+        color: var(--ink-2);
+        white-space: nowrap;
+        padding-left: var(--space-3);
+    }
+
+    &__date-sub {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+
     &__merchant {
         min-width: 0;
-        padding-left: var(--space-4);
         display: flex;
         flex-direction: column;
         gap: 1px;
@@ -226,31 +368,26 @@
     &__meta {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
+        min-width: 0;
         font-size: var(--fs-micro);
         color: var(--ink-3);
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
+        overflow: hidden;
+
+        > span + span::before {
+            content: '·';
+            margin-right: 6px;
+            color: var(--line-2);
+        }
     }
 
     &__comment {
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: 24ch;
     }
 
-    &__cat {
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-        font-size: var(--fs-meta);
-        color: var(--ink-2);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+    &__cat { min-width: 0; }
 
     // Expense stays ink so the sheet reads calm; income is the signal.
     &__amount {
@@ -280,6 +417,65 @@
     &--hold .row__spine { background: var(--warn) !important; }
 }
 
+// ── category control ─────────────────────────────────────────
+.cat {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 100%;
+    height: 28px;
+    padding: 0 var(--space-2);
+    margin-left: calc(var(--space-2) * -1);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-meta);
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+
+    &__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__chev, &__plus {
+        width: 13px;
+        height: 13px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    &__chev { opacity: 0; color: var(--ink-3); transition: opacity var(--dur-fast) var(--ease); }
+
+    &:hover, &--open {
+        border-color: var(--line-2);
+        background: var(--surface);
+        color: var(--ink);
+        .cat__chev { opacity: 1; }
+    }
+
+    // Uncategorized rows invite the one action that fixes them.
+    &--none {
+        color: var(--accent);
+        font-weight: 500;
+        &:hover { color: var(--accent-2); }
+    }
+
+    &--inline {
+        height: 22px;
+        margin: 3px 0 0 calc(var(--space-2) * -1);
+        font-size: var(--fs-micro);
+        align-self: flex-start;
+    }
+}
+
 .dot {
     width: 8px;
     height: 8px;
@@ -300,6 +496,11 @@
         background: var(--warn-tint);
         color: var(--warn);
     }
+}
+
+// ── narrow ───────────────────────────────────────────────────
+.ledger--narrow .row {
+    grid-template-columns: 3px minmax(0, 1fr) auto;
 }
 
 // ── empty ────────────────────────────────────────────────────

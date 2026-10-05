@@ -1,32 +1,33 @@
-import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import { AsyncPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { ChartType, LocalStorage, TransactionSortBy } from '@core/enums';
+import { categoryIndexOf, isCounted, UNCATEGORIZED } from '@core/helpers/categorize';
+import { ChartType, LocalStorage } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { SyncStatusService } from '@core/services/sync-status.service';
 import { ToastService } from '@shared/components';
-import { first, firstValueFrom, Observable, Subject } from 'rxjs';
+import { first, Observable } from 'rxjs';
 import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
-import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
-import {
-    CardComponent, CategoryManagerComponent, ChartComponent, TransactionsComponent
-} from './components';
+import { CardComponent, ChartComponent, TransactionsComponent } from './components';
+import { CategoryBreakdownComponent } from './components/category-breakdown/category-breakdown.component';
+import { UNCATEGORIZED_FILTER } from './components/transactions/transactions.component';
+
+const MONTHS = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 @Component({
-selector: 'app-dashboard',
+    selector: 'app-dashboard',
     standalone: true,
     imports: [
-        AsyncPipe, DatePipe, DecimalPipe,
-        CardComponent, ChartComponent, TransactionsComponent,
-        CategoryManagerComponent,
+        AsyncPipe,
+        CardComponent, ChartComponent, TransactionsComponent, CategoryBreakdownComponent,
         DisplayMoneyPipe, DisplayMoneyMajorPipe,
-        TransactionsFilterPipe, TransactionsSortByPipe,
-        DragDropModule,
     ],
     templateUrl: './dashboard.component.html',
     styleUrl: './dashboard.component.scss',
@@ -40,46 +41,68 @@ export default class DashboardComponent implements OnInit {
     readonly syncStatus = inject(SyncStatusService);
     private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly searchPipe = new TransactionsFilterPipe();
 
     readonly transactions = signal<ITransaction[]>([]);
     readonly searchValue = signal('');
-    readonly sortDirection = signal<'asc' | 'desc'>('desc');
-    readonly sortBy = signal<TransactionSortBy>(TransactionSortBy.Date);
+    readonly categoryFilter = signal<string | null>(null);
     readonly showHoldTransactions = signal(this.monobankService.showHold);
 
+    readonly clientInfoSignal = signal<IAccountInfo | null>(null);
+    readonly groupsSignal = signal<ICategoryGroup[]>([]);
+    readonly activeMonthSignal = signal(new Date().getMonth() + 1);
+    readonly activeYearSignal = signal(new Date().getFullYear());
+
     activeCardId$!: Observable<string>;
-    clientInfo$!: Observable<IAccountInfo>;
-    groups$!: Observable<ICategoryGroup[]>;
-    transactions$!: Observable<ITransaction[]>;
     readonly ChartType = ChartType;
 
-    // ── Spending Insights (bonus feature) ──
-    readonly totalExpenses = computed(() => {
-        const txs = this.transactions();
-        return txs
-            .filter(t => +t.amount < 0)
-            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0);
+    activeMonth = new Date().getMonth() + 1;
+    activeYear = new Date().getFullYear();
+
+    // ── What counts ──────────────────────────────────────────
+    /**
+     * Transactions of categories marked "not spending" (jars, own cards) are left
+     * out of every figure below, so a top-up to a jar never shows up as spending.
+     */
+    private readonly counted = computed(() => {
+        const groups = this.groupsSignal();
+        return this.transactions().filter(t => isCounted(t, groups));
     });
 
-    readonly totalIncome = computed(() => {
-        const txs = this.transactions();
-        return txs
-            .filter(t => +t.amount > 0)
-            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0);
+    /** Names of the categories currently left out — shown next to the figures. */
+    readonly excludedNames = computed(() => {
+        const groups = this.groupsSignal();
+        const used = new Set<number>();
+        for (const tx of this.transactions()) {
+            const index = categoryIndexOf(tx, groups);
+            if (index !== UNCATEGORIZED && groups[index]?.excluded) used.add(index);
+        }
+        return Array.from(used).map(index => groups[index].title);
     });
+
+    readonly totalExpenses = computed(() =>
+        this.counted()
+            .filter(t => +t.amount < 0)
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0),
+    );
+
+    readonly totalIncome = computed(() =>
+        this.counted()
+            .filter(t => +t.amount > 0)
+            .reduce((sum, t) => sum + this.currencyDisplay.convertMinorAmount(t.amount, t.cardCurrencyCode), 0),
+    );
 
     readonly biggestExpense = computed(() => {
-        const txs = this.transactions().filter(t => +t.amount < 0);
+        const txs = this.counted().filter(t => +t.amount < 0);
         if (!txs.length) return null;
-        return txs.reduce((max, tx) => {
-            const txAmount = this.currencyDisplay.convertMinorAmount(tx.amount, tx.cardCurrencyCode);
-            const maxAmount = this.currencyDisplay.convertMinorAmount(max.amount, max.cardCurrencyCode);
-            return txAmount < maxAmount ? tx : max;
-        }, txs[0]);
+        return txs.reduce((max, tx) =>
+            this.currencyDisplay.convertMinorAmount(tx.amount, tx.cardCurrencyCode)
+                < this.currencyDisplay.convertMinorAmount(max.amount, max.cardCurrencyCode) ? tx : max,
+        txs[0]);
     });
 
     readonly averageDailySpend = computed(() => {
-        const txs = this.transactions().filter(t => +t.amount < 0);
+        const txs = this.counted().filter(t => +t.amount < 0);
         if (!txs.length) return 0;
         const days = new Set(txs.map(t => new Date(t.time * 1000).toDateString())).size;
         const total = txs.reduce(
@@ -102,42 +125,74 @@ export default class DashboardComponent implements OnInit {
         return flow > 0 ? Math.round((income / flow) * 100) : 0;
     });
 
-    readonly periodLabel = computed(() => {
-        const name = this.monthsMapFull[this.activeMonthSignal() - 1] ?? '';
-        return `${name} ${this.activeYearSignal()}`;
+    readonly uncategorizedCount = computed(() => {
+        const groups = this.groupsSignal();
+        return this.transactions().filter(t => categoryIndexOf(t, groups) === UNCATEGORIZED).length;
     });
 
-    /** Categories ranked by spend, with a stable colour taken from their index. */
-    readonly rankedCategories = computed(() => {
-        const scored = this.groupsSignal()
-            .map((group, index) => ({
-                title: group.title,
-                emoji: group.emoji,
-                amount: Number(group.amount) || 0,
-                abs: Math.abs(Number(group.amount) || 0),
-                colorVar: `var(--cat-${(index % 12) + 1})`,
-            }))
-            .filter(item => item.abs > 0);
+    readonly periodLabel = computed(() => `${MONTHS[this.activeMonthSignal() - 1] ?? ''} ${this.activeYearSignal()}`);
 
-        if (!scored.length) return [];
+    // ── Scoping (search + category) ──────────────────────────
+    readonly searched = computed(() => this.searchPipe.transform(this.transactions(), this.searchValue()) ?? []);
 
-        const max = Math.max(...scored.map(item => item.abs));
-        const total = scored.reduce((sum, item) => sum + item.abs, 0) || 1;
-
-        return scored
-            .sort((a, b) => b.abs - a.abs)
-            .slice(0, 6)
-            .map(item => ({
-                ...item,
-                width: Math.max(3, Math.round((item.abs / max) * 100)),
-                pct: Math.round((item.abs / total) * 100),
-            }));
+    /** What the charts draw: the same slice the ledger shows. */
+    readonly chartTransactions = computed(() => {
+        const filter = this.categoryFilter();
+        const groups = this.groupsSignal();
+        let rows = this.searched();
+        if (filter === UNCATEGORIZED_FILTER) rows = rows.filter(t => categoryIndexOf(t, groups) === UNCATEGORIZED);
+        else if (filter !== null) rows = rows.filter(t => groups[categoryIndexOf(t, groups)]?.title === filter);
+        return rows.map(t => this.currencyDisplay.convertTransactionForMinorUnitCharts(t));
     });
 
-    private readonly monthsMapFull = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-    ];
+    readonly chartScope = computed(() => {
+        const filter = this.categoryFilter();
+        if (filter === null) return '';
+        return filter === UNCATEGORIZED_FILTER ? ' · Uncategorized' : ` · ${filter}`;
+    });
+
+    // ── Accounts ─────────────────────────────────────────────
+    readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
+
+    readonly availableCardTypes = computed(() => {
+        const info = this.clientInfoSignal();
+        if (!info?.accounts) return [];
+        return Array.from(new Set(info.accounts.map(a => a.type).filter(Boolean)));
+    });
+
+    /** Sorted accounts: type='white' always first, filtered by chip selection */
+    readonly sortedAccounts = computed(() => {
+        const info = this.clientInfoSignal();
+        if (!info?.accounts) return [];
+        const filters = this.cardTypeFilters();
+        const filtered = filters.size > 0 ? info.accounts.filter(a => filters.has(a.type)) : info.accounts;
+        return [...filtered].sort((a, b) => {
+            if (a.type === 'white' && b.type !== 'white') return -1;
+            if (a.type !== 'white' && b.type === 'white') return 1;
+            return 0;
+        });
+    });
+
+    ngOnInit(): void {
+        this.activeCardId$ = this.monobankService.activeCardId$;
+
+        this.monobankService.currentTransactions$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(t => this.transactions.set(t ?? []));
+
+        this.monobankService.clientInfo$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(info => this.clientInfoSignal.set(info));
+
+        this.categoryGroupService.categoryGroups$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(groups => this.groupsSignal.set([...(groups ?? [])]));
+
+        // Ambient background-sync status (backfill progress, month freshness).
+        this.syncStatus.start();
+    }
+
+    // ── Period ───────────────────────────────────────────────
 
     /** Step the period by whole months, clamped to the current month. */
     stepPeriod(delta: number): void {
@@ -147,9 +202,7 @@ export default class DashboardComponent implements OnInit {
         if (month < 1) { month = 12; year--; }
 
         const now = new Date();
-        if (year > now.getFullYear() || (year === now.getFullYear() && month > now.getMonth() + 1)) {
-            return;
-        }
+        if (year > now.getFullYear() || (year === now.getFullYear() && month > now.getMonth() + 1)) return;
         if (year < 2017) return;
 
         this.activeYear = year;
@@ -162,137 +215,13 @@ export default class DashboardComponent implements OnInit {
         const now = new Date();
         return !(this.activeYear === now.getFullYear() && this.activeMonth === now.getMonth() + 1);
     }
-    readonly chartTransactions = computed(() =>
-        this.transactions().map(transaction => this.currencyDisplay.convertTransactionForMinorUnitCharts(transaction))
-    );
-
-    /** Sorted accounts: type='white' always first, filtered by chip selection */
-    readonly sortedAccounts = computed(() => {
-        const info = this.clientInfoSignal();
-        if (!info?.accounts) return [];
-        const filters = this.cardTypeFilters();
-        const filtered = filters.size > 0
-            ? info.accounts.filter(a => filters.has(a.type))
-            : info.accounts;
-        return [...filtered].sort((a, b) => {
-            if (a.type === 'white' && b.type !== 'white') return -1;
-            if (a.type !== 'white' && b.type === 'white') return 1;
-            return 0;
-        });
-    });
-
-    /** Transaction descriptions for category autocomplete */
-    readonly transactionDescriptions = computed(() => {
-        const txs = this.transactions();
-        return Array.from(new Set(txs.map(t => t.description)));
-    });
-
-    /** Category editing state */
-    readonly editingCategory = signal<ICategoryGroup | null>(null);
-    readonly showCategoryEditor = signal(false);
-    readonly showCategoryDrawer = signal(false);
-    readonly showFloatingToolbar = signal(true);
-    readonly clientInfoSignal = signal<IAccountInfo | null>(null);
-    readonly groupsSignal = signal<ICategoryGroup[]>([]);
-    readonly activeMonthSignal = signal(new Date().getMonth() + 1);
-    readonly activeYearSignal = signal(new Date().getFullYear());
-
-    // ── Card type filter chips ──
-    readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
-    readonly availableCardTypes = computed(() => {
-        const info = this.clientInfoSignal();
-        if (!info?.accounts) return [];
-        const types = new Set(info.accounts.map(a => a.type).filter(Boolean));
-        return Array.from(types);
-    });
-
-    // ── Date picker state (owned by dashboard, always available) ──
-    activeMonth = new Date().getMonth() + 1;
-    activeYear = new Date().getFullYear();
-    readonly currentMonth = new Date().getMonth() + 1;
-    readonly currentYear = new Date().getFullYear();
-    readonly monthsMap = [
-        { name: 'Jan', value: 1 }, { name: 'Feb', value: 2 },
-        { name: 'Mar', value: 3 }, { name: 'Apr', value: 4 },
-        { name: 'May', value: 5 }, { name: 'Jun', value: 6 },
-        { name: 'Jul', value: 7 }, { name: 'Aug', value: 8 },
-        { name: 'Sep', value: 9 }, { name: 'Oct', value: 10 },
-        { name: 'Nov', value: 11 }, { name: 'Dec', value: 12 },
-    ];
-    yearsMap: number[] = [];
-
-    private readonly cancelPreviousRequest$ = new Subject<void>();
-
-    @ViewChild('transactionsRef') transactionsRef!: TransactionsComponent;
-
-    ngOnInit(): void {
-        const numberOfYears = new Date().getFullYear() - 2017;
-        for (let i = 0; i <= numberOfYears; i++) {
-            this.yearsMap.push(2017 + (numberOfYears - i));
-        }
-
-        this.activeCardId$ = this.monobankService.activeCardId$;
-        this.clientInfo$ = this.monobankService.clientInfo$;
-        this.groups$ = this.categoryGroupService.categoryGroups$;
-        this.transactions$ = this.monobankService.currentTransactions$;
-
-        this.transactions$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(t => this.transactions.set(t));
-
-        this.clientInfo$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(info => this.clientInfoSignal.set(info));
-
-        this.groups$
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(groups => this.groupsSignal.set([...(groups ?? [])]));
-
-        // Ambient background-sync status (backfill progress, month freshness).
-        this.syncStatus.start();
-    }
-
-    onCardClick(account: IAccount): void {
-        this.monobankService.setActiveCardId(account.id);
-    }
-
-    /**
-     * Kick off a full server-side backfill. Returns immediately; the worker drains
-     * the queue in the background whether or not this tab stays open.
-     */
-    onBackfillClick(): void {
-        if (this.syncStatus.isBackfilling()) {
-            return;
-        }
-        this.syncStatus.startBackfill()
-            .pipe(first(), takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: ({ jobs }) => {
-                    this.toast.success(`Backfill started — ${jobs} months queued. You can close the tab.`);
-                    this.syncStatus.start();
-                },
-                error: () => this.toast.error('Could not start backfill. Try again.'),
-            });
-    }
 
     onSelectMonth(month: number): void {
         this.activeMonth = month;
         this.activeMonthSignal.set(month);
         this.monobankService.activeMonth = month;
-        this.cancelPreviousRequest$.next();
         this.monobankService
             .getTransactions(month, this.activeYear, { includeHold: this.showHoldTransactions() })
-            .pipe(first(), takeUntilDestroyed(this.destroyRef))
-            .subscribe();
-    }
-
-    onSelectYear(year: number): void {
-        this.activeYear = year;
-        this.activeYearSignal.set(year);
-        this.monobankService.activeYear = year;
-        this.cancelPreviousRequest$.next();
-        this.monobankService
-            .getTransactions(this.activeMonth, year, { includeHold: this.showHoldTransactions() })
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe();
     }
@@ -306,36 +235,54 @@ export default class DashboardComponent implements OnInit {
             .subscribe();
     }
 
+    /**
+     * Kick off a full server-side backfill. Returns immediately; the worker drains
+     * the queue in the background whether or not this tab stays open.
+     */
+    onBackfillClick(): void {
+        if (this.syncStatus.isBackfilling()) return;
+        this.syncStatus.startBackfill()
+            .pipe(first(), takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: ({ jobs }) => {
+                    this.toast.success(`Backfill started — ${jobs} months queued. You can close the tab.`);
+                    this.syncStatus.start();
+                },
+                error: () => this.toast.error('Could not start backfill. Try again.'),
+            });
+    }
+
+    // ── Ledger ───────────────────────────────────────────────
+
     onSearchTransaction(value: string): void {
         this.searchValue.set(value);
     }
 
-    onSelectValueChange(value: string[]): void {
-        this.searchValue.set(value.join());
+    onCategoryFilter(filter: string | null): void {
+        this.categoryFilter.set(filter);
     }
 
-    onSortTransactionsBy(sort: { sortBy: TransactionSortBy; direction: 'asc' | 'desc' }): void {
-        this.sortBy.set(sort.sortBy);
-        this.sortDirection.set(sort.direction);
+    showUncategorized(): void {
+        this.categoryFilter.set(UNCATEGORIZED_FILTER);
     }
 
     onOpenTransaction(transaction: ITransaction): void {
         this.monobankService.rememberTransaction(transaction);
-        this.router.navigate(['/transactions', transaction.id], {
-            state: { transaction },
-        });
+        this.router.navigate(['/transactions', transaction.id], { state: { transaction } });
     }
 
-    // ── Card Type Filter ──
+    // ── Accounts ─────────────────────────────────────────────
+
+    onCardClick(account: IAccount): void {
+        this.monobankService.setActiveCardId(account.id);
+    }
+
     toggleCardTypeFilter(type: string): void {
         const current = new Set(this.cardTypeFilters());
-        if (current.has(type)) {
-            current.delete(type);
-        } else {
-            current.add(type);
-        }
+        if (current.has(type)) current.delete(type);
+        else current.add(type);
         this.cardTypeFilters.set(current);
-        this.saveCardTypeFilters(current);
+        localStorage.setItem(LocalStorage.CardTypeFilters, JSON.stringify([...current]));
     }
 
     clearCardTypeFilters(): void {
@@ -349,49 +296,5 @@ export default class DashboardComponent implements OnInit {
             if (raw) return new Set(JSON.parse(raw));
         } catch { /* ignore */ }
         return new Set();
-    }
-
-    private saveCardTypeFilters(filters: Set<string>): void {
-        localStorage.setItem(LocalStorage.CardTypeFilters, JSON.stringify([...filters]));
-    }
-
-    // ── Category Management ──
-    onAddCategory(): void {
-        this.editingCategory.set(null);
-        this.showCategoryEditor.set(true);
-    }
-
-    onEditCategory(group: ICategoryGroup): void {
-        this.editingCategory.set(group);
-        this.showCategoryEditor.set(true);
-    }
-
-    onSaveCategory(group: ICategoryGroup): void {
-        this.categoryGroupService.set(group);
-        this.showCategoryEditor.set(false);
-        this.editingCategory.set(null);
-    }
-
-    onDeleteCategory(group: ICategoryGroup): void {
-        this.categoryGroupService.delete(group);
-        this.showCategoryEditor.set(false);
-        this.editingCategory.set(null);
-    }
-
-    onCloseCategoryEditor(): void {
-        this.showCategoryEditor.set(false);
-        this.editingCategory.set(null);
-    }
-
-    // Handle drag & drop reordering of category groups
-    async onCategoryDrop(event: CdkDragDrop<ICategoryGroup[]>): Promise<void> {
-        const groups = (await firstValueFrom(this.groups$)) as ICategoryGroup[];
-        if (!groups) return;
-
-        const updated = [...groups];
-        moveItemInArray(updated, event.previousIndex, event.currentIndex);
-
-        // Apply ordering change and persist via service
-        this.categoryGroupService.changeOrdering(updated);
     }
 }

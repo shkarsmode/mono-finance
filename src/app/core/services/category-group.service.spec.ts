@@ -23,7 +23,8 @@ describe('CategoryGroupService', () => {
         const monobank: any = { currentTransactions$, categoryGroups$: new BehaviorSubject<any[]>([]) };
         const http: any = { post: () => ({ pipe: () => ({ subscribe: () => undefined }) }) };
         const loading: any = { loading$: { next: () => undefined } };
-        const service = new CategoryGroupService(http, monobank, '/api', loading);
+        const toast: any = { error: () => undefined };
+        const service = new CategoryGroupService(http, monobank, '/api', loading, toast);
         return { service, monobank, currentTransactions$ };
     }
 

@@ -2,15 +2,14 @@ import { DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { TransactionSortBy } from '@core/enums';
 import { ITransaction } from '@core/interfaces';
-import { CurrencyDisplayService, MonobankService } from '@core/services';
+import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 import { first } from 'rxjs';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
-import { TransactionsSortByPipe } from '../../../../shared/pipes/transactions-sort-by.pipe';
 import { TransactionsComponent } from '../dashboard/components';
 
 interface CalendarDay {
@@ -46,7 +45,6 @@ interface CalendarMonth {
         DisplayMoneyMajorPipe,
         TransactionsComponent,
         TransactionsFilterPipe,
-        TransactionsSortByPipe,
     ],
     templateUrl: './calendar.component.html',
     styleUrl: './calendar.component.scss',
@@ -58,6 +56,8 @@ export default class CalendarComponent implements OnInit {
     private readonly baseApi = inject(BASE_PATH_API);
     private readonly monobankService = inject(MonobankService);
     readonly currencyDisplay = inject(CurrencyDisplayService);
+    /** Same categories as the dashboard, so the feed can be categorized from here too. */
+    readonly groups = toSignal(inject(CategoryGroupService).categoryGroups$, { initialValue: [] });
 
     readonly calendarData = signal<CalendarMonth | null>(null);
     readonly loadingCalendar = signal(true);
@@ -67,8 +67,6 @@ export default class CalendarComponent implements OnInit {
     readonly selectedDay = signal<CalendarDay | null>(null);
     readonly monthTransactions = signal<ITransaction[]>([]);
     readonly transactionSearch = signal('');
-    readonly transactionSortBy = signal<TransactionSortBy>(TransactionSortBy.Date);
-    readonly transactionSortDirection = signal<'asc' | 'desc'>('desc');
     readonly transactionError = signal<string | null>(null);
 
     readonly weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -182,11 +180,6 @@ export default class CalendarComponent implements OnInit {
 
     onSearchTransactions(value: string): void {
         this.transactionSearch.set(value);
-    }
-
-    onSortTransactions(sort: { sortBy: TransactionSortBy; direction: 'asc' | 'desc' }): void {
-        this.transactionSortBy.set(sort.sortBy);
-        this.transactionSortDirection.set(sort.direction);
     }
 
     onOpenTransaction(transaction: ITransaction): void {

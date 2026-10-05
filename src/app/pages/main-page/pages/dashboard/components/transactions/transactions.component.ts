@@ -1,166 +1,355 @@
+import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, HostListener, Input, Output, signal, ViewChild } from '@angular/core';
-import { TransactionSortBy } from '@core/enums';
+import {
+    ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, HostListener, inject, Input, Output,
+    signal, ViewChild,
+} from '@angular/core';
+import {
+    AssignMode, categoryColor, categoryIndexOf, merchantLabel, UNCATEGORIZED,
+} from '@core/helpers/categorize';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { CategoryGroupService } from '@core/services/category-group.service';
+import { CategoryPickerComponent, ToastService } from '@shared/components';
 import { DisplayMoneyPipe } from '../../../../../../shared/pipes/display-money.pipe';
 
-/** A transaction with its resolved category identity. */
+export type LedgerSortKey = 'date' | 'merchant' | 'category' | 'amount' | 'balance';
+type SortDir = 'asc' | 'desc';
+
+/** Sentinel for "show only uncategorized" in the category filter. */
+export const UNCATEGORIZED_FILTER = '\u0000uncategorized';
+
 type LedgerRow = {
     tx: ITransaction;
-    categoryName: string | null;
-    categoryVar: string;
+    index: number;
+    category: string | null;
+    color: string;
 };
 
-/** One day of the ledger: a sticky rule with a running total. */
-type LedgerDay = {
+type LedgerSection = {
     key: string;
-    weekday: string;
-    date: string;
+    title: string;
+    subtitle?: string;
+    color?: string;
     net: number;
     count: number;
     rows: LedgerRow[];
 };
 
+const SORT_STORAGE = 'finance-ledger-sort';
+const DENSITY_STORAGE = 'finance-ledger-density';
+
+/**
+ * First click direction per column — chosen for what you usually want to see first:
+ * newest, A→Z, the biggest spending, the highest balance.
+ */
+const DEFAULT_DIR: Record<LedgerSortKey, SortDir> = {
+    date: 'desc',
+    merchant: 'asc',
+    category: 'asc',
+    amount: 'asc',
+    balance: 'desc',
+};
+
+const SORT_LABEL: Record<LedgerSortKey, string> = {
+    date: 'Date',
+    merchant: 'Merchant',
+    category: 'Category',
+    amount: 'Amount',
+    balance: 'Balance',
+};
+
+function readSort(): { key: LedgerSortKey; dir: SortDir } {
+    try {
+        const raw = JSON.parse(localStorage.getItem(SORT_STORAGE) ?? 'null');
+        if (raw && raw.key in DEFAULT_DIR && (raw.dir === 'asc' || raw.dir === 'desc')) return raw;
+    } catch { /* fall through */ }
+    return { key: 'date', dir: 'desc' };
+}
+
+function readCompact(): boolean {
+    try { return localStorage.getItem(DENSITY_STORAGE) === 'compact'; } catch { return false; }
+}
+
 @Component({
     selector: 'app-transactions',
     standalone: true,
-    imports: [DatePipe, DisplayMoneyPipe],
+    imports: [DatePipe, DisplayMoneyPipe, OverlayModule, CategoryPickerComponent],
     templateUrl: './transactions.component.html',
     styleUrl: './transactions.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsComponent {
-    @Input() public title = 'Ledger';
-    @Input() public allowGroupFilter = true;
-    @Input() public searchValue: string = '';
-    @Input() public sortByValue!: TransactionSortBy;
+    private readonly categories = inject(CategoryGroupService);
+    private readonly toast = inject(ToastService);
 
+    @Input() public searchValue = '';
     @Input() public set groups(value: ICategoryGroup[] | null) {
         this.groupList.set(value ?? []);
     }
     @Input() public set transactions(value: ITransaction[] | null) {
         this.txList.set(value ?? []);
     }
+    /** A category title, UNCATEGORIZED_FILTER, or null for everything. */
+    @Input() public set categoryFilter(value: string | null) {
+        this.filter.set(value);
+    }
 
-    @Output() public sortBy = new EventEmitter<{ sortBy: TransactionSortBy; direction: 'asc' | 'desc' }>();
-    @Output() public searchTransactions = new EventEmitter<string>();
-    @Output() public selectValueChange = new EventEmitter<string[]>();
-    @Output() public selectMonth = new EventEmitter<number>();
-    @Output() public selectYear = new EventEmitter<number>();
-    @Output() public openTransaction = new EventEmitter<ITransaction>();
+    @Output() public readonly searchTransactions = new EventEmitter<string>();
+    @Output() public readonly openTransaction = new EventEmitter<ITransaction>();
+    @Output() public readonly clearCategoryFilter = new EventEmitter<void>();
 
-    @ViewChild('inputRef') public inputRef!: ElementRef<HTMLInputElement>;
+    @ViewChild('inputRef') public inputRef?: ElementRef<HTMLInputElement>;
 
     private readonly txList = signal<ITransaction[]>([]);
     private readonly groupList = signal<ICategoryGroup[]>([]);
+    public readonly filter = signal<string | null>(null);
 
     public readonly isNarrow = signal(window.innerWidth < 900);
-    public readonly compact = signal(false);
-    public isAscSortDirection = false;
-    public readonly SortBy = TransactionSortBy;
+    public readonly compact = signal(readCompact());
+    public readonly sort = signal(readSort());
 
-    /** Live — the old code sampled width once at construction and never updated. */
+    public readonly sortOptions = Object.keys(SORT_LABEL) as LedgerSortKey[];
+    public readonly columns: LedgerSortKey[] = ['date', 'merchant', 'category', 'amount', 'balance'];
+    /** Read side of the categories input, for the picker. */
+    public readonly groupsView = this.groupList.asReadonly();
+    public readonly sortLabel = SORT_LABEL;
+    public readonly UNCATEGORIZED_FILTER = UNCATEGORIZED_FILTER;
+
     @HostListener('window:resize')
     public onResize(): void {
         this.isNarrow.set(window.innerWidth < 900);
     }
 
-    public readonly count = computed(() => this.txList().length);
+    /** "/" jumps to search from anywhere on the page, like most data tools. */
+    @HostListener('document:keydown', ['$event'])
+    public onDocumentKeydown(event: KeyboardEvent): void {
+        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+        const target = event.target as HTMLElement | null;
+        if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+        event.preventDefault();
+        this.inputRef?.nativeElement.focus();
+    }
 
-    /**
-     * The ledger, grouped into days. Each day carries its own net and count so
-     * the sticky rule can show a running total while you scan.
-     */
-    public readonly days = computed<LedgerDay[]>(() => {
-        const rows = this.txList().map(tx => this.resolveCategory(tx));
-        const byDay = new Map<string, LedgerDay>();
+    // ── rows ─────────────────────────────────────────────────
 
-        for (const row of rows) {
-            const date = new Date(row.tx.time * 1000);
-            const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-            let day = byDay.get(key);
-            if (!day) {
-                day = {
-                    key,
-                    weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
-                    date: date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
-                    net: 0,
-                    count: 0,
-                    rows: [],
-                };
-                byDay.set(key, day);
-            }
-            day.rows.push(row);
-            day.net += Number(row.tx.amount) || 0;
-            day.count += 1;
-        }
-
-        return Array.from(byDay.values());
+    private readonly rows = computed<LedgerRow[]>(() => {
+        const groups = this.groupList();
+        return this.txList().map(tx => {
+            const index = categoryIndexOf(tx, groups);
+            return {
+                tx,
+                index,
+                category: index === UNCATEGORIZED ? null : groups[index]?.title ?? null,
+                color: categoryColor(index),
+            };
+        });
     });
 
-    /**
-     * Resolve a transaction to exactly one category, first match wins, and take
-     * its colour from the category's index so identity is stable.
-     */
-    private resolveCategory(tx: ITransaction): LedgerRow {
-        const groups = this.groupList();
-        const description = (tx.description ?? '').toLocaleLowerCase();
-        const merchant = ((tx as any).merchantName ?? '').toLocaleLowerCase();
-        const counter = (tx.counterName ?? '').toLocaleLowerCase();
+    private readonly visibleRows = computed<LedgerRow[]>(() => {
+        const filter = this.filter();
+        if (filter === null) return this.rows();
+        if (filter === UNCATEGORIZED_FILTER) return this.rows().filter(row => row.index === UNCATEGORIZED);
+        return this.rows().filter(row => row.category === filter);
+    });
 
-        for (let i = 0; i < groups.length; i++) {
-            const group = groups[i];
-            const hit = (group.keys ?? []).some((rawKey: string) => {
-                const key = (rawKey ?? '').trim();
-                if (!key) return false;
-                if (/^\d+$/.test(key)) {
-                    const mcc = Number(key);
-                    return tx.mcc === mcc || tx.originalMcc === mcc;
-                }
-                const needle = key.toLocaleLowerCase();
-                return description.includes(needle) || merchant.includes(needle) || counter.includes(needle);
-            });
-            if (hit) {
-                return {
-                    tx,
-                    categoryName: group.title,
-                    categoryVar: `var(--cat-${(i % 12) + 1})`,
-                };
-            }
+    public readonly count = computed(() => this.visibleRows().length);
+    public readonly visibleNet = computed(() =>
+        this.visibleRows().reduce((sum, row) => sum + (Number(row.tx.amount) || 0), 0),
+    );
+    public readonly currencyCode = computed(() => this.txList()[0]?.cardCurrencyCode ?? 980);
+
+    public readonly filterLabel = computed(() => {
+        const filter = this.filter();
+        if (filter === null) return null;
+        return filter === UNCATEGORIZED_FILTER ? 'Uncategorized' : filter;
+    });
+
+    public readonly filterColor = computed(() => {
+        const filter = this.filter();
+        if (filter === null || filter === UNCATEGORIZED_FILTER) return categoryColor(UNCATEGORIZED);
+        return categoryColor(this.groupList().findIndex(g => g.title === filter));
+    });
+
+    /** Grouped modes get sticky section rules; amount and balance are one flat sorted list. */
+    public readonly grouped = computed(() => {
+        const key = this.sort().key;
+        return key === 'date' || key === 'category' || key === 'merchant';
+    });
+
+    public readonly sections = computed<LedgerSection[]>(() => {
+        const { key, dir } = this.sort();
+        const rows = this.visibleRows();
+        const sign = dir === 'asc' ? 1 : -1;
+        const byTimeDesc = (a: LedgerRow, b: LedgerRow) => b.tx.time - a.tx.time;
+        const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+
+        if (key === 'amount' || key === 'balance') {
+            const sorted = [...rows].sort((a, b) =>
+                sign * ((Number(a.tx[key]) || 0) - (Number(b.tx[key]) || 0)) || byTimeDesc(a, b),
+            );
+            return [{ key: 'all', title: '', net: 0, count: sorted.length, rows: sorted }];
         }
 
-        return { tx, categoryName: null, categoryVar: 'var(--cat-12)' };
+        const buckets = new Map<string, LedgerSection>();
+        for (const row of rows) {
+            let id: string;
+            let title: string;
+            let subtitle: string | undefined;
+            let color: string | undefined;
+
+            if (key === 'date') {
+                const d = new Date(row.tx.time * 1000);
+                id = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                title = d.toLocaleDateString(undefined, { weekday: 'short' });
+                subtitle = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+            } else if (key === 'category') {
+                id = row.category ?? UNCATEGORIZED_FILTER;
+                title = row.category ?? 'Uncategorized';
+                color = row.color;
+            } else {
+                const label = merchantLabel(row.tx) || '—';
+                id = label.toLocaleLowerCase();
+                title = label;
+            }
+
+            let section = buckets.get(id);
+            if (!section) {
+                section = { key: id, title, subtitle, color, net: 0, count: 0, rows: [] };
+                buckets.set(id, section);
+            }
+            section.rows.push(row);
+            section.count += 1;
+            section.net += Number(row.tx.amount) || 0;
+        }
+
+        const sections = Array.from(buckets.values());
+
+        if (key === 'date') {
+            for (const section of sections) section.rows.sort((a, b) => sign * (a.tx.time - b.tx.time));
+            return sections.sort((a, b) => sign * (a.rows[0].tx.time - b.rows[0].tx.time));
+        }
+
+        for (const section of sections) section.rows.sort(byTimeDesc);
+        return sections.sort((a, b) => {
+            // Uncategorized always last — it is a to-do list, not a category.
+            if (a.key === UNCATEGORIZED_FILTER) return 1;
+            if (b.key === UNCATEGORIZED_FILTER) return -1;
+            return sign * collator.compare(a.title, b.title);
+        });
+    });
+
+    // ── sorting ──────────────────────────────────────────────
+
+    public sortBy(key: LedgerSortKey): void {
+        const current = this.sort();
+        const next = current.key === key
+            ? { key, dir: (current.dir === 'asc' ? 'desc' : 'asc') as SortDir }
+            : { key, dir: DEFAULT_DIR[key] };
+        this.sort.set(next);
+        try { localStorage.setItem(SORT_STORAGE, JSON.stringify(next)); } catch { /* private mode */ }
     }
+
+    public onSortSelect(event: Event): void {
+        this.sortBy((event.target as HTMLSelectElement).value as LedgerSortKey);
+    }
+
+    public resetSort(): void {
+        this.sort.set({ key: 'date', dir: 'desc' });
+        try { localStorage.removeItem(SORT_STORAGE); } catch { /* ignore */ }
+    }
+
+    public ariaSort(key: LedgerSortKey): 'ascending' | 'descending' | 'none' {
+        const { key: active, dir } = this.sort();
+        if (active !== key) return 'none';
+        return dir === 'asc' ? 'ascending' : 'descending';
+    }
+
+    public setCompact(value: boolean): void {
+        this.compact.set(value);
+        try { localStorage.setItem(DENSITY_STORAGE, value ? 'compact' : 'comfortable'); } catch { /* ignore */ }
+    }
+
+    // ── search ───────────────────────────────────────────────
 
     public onInputEvent(event: Event): void {
         this.searchTransactions.emit((event.target as HTMLInputElement).value);
     }
 
     public clearInputEvent(): void {
-        if (this.inputRef) {
-            this.inputRef.nativeElement.value = '';
-        }
+        if (this.inputRef) this.inputRef.nativeElement.value = '';
         this.searchTransactions.emit('');
     }
 
-    public onSortByEvent(sortBy: TransactionSortBy): void {
-        if (sortBy === this.sortByValue) this.isAscSortDirection = !this.isAscSortDirection;
-        this.sortBy.emit({ sortBy, direction: this.isAscSortDirection ? 'asc' : 'desc' });
-    }
-
-    public toggleDensity(): void {
-        this.compact.update(v => !v);
-    }
+    // ── open ─────────────────────────────────────────────────
 
     public onTransactionClick(transaction: ITransaction): void {
         this.openTransaction.emit(transaction);
     }
 
-    /** Keyboard access for a row — the list was click-only before. */
     public onRowKeydown(event: KeyboardEvent, transaction: ITransaction): void {
+        if (event.target !== event.currentTarget) return;
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             this.openTransaction.emit(transaction);
         }
+    }
+
+    // ── categorize inline ────────────────────────────────────
+
+    public readonly picker = signal<{ row: LedgerRow; origin: HTMLElement } | null>(null);
+
+    public readonly pickerPositions: ConnectedPosition[] = [
+        { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 6 },
+        { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -6 },
+        { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 6 },
+    ];
+
+    public readonly pickerMerchant = computed(() => {
+        const open = this.picker();
+        return open ? merchantLabel(open.row.tx) : '';
+    });
+
+    public readonly pickerMerchantCount = computed(() => {
+        const open = this.picker();
+        if (!open) return 0;
+        const label = merchantLabel(open.row.tx).toLocaleLowerCase();
+        if (!label) return 0;
+        return this.txList().filter(tx => merchantLabel(tx).toLocaleLowerCase() === label).length;
+    });
+
+    public openPicker(event: Event, row: LedgerRow): void {
+        event.stopPropagation();
+        const origin = event.currentTarget as HTMLElement;
+        this.picker.set(this.picker()?.row.tx.id === row.tx.id ? null : { row, origin });
+    }
+
+    public closePicker(): void {
+        const open = this.picker();
+        this.picker.set(null);
+        open?.origin.focus({ preventScroll: true });
+    }
+
+    public onPick(choice: { index: number; mode: AssignMode }): void {
+        const open = this.picker();
+        if (!open) return;
+        const title = this.groupList()[choice.index]?.title ?? '';
+        this.categories.assign(open.row.tx, choice.index, choice.mode);
+        this.announce(open.row.tx, title, choice.mode);
+        this.closePicker();
+    }
+
+    public onCreate(choice: { title: string; mode: AssignMode }): void {
+        const open = this.picker();
+        if (!open) return;
+        this.categories.createAndAssign(open.row.tx, { title: choice.title }, choice.mode);
+        this.announce(open.row.tx, choice.title, choice.mode);
+        this.closePicker();
+    }
+
+    private announce(tx: ITransaction, title: string, mode: AssignMode): void {
+        const merchant = merchantLabel(tx);
+        this.toast.success(mode === 'merchant' && merchant
+            ? `Every “${merchant}” → ${title}`
+            : `Moved to ${title}`);
     }
 }

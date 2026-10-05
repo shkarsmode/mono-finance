@@ -1,163 +1,121 @@
 @if (transaction(); as tx) {
-    <section class="transaction-page">
-        <header class="transaction-header">
-            <button class="back-btn" type="button" (click)="goBack()">
-                <span class="material-icons-round">arrow_back</span>
-                Back to dashboard
-            </button>
-
-            <div class="transaction-header__meta">
-                <span class="transaction-header__badge" [class.income]="tx.amount >= 0" [class.expense]="tx.amount < 0">
-                    {{ tx.amount >= 0 ? 'Income' : 'Expense' }}
-                </span>
-                <span class="transaction-header__time">{{ tx.time * 1000 | date: 'MMM d, y • HH:mm' }}</span>
-            </div>
-        </header>
-
-        <section class="hero-card">
-            <div>
-                <p class="hero-card__eyebrow">Transaction Details</p>
-                <h1 class="hero-card__title">{{ tx.description }}</h1>
-                <p class="hero-card__subtitle">{{ merchantDisplay() }}</p>
-            </div>
-
-            <div class="hero-card__amount">
-                <strong>{{ tx.amount | displayMoney: tx.cardCurrencyCode }}</strong>
-                <span>{{ formatOriginalMinorAmount(tx.amount, tx.cardCurrencyCode) }} original</span>
-            </div>
-        </section>
-
-        <section class="stats-grid">
-            <article class="stat-card">
-                <span class="stat-card__label">Operation amount</span>
-                <strong class="stat-card__value">{{ tx.operationAmount | displayMoney: tx.currencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.operationAmount, tx.currencyCode) }}</span>
-            </article>
-            <article class="stat-card">
-                <span class="stat-card__label">Cashback</span>
-                <strong class="stat-card__value">{{ tx.cashbackAmount | displayMoney: tx.cardCurrencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.cashbackAmount, tx.cardCurrencyCode) }}</span>
-            </article>
-            <article class="stat-card">
-                <span class="stat-card__label">Balance after payment</span>
-                <strong class="stat-card__value">{{ tx.balance | displayMoney: tx.cardCurrencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.balance, tx.cardCurrencyCode) }}</span>
-            </article>
-            <article class="stat-card">
-                <span class="stat-card__label">Commission</span>
-                <strong class="stat-card__value">{{ tx.commissionRate | displayMoney: tx.cardCurrencyCode }}</strong>
-                <span class="stat-card__hint">{{ formatOriginalMinorAmount(tx.commissionRate, tx.cardCurrencyCode) }}</span>
-            </article>
-        </section>
-
-        <div class="details-grid">
-            <section class="panel">
-                <div class="panel__header">
-                    <div>
-                        <p class="panel__eyebrow">MCC</p>
-                        <h2 class="panel__title">{{ tx.mcc }} - {{ mccLabel() }}</h2>
-                    </div>
-                    <button class="panel__action" type="button" (click)="openMerchantSearch()">
-                        <span class="material-icons-round">travel_explore</span>
-                        Explore analytics
-                    </button>
-                </div>
-
-                <p class="panel__text">
-                    MCC is the merchant category code. It explains what kind of business the bank attached to this payment.
-                </p>
-
-                <dl class="meta-list">
-                    <div class="meta-row">
-                        <dt>Merchant category</dt>
-                        <dd>{{ mccLabel() }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Original MCC</dt>
-                        <dd>{{ tx.originalMcc || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Merchant key</dt>
-                        <dd>{{ tx.merchantKey || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Currency</dt>
-                        <dd>{{ originalCurrencyCode() }}</dd>
-                    </div>
-                </dl>
-            </section>
-
-            <section class="panel">
-                <div class="panel__header">
-                    <div>
-                        <p class="panel__eyebrow">Identifiers</p>
-                        <h2 class="panel__title">Technical info</h2>
-                    </div>
-                </div>
-
-                <dl class="meta-list">
-                    <div class="meta-row">
-                        <dt>Transaction ID</dt>
-                        <dd>{{ tx.id }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Receipt ID</dt>
-                        <dd>{{ tx.receiptId || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Invoice ID</dt>
-                        <dd>{{ tx.invoiceId || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Hold status</dt>
-                        <dd>{{ tx.hold ? 'Hold' : 'Booked' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Comment</dt>
-                        <dd>{{ tx.comment || 'n/a' }}</dd>
-                    </div>
-                </dl>
-            </section>
-
-            <section class="panel panel--wide">
-                <div class="panel__header">
-                    <div>
-                        <p class="panel__eyebrow">Counterparty</p>
-                        <h2 class="panel__title">Merchant and bank side</h2>
-                    </div>
-                </div>
-
-                <dl class="meta-list meta-list--two">
-                    <div class="meta-row">
-                        <dt>Merchant name</dt>
-                        <dd>{{ tx.merchantName || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>Counterparty name</dt>
-                        <dd>{{ tx.counterName || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>EDRPOU</dt>
-                        <dd>{{ tx.counterEdrpou || 'n/a' }}</dd>
-                    </div>
-                    <div class="meta-row">
-                        <dt>IBAN</dt>
-                        <dd>{{ tx.counterIban || 'n/a' }}</dd>
-                    </div>
-                </dl>
-            </section>
-        </div>
-    </section>
-} @else {
-    <section class="missing-state">
-        <span class="material-icons-round">receipt_long</span>
-        <h1>Transaction not found</h1>
-        <p>
-            We could not restore transaction <strong>{{ transactionId() }}</strong>. Open it again from the transaction list.
-        </p>
-        <button class="back-btn" type="button" (click)="goBack()">
-            <span class="material-icons-round">arrow_back</span>
-            Back to dashboard
+    <section class="page">
+        <button class="back" type="button" (click)="goBack()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+            Back
         </button>
+
+        <article class="card">
+            <header class="hero">
+                <div class="hero__main">
+                    <div class="hero__tags">
+                        <span class="tag" [class.tag--pos]="tx.amount > 0">{{ tx.amount > 0 ? 'Income' : 'Expense' }}</span>
+                        @if (tx.hold) { <span class="tag tag--hold">Hold</span> }
+                    </div>
+                    <h1 class="hero__title">{{ tx.description }}</h1>
+                    <p class="hero__when num">{{ tx.time * 1000 | date: 'EEEE, d MMMM y · HH:mm' }}</p>
+                </div>
+                <div class="hero__amount">
+                    <span class="hero__figure num" [class.is-pos]="tx.amount > 0">{{ tx.amount | displayMoney: tx.cardCurrencyCode }}</span>
+                    @if (foreign()) {
+                        <span class="hero__orig num">{{ tx.operationAmount | displayMoney: tx.currencyCode }} · {{ currencyName(tx.currencyCode) }}</span>
+                    }
+                </div>
+            </header>
+
+            <!-- the one thing you are most likely to change here -->
+            <div class="catrow">
+                <span class="micro">Category</span>
+                <button type="button" class="cat" [class.cat--none]="!category()" [class.cat--open]="!!pickerOrigin()"
+                        (click)="togglePicker($event)"
+                        [attr.aria-label]="category() ? 'Category ' + category()!.title + ' — change' : 'Categorize this transaction'">
+                    <span class="dot" [style.background]="categoryColor()"></span>
+                    @if (category(); as c) {
+                        @if (c.emoji) { <span class="emoji">{{ c.emoji }}</span> }
+                        {{ c.title }}
+                    } @else {
+                        Categorize
+                    }
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                @if (category() && category()!.excluded) { <span class="catrow__note">not counted in Spent and Income</span> }
+            </div>
+
+            <div class="figures">
+                <div>
+                    <span class="micro">Balance after</span>
+                    <span class="figures__v num balance-cell">{{ tx.balance | displayMoney: tx.cardCurrencyCode }}</span>
+                </div>
+                @if (tx.cashbackAmount > 0) {
+                    <div>
+                        <span class="micro">Cashback</span>
+                        <span class="figures__v num is-pos">+{{ tx.cashbackAmount | displayMoney: tx.cardCurrencyCode }}</span>
+                    </div>
+                }
+                @if (tx.commissionRate > 0) {
+                    <div>
+                        <span class="micro">Commission</span>
+                        <span class="figures__v num">{{ tx.commissionRate | displayMoney: tx.cardCurrencyCode }}</span>
+                    </div>
+                }
+                @if (siblings().length > 1) {
+                    <div>
+                        <span class="micro">{{ merchant() }} this month</span>
+                        <span class="figures__v num">{{ siblingsNet() | displayMoney: tx.cardCurrencyCode }}</span>
+                        <span class="figures__sub num">{{ siblings().length }} transactions</span>
+                    </div>
+                }
+            </div>
+
+            @if (details().length) {
+                <dl class="kv">
+                    @for (row of details(); track row.label) {
+                        <div class="kv__row">
+                            <dt class="micro">{{ row.label }}</dt>
+                            <dd [class.mono]="row.mono">
+                                <span class="kv__val">{{ row.value }}</span>
+                                @if (row.copy) {
+                                    <button type="button" class="kv__copy" (click)="copy(row)" [attr.aria-label]="'Copy ' + row.label">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5h10" /></svg>
+                                    </button>
+                                }
+                            </dd>
+                        </div>
+                    }
+                </dl>
+            }
+
+            <footer class="foot">
+                <button type="button" class="btn" (click)="openMerchantSearch()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4" /></svg>
+                    {{ merchant() || 'Merchant' }} across all months
+                </button>
+            </footer>
+        </article>
+    </section>
+
+    <ng-template cdkConnectedOverlay
+                 [cdkConnectedOverlayOrigin]="$any(pickerOrigin())"
+                 [cdkConnectedOverlayOpen]="!!pickerOrigin()"
+                 [cdkConnectedOverlayPositions]="pickerPositions"
+                 [cdkConnectedOverlayPush]="true"
+                 (overlayOutsideClick)="closePicker()"
+                 (detach)="pickerOrigin.set(null)">
+        <app-category-picker
+            [groups]="groups()"
+            [currentIndex]="categoryIndex()"
+            [merchant]="merchant()"
+            [merchantCount]="siblings().length"
+            (pick)="onPick($event)"
+            (create)="onCreate($event)"
+            (close)="closePicker()">
+        </app-category-picker>
+    </ng-template>
+} @else {
+    <section class="missing">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
+        <h1>Transaction not found</h1>
+        <p>Could not restore <span class="mono">{{ transactionId() }}</span>. Open it again from the ledger.</p>
+        <button class="btn" type="button" (click)="goBack()">Back</button>
     </section>
 }

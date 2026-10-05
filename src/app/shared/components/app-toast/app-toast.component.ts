@@ -16,13 +16,7 @@ export interface ToastConfig {
                 [class]="'toast toast--' + toast.type"
                 [class.toast--exit]="toast.exiting"
                 (click)="dismiss(toast.id)">
-                <span class="toast__icon">
-                    @switch (toast.type) {
-                        @case ('success') { ✅ }
-                        @case ('error') { ❌ }
-                        @default { ℹ️ }
-                    }
-                </span>
+
                 <span class="toast__message">{{ toast.message }}</span>
             </div>
         }
@@ -59,16 +53,16 @@ export interface ToastConfig {
             &:hover { box-shadow: var(--shadow-4); }
         }
 
-        .toast--success { border-left: 3px solid var(--color-success); }
+        /* green and red are reserved for money; a confirmation is an accent */
+        .toast--success { border-left: 3px solid var(--accent); }
         .toast--error { border-left: 3px solid var(--color-error); }
-        .toast--info { border-left: 3px solid var(--color-primary); }
+        .toast--info { border-left: 3px solid var(--line-2); }
 
         .toast--exit {
             opacity: 0;
             transform: translateX(100%);
         }
 
-        .toast__icon { font-size: 18px; flex-shrink: 0; }
         .toast__message { flex: 1; }
 
         @keyframes toast-in {

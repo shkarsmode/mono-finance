@@ -33,13 +33,15 @@ export class MainPageComponent implements OnInit {
     readonly isSyncing = signal(false);
     readonly isDark = computed(() => this.themeService.theme() === 'dark');
 
+    // The first five are the phone's bottom bar, so the daily tools come first.
     readonly navItems = [
         { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { path: '/exchange', icon: 'currency_exchange', label: 'Exchange' },
-        { path: '/subscriptions', icon: 'autorenew', label: 'Subscriptions' },
-        { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
-        { path: '/insights', icon: 'psychology', label: 'Insights' },
+        { path: '/categories', icon: 'category', label: 'Categories' },
         { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
+        { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
+        { path: '/subscriptions', icon: 'autorenew', label: 'Subscriptions' },
+        { path: '/insights', icon: 'psychology', label: 'Insights' },
+        { path: '/exchange', icon: 'currency_exchange', label: 'Exchange' },
         { path: '/changelog', icon: 'timeline', label: 'Changes' },
         { path: '/profile', icon: 'person', label: 'Profile' },
     ];

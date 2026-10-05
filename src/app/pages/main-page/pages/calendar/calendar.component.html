@@ -123,15 +123,10 @@
                 </div>
             } @else if (visibleTransactions().length) {
                 <app-transactions
-                    [allowGroupFilter]="false"
-                    [sortByValue]="transactionSortBy()"
-                    [transactions]="
-                        visibleTransactions()
-                            | transactionsFilter: transactionSearch()
-                            | transactionsSortBy: transactionSortBy() : transactionSortDirection()
-                    "
+                    [groups]="groups()"
+                    [searchValue]="transactionSearch()"
+                    [transactions]="visibleTransactions() | transactionsFilter: transactionSearch()"
                     (searchTransactions)="onSearchTransactions($event)"
-                    (sortBy)="onSortTransactions($event)"
                     (openTransaction)="onOpenTransaction($event)">
                 </app-transactions>
             } @else {

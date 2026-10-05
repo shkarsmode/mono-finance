@@ -1,12 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Inject, Injectable } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AppRouteEnum, LocalStorage } from '@core/enums';
 import { IAccountInfo, ICategoryGroup, ICurrency, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.tokens';
 import { BehaviorSubject, catchError, first, map, mergeMap, Observable, of, retryWhen, scan, switchMap, tap, timer } from 'rxjs';
 import { TransactionStore } from '../store/transaction-store.service';
+import { ToastService } from '@shared/components';
 import { LoadingService } from './loading.service';
 import { LocalStorageService } from './local-storage.service';
 
@@ -65,6 +65,7 @@ export class MonobankService {
     public activeYear: number = new Date().getFullYear();
 
     public readonly loadingService: LoadingService = inject(LoadingService);
+    private readonly toast = inject(ToastService);
 
     private readonly _rateLimitCooldown$ = new BehaviorSubject<number>(0);
     public readonly rateLimitCooldown$ = this._rateLimitCooldown$.asObservable();
@@ -90,7 +91,6 @@ export class MonobankService {
         private readonly router: Router,
         private readonly http: HttpClient,
         private readonly localStorageService: LocalStorageService,
-        private readonly snackBar: MatSnackBar,
         @Inject(MONOBANK_API) private readonly monobankApi: string,
         @Inject(BASE_PATH_API) private readonly basePathApi: string
     ) { }
@@ -394,12 +394,7 @@ export class MonobankService {
         return this.http.post<TransactionSyncResponse>(syncApiUrl, {}).pipe(
             tap(({ message }) => {
                 if (!options?.silent) {
-                    this.snackBar.open(message, '✅', {
-                        duration: 5000,
-                        horizontalPosition: 'right',
-                        verticalPosition: 'top',
-                        panelClass: ['green-snackbar'],
-                    });
+                    this.toast.success(message);
                 }
             }),
             tap(() => {

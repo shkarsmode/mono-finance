@@ -1,8 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
+import { AssignMode, assignTransaction, summarize, toDefinitions } from '@core/helpers/categorize';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
-import { BehaviorSubject, combineLatest, first, tap } from 'rxjs';
+import { ToastService } from '@shared/components';
+import { BehaviorSubject, combineLatest, first } from 'rxjs';
 import { LoadingService } from './loading.service';
 import { MonobankService } from './monobank.service';
 
@@ -11,7 +13,7 @@ import { MonobankService } from './monobank.service';
 })
 export class CategoryGroupService {
     /**
-     * Categories as stored on the user record — names, emoji and match keys, with no
+     * Categories as stored on the user record — names, emoji and rules, with no
      * totals. MonobankService writes client-info straight into this subject.
      */
     public readonly serverGroups$: BehaviorSubject<ICategoryGroup[]> =
@@ -26,92 +28,128 @@ export class CategoryGroupService {
         private readonly monobankService: MonobankService,
         @Inject(BASE_PATH_API) private readonly basePathApi: string,
         private readonly loadingService: LoadingService,
+        private readonly toast: ToastService,
     ) {
         this.monobankService.categoryGroups$ = this.serverGroups$;
 
-        // Totals are DERIVED from both inputs. Previously they were recomputed only
-        // when transactions emitted, so whenever the categories finished loading
-        // after the transactions — the usual order — nothing ever recomputed and
-        // every category rendered 0,00.
+        // Totals are DERIVED from both inputs, so they are right whichever arrives
+        // first. Each transaction lands in exactly one category (see categorize.ts).
         combineLatest([
             this.monobankService.currentTransactions$,
             this.serverGroups$,
         ]).subscribe(([transactions, groups]) => {
-            this.categoryGroups$.next(this.withTotals(groups, transactions ?? []));
+            this.categoryGroups$.next(this.withTotals(groups ?? [], transactions ?? []));
         });
     }
 
-    /**
-     * Sum each category's matching transactions. Returns new objects — mutating the
-     * stored ones in place made the totals depend on emission order and meant the
-     * server copy silently carried a stale `amount`.
-     */
+    /** The stored definitions, current as of the last edit. */
+    public get definitions(): ICategoryGroup[] {
+        return this.serverGroups$.getValue() ?? [];
+    }
+
     private withTotals(groups: ICategoryGroup[], transactions: ITransaction[]): ICategoryGroup[] {
-        if (!groups?.length) {
-            return [];
-        }
-
-        return groups.map(group => {
-            const keys = (group.keys ?? [])
-                .map(key => (key ?? '').trim())
-                .filter(Boolean);
-
-            const amount = transactions.reduce((sum, transaction) => {
-                return this.matches(keys, transaction) ? sum + (Number(transaction.amount) || 0) : sum;
-            }, 0);
-
-            return { ...group, amount };
-        });
+        if (!groups.length) return [];
+        const { byIndex } = summarize(transactions, groups);
+        return groups.map((group, index) => ({
+            ...group,
+            amount: byIndex[index].net,
+            spent: byIndex[index].spent,
+            income: byIndex[index].income,
+            count: byIndex[index].count,
+        }));
     }
 
-    /** A numeric key is an MCC; anything else is a case-insensitive text match. */
-    private matches(keys: string[], transaction: ITransaction): boolean {
-        if (!keys.length) return false;
-
-        const description = (transaction.description ?? '').toLocaleLowerCase();
-        const merchant = ((transaction as any).merchantName ?? '').toLocaleLowerCase();
-        const counter = (transaction.counterName ?? '').toLocaleLowerCase();
-
-        return keys.some(key => {
-            if (/^\d+$/.test(key)) {
-                const mcc = Number(key);
-                return transaction.mcc === mcc || transaction.originalMcc === mcc;
-            }
-            const needle = key.toLocaleLowerCase();
-            return description.includes(needle) || merchant.includes(needle) || counter.includes(needle);
-        });
-    }
-
-    /** Persist the category definitions. Totals are derived, so they are never sent. */
-    private updateCategories(categories: ICategoryGroup[]): void {
-        const definitions = categories.map(({ emoji, title, keys }) => ({
-            emoji,
-            title,
-            keys,
-            amount: 0,
-        })) as ICategoryGroup[];
-
+    /** Persist the whole list. Totals are derived, so they are never sent. */
+    public replaceAll(groups: ICategoryGroup[]): void {
+        const definitions = toDefinitions(groups);
         this.serverGroups$.next(definitions);
 
         this.loadingService.loading$.next(true);
         this.http
-            .post<string>(`${this.basePathApi}/users/update-categories`, definitions)
-            .pipe(first(), tap(() => this.loadingService.loading$.next(false)))
-            .subscribe();
+            .post<unknown>(`${this.basePathApi}/users/update-categories`, definitions)
+            .pipe(first())
+            .subscribe({
+                next: () => this.loadingService.loading$.next(false),
+                error: () => {
+                    this.loadingService.loading$.next(false);
+                    this.toast.error('Categories were not saved — check the connection and try again.');
+                },
+            });
     }
 
     public changeOrdering(groups: ICategoryGroup[]): void {
-        this.updateCategories(groups);
+        this.replaceAll(groups);
     }
 
+    public move(fromIndex: number, toIndex: number): void {
+        const groups = [...this.definitions];
+        if (fromIndex === toIndex || !groups[fromIndex]) return;
+        const [moved] = groups.splice(fromIndex, 1);
+        groups.splice(Math.max(0, Math.min(toIndex, groups.length)), 0, moved);
+        this.replaceAll(groups);
+    }
+
+    /**
+     * Create or edit. Matching on the ORIGINAL title, so a rename edits the
+     * category in place instead of leaving the old one behind as a duplicate.
+     */
+    public upsert(originalTitle: string | null, group: ICategoryGroup): void {
+        const groups = [...this.definitions];
+        const index = originalTitle === null ? -1 : groups.findIndex(g => g.title === originalTitle);
+        if (index >= 0) groups[index] = { ...groups[index], ...group };
+        else groups.push(group);
+        this.replaceAll(groups);
+    }
+
+    /** Back-compat for the old editor: create-or-replace by title. */
     public set(group: ICategoryGroup): void {
-        const groups = this.serverGroups$.getValue();
-        const without = groups.filter(existing => existing.title !== group.title);
-        this.updateCategories([...without, group]);
+        this.upsert(group.title, group);
     }
 
     public delete(group: ICategoryGroup): void {
-        const groups = this.serverGroups$.getValue();
-        this.updateCategories(groups.filter(existing => existing.title !== group.title));
+        this.replaceAll(this.definitions.filter(existing => existing.title !== group.title));
+    }
+
+    public isTitleTaken(title: string, exceptTitle: string | null = null): boolean {
+        const wanted = title.trim().toLocaleLowerCase();
+        return this.definitions.some(g => g.title !== exceptTitle && g.title.trim().toLocaleLowerCase() === wanted);
+    }
+
+    /** Put a transaction into an existing category. */
+    public assign(tx: ITransaction, targetIndex: number, mode: AssignMode): void {
+        this.replaceAll(assignTransaction(this.definitions, tx, targetIndex, mode));
+    }
+
+    /** Create a category and put the transaction into it, in one save. */
+    public createAndAssign(tx: ITransaction, draft: { title: string; emoji?: string }, mode: AssignMode): void {
+        const groups = [...this.definitions, { emoji: draft.emoji ?? '', title: draft.title.trim(), keys: [], amount: 0 }];
+        this.replaceAll(assignTransaction(groups, tx, groups.length - 1, mode));
+    }
+
+    /** Add a rule to a category, removing the identical rule from every other one. */
+    public addKey(targetIndex: number, key: string): void {
+        const clean = key.trim();
+        if (!clean) return;
+        const lower = clean.toLocaleLowerCase();
+        const groups = this.definitions.map((group, index) => {
+            const keys = (group.keys ?? []).filter(k => String(k).trim().toLocaleLowerCase() !== lower);
+            if (index === targetIndex) keys.push(clean);
+            return { ...group, keys };
+        });
+        this.replaceAll(groups);
+    }
+
+    public removeKey(targetIndex: number, key: string): void {
+        const groups = this.definitions.map((group, index) =>
+            index === targetIndex ? { ...group, keys: (group.keys ?? []).filter(k => k !== key) } : group,
+        );
+        this.replaceAll(groups);
+    }
+
+    public unpin(targetIndex: number, txId: string): void {
+        const groups = this.definitions.map((group, index) =>
+            index === targetIndex ? { ...group, txIds: (group.txIds ?? []).filter(id => id !== txId) } : group,
+        );
+        this.replaceAll(groups);
     }
 }

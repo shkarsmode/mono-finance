@@ -26,7 +26,7 @@
 
     @if (isLoading()) {
         <div class="sk"></div><div class="sk"></div>
-    } @else if (!subscriptions()?.length) {
+    } @else if (!subscriptions().length) {
         <div class="empty">
             <p>No recurring payments detected yet.</p>
             <span>Press Detect to scan the last 90 days for repeating charges.</span>

@@ -110,134 +110,55 @@
     </div>
 </section>
 
-<!-- Category Drawer Trigger (always accessible) -->
-<section class="categories-trigger-section">
-    <button class="categories-trigger-btn" (click)="showCategoryDrawer.set(true)">
-        <span class="material-icons-round">category</span>
-        <span class="categories-trigger-btn__text">Spending by Category</span>
-        @if ((groups$ | async)?.length; as count) {
-            <span class="categories-trigger-btn__badge">{{ count }}</span>
-        }
-        <span class="material-icons-round categories-trigger-btn__arrow">chevron_right</span>
-    </button>
-</section>
+@if (excludedNames().length) {
+    <p class="kpis__note">
+        Spent and Income leave out <strong>{{ excludedNames().join(', ') }}</strong> — money moving between your own pockets.
+    </p>
+}
 
-<!-- Charts & Transactions -->
 @if (transactions().length) {
-    <div class="dashboard-grid">
+    <div class="board">
         <app-transactions
-            [groups]="groups$ | async"
-            [sortByValue]="sortBy()"
-            [transactions]="
-                transactions()
-                    | transactionsFilter: searchValue()
-                    | transactionsSortBy: sortBy() : sortDirection()
-            "
+            [groups]="groupsSignal()"
+            [transactions]="searched()"
+            [searchValue]="searchValue()"
+            [categoryFilter]="categoryFilter()"
             (searchTransactions)="onSearchTransaction($event)"
-            (selectValueChange)="onSelectValueChange($event)"
-            (sortBy)="onSortTransactionsBy($event)"
-            (openTransaction)="onOpenTransaction($event)"
-            (selectMonth)="onSelectMonth($event)"
-            (selectYear)="onSelectYear($event)"
-            #transactionsRef>
+            (clearCategoryFilter)="onCategoryFilter(null)"
+            (openTransaction)="onOpenTransaction($event)">
         </app-transactions>
 
-        <div class="charts-col">
+        <aside class="board__side">
+            <app-category-breakdown
+                [transactions]="transactions()"
+                [groups]="groupsSignal()"
+                [active]="categoryFilter()"
+                [currency]="transactions().length ? transactions()[0].cardCurrencyCode : 980"
+                (select)="onCategoryFilter($event)">
+            </app-category-breakdown>
+
             @defer (on viewport) {
                 <app-chart
-                    [transactions]="chartTransactions() | transactionsFilter: searchValue()"
-                    [label]="'Monthly Income'"
-                    [currency]="currencyDisplay.selectedCode()"
-                    [type]="ChartType.Income">
-                </app-chart>
-                <app-chart
-                    [transactions]="chartTransactions() | transactionsFilter: searchValue()"
-                    [label]="'Monthly Expenses'"
+                    [transactions]="chartTransactions()"
+                    [label]="'Spending by day' + chartScope()"
                     [currency]="currencyDisplay.selectedCode()"
                     [type]="ChartType.Expenses">
                 </app-chart>
+                <app-chart
+                    [transactions]="chartTransactions()"
+                    [label]="'Income by day' + chartScope()"
+                    [currency]="currencyDisplay.selectedCode()"
+                    [type]="ChartType.Income">
+                </app-chart>
             } @placeholder {
-                <div class="chart-placeholder">
-                    <span class="material-icons-round">bar_chart</span>
-                    <p>Scroll to load charts</p>
-                </div>
-            } @loading (minimum 300ms) {
-                <div class="chart-placeholder">
-                    <span class="material-icons-round">hourglass_empty</span>
-                    <p>Loading charts…</p>
-                </div>
+                <div class="chart-placeholder"></div>
             }
-        </div>
-
+        </aside>
     </div>
 } @else {
     <div class="empty-state">
-        <span class="material-icons-round">receipt_long</span>
-        <h3>No transactions yet</h3>
-        <p>Select a card to view transactions for the current month</p>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
+        <h3>No transactions this month</h3>
+        <p>Pick another month or card — history syncs in the background.</p>
     </div>
-}
-
-<!-- Category Sidebar Drawer -->
-@if (showCategoryDrawer()) {
-    <div class="drawer-backdrop" (click)="showCategoryDrawer.set(false)"></div>
-    <aside class="drawer">
-        <div class="drawer__header">
-            <h2 class="drawer__title">
-                <span class="material-icons-round">category</span>
-                Spending by Category
-            </h2>
-            <button class="drawer__close" (click)="showCategoryDrawer.set(false)">
-                <span class="material-icons-round">close</span>
-            </button>
-        </div>
-        <div class="drawer__body">
-            @if ((groups$ | async); as groups) {
-                @if (groups.length) {
-                    <div cdkDropList class="drawer-categories-list" (cdkDropListDropped)="onCategoryDrop($event)">
-                        @for (group of groups; track group.title) {
-                            <div class="drawer-category" cdkDrag
-                                 [class.has-expense]="group.amount < 0"
-                                 [class.has-income]="group.amount > 0"
-                                 (click)="onEditCategory(group)">
-                                <span class="drawer-category__emoji">{{ group.emoji }}</span>
-                                <div class="drawer-category__info">
-                                    <span class="drawer-category__title">{{ group.title }}</span>
-                                    <span class="drawer-category__keys">{{ group.keys.length }} keys</span>
-                                </div>
-                                <span class="drawer-category__amount"
-                                      [class.expense]="group.amount < 0"
-                                      [class.income]="group.amount > 0">
-                                    {{ group.amount | displayMoney: 980 }}
-                                </span>
-                            </div>
-                        }
-                    </div>
-                } @else {
-                    <div class="drawer-empty">
-                        <span class="material-icons-round">folder_open</span>
-                        <p>No categories yet</p>
-                        <p class="drawer-empty__hint">Create your first category to track spending by group</p>
-                    </div>
-                }
-            }
-            <!-- Add new -->
-            <button class="drawer-add-btn" (click)="onAddCategory()">
-                <span class="material-icons-round">add_circle_outline</span>
-                Add new category
-            </button>
-        </div>
-    </aside>
-}
-
-
-<!-- Category Editor Modal -->
-@if (showCategoryEditor()) {
-    <app-category-manager
-        [editGroup]="editingCategory()"
-        [transactionDescriptions]="transactionDescriptions()"
-        (save)="onSaveCategory($event)"
-        (delete)="onDeleteCategory($event)"
-        (close)="onCloseCategoryEditor()">
-    </app-category-manager>
 }

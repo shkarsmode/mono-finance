@@ -111,7 +111,6 @@ export class ChartFactory {
 
     public init(): void {
         this.prepareDataToCreate();
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 700;
         this.chart = new Chart(this.canvas, {
             type: 'line',
             data: {
@@ -120,15 +119,17 @@ export class ChartFactory {
                     {
                         label: this.label,
                         data: this.data,
-                        borderWidth: isMobile ? 1.5 : 2,
+                        // a calm line: points appear only under the cursor
+                        borderWidth: 2,
                         pointStyle: 'circle',
-                        pointRadius: isMobile ? 2 : (this.mode === 'monthly' ? 5 : 6),
-                        pointHoverRadius: isMobile ? 5 : (this.mode === 'monthly' ? 9 : 10),
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHitRadius: 12,
                         fill: true,
-                        borderCapStyle: 'square',
+                        borderCapStyle: 'round',
                         borderColor: chartStroke(this.type),
                         backgroundColor: chartFill(this.type),
-                        tension: 0.25,
+                        tension: 0.3,
                     },
                 ],
             },
@@ -169,6 +170,10 @@ export class ChartFactory {
                         ticks: {
                             color: token('--ink-3', '#67707e'),
                             font: { family: token('--font-mono', 'monospace'), size: 10 },
+                            // a narrow column: a few upright labels beat a fence of slanted ones
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 6,
                         },
                     },
                 },

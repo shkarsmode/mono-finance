@@ -5,7 +5,7 @@ import {
     HttpRequest
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ToastService } from '@shared/components';
 import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { LoadingService } from '@core/services/loading.service';
@@ -19,7 +19,7 @@ export class ErrorInterceptor implements HttpInterceptor {
 
     constructor(
         private readonly router: Router,
-        private readonly snackBar: MatSnackBar,
+        private readonly toast: ToastService,
         private readonly authService: AuthService
     ) {}
 
@@ -39,7 +39,7 @@ export class ErrorInterceptor implements HttpInterceptor {
                 if (error.status === 401) {
                     this.authService.logout();
                     this.router.navigateByUrl('/login');
-                    this.snackBar.open(`You have to authorize`, '👀', { duration: 6000 });
+                    this.toast.error('Session expired — sign in again.');
                     return throwError(() => error);
                 }
 
@@ -52,7 +52,7 @@ export class ErrorInterceptor implements HttpInterceptor {
                         error.error?.errorDescription ??
                         error.message ??
                         'Request failed';
-                    this.snackBar.open(`Url ${params}\n ${description}`, '👀', { duration: 6000 });
+                    this.toast.error(`${description} · ${params}`);
                 }
 
                 // Preserve the HttpErrorResponse so status, headers (Retry-After) and
