@@ -319,3 +319,14 @@
     .day { min-height: 56px; }
     .day__amt { display: none; }
 }
+
+// Fixed-width month label: every month is laid over an invisible "September 2026",
+// so stepping through months never shifts the arrows away from the cursor.
+.period__text {
+    display: inline-grid;
+    justify-items: center;
+
+    > * { grid-area: 1 / 1; white-space: nowrap; }
+}
+
+.period__sizer { visibility: hidden; }

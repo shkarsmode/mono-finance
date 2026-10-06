@@ -5,7 +5,11 @@
             <button type="button" class="period__step" (click)="prevMonth()" aria-label="Previous month">
                 <span class="material-icons-round">chevron_left</span>
             </button>
-            <span class="period__label num">{{ monthName() }} {{ activeYear() }}</span>
+            <!-- the widest month reserves the width, so the arrows never move under the cursor -->
+            <span class="period__label period__text num">
+                <span class="period__sizer" aria-hidden="true">September 2026</span>
+                <span>{{ monthName() }} {{ activeYear() }}</span>
+            </span>
             <button type="button" class="period__step" (click)="nextMonth()" aria-label="Next month">
                 <span class="material-icons-round">chevron_right</span>
             </button>

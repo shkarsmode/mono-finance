@@ -370,12 +370,17 @@
     }
 }
 
-@media (max-width: 900px) {
-    :host { padding: var(--space-4); }
-    .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+// Four figures need ~1180px before "-64 581,84 грн" starts to ellipsize; below
+// that, two per row keeps every number whole.
+@media (max-width: 1180px) {
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(3) { border-left: 0; }
     .kpi:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+
+@media (max-width: 900px) {
+    :host { padding: var(--space-4); }
+    .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 }
 
 // ── Board: ledger + side column ──────────────────────────────
@@ -420,3 +425,14 @@
 @media (max-width: 1180px) {
     .board { grid-template-columns: minmax(0, 1fr); }
 }
+
+// Fixed-width month label: every month is laid over an invisible "September 2026",
+// so stepping through months never shifts the arrows away from the cursor.
+.period__text {
+    display: inline-grid;
+    justify-items: center;
+
+    > * { grid-area: 1 / 1; white-space: nowrap; }
+}
+
+.period__sizer { visibility: hidden; }

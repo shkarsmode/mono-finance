@@ -6,7 +6,11 @@
         </button>
         <button type="button" class="period__label" cdkOverlayOrigin #periodOrigin="cdkOverlayOrigin"
                 (click)="pickerOpen.set(!pickerOpen())" [attr.aria-expanded]="pickerOpen()" aria-haspopup="dialog">
-            {{ periodLabel() }}
+            <!-- the widest month reserves the width, so the arrows never move under the cursor -->
+            <span class="period__text num">
+                <span class="period__sizer" aria-hidden="true">September 2026</span>
+                <span>{{ periodLabel() }}</span>
+            </span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
         <button type="button" class="period__step" (click)="stepPeriod(1)" [disabled]="!canStepForward" aria-label="Next month">
