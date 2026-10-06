@@ -12,6 +12,18 @@ import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-ma
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { TransactionsComponent } from '../dashboard/components';
 
+const MONTHS = [
+    'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+    'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень',
+];
+/** With a day number: «5 жовтня». */
+const MONTHS_GENITIVE = [
+    'січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня',
+];
+/** Indexed by Date.getDay() (0 = Sunday). Hand-written for the ’ in п’ятниця. */
+const WEEKDAYS_FULL = ['неділя', 'понеділок', 'вівторок', 'середа', 'четвер', 'п’ятниця', 'субота'];
+
 interface CalendarDay {
     date: string;
     dayOfMonth: number;
@@ -70,14 +82,10 @@ export default class CalendarComponent implements OnInit {
     readonly transactionSearch = signal('');
     readonly transactionError = signal<string | null>(null);
 
-    readonly weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    readonly weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
     readonly loading = computed(() => this.loadingCalendar() || this.loadingTransactions());
 
-    readonly monthName = computed(() => {
-        const names = ['', 'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'];
-        return names[this.activeMonth()];
-    });
+    readonly monthName = computed(() => MONTHS[this.activeMonth() - 1] ?? '');
 
     readonly calendarGrid = computed(() => {
         const data = this.calendarData();
@@ -95,12 +103,18 @@ export default class CalendarComponent implements OnInit {
         return Math.max(1, ...data.days.map(day => day.expense));
     });
 
-    /** A readable heading, not the raw ISO string. */
+    /** A readable day, not the raw ISO string: «понеділок, 5 жовтня». */
     readonly selectedDayLabel = computed(() => {
         const day = this.selectedDay();
         if (!day) return null;
         const parsed = new Date(`${day.date}T00:00:00`);
-        return parsed.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+        return `${WEEKDAYS_FULL[parsed.getDay()]}, ${parsed.getDate()} ${MONTHS_GENITIVE[parsed.getMonth()]}`;
+    });
+
+    /** The same day as a heading: «Понеділок, 5 жовтня». */
+    readonly selectedDayTitle = computed(() => {
+        const label = this.selectedDayLabel();
+        return label ? label.charAt(0).toUpperCase() + label.slice(1) : null;
     });
 
     /**
@@ -214,7 +228,7 @@ export default class CalendarComponent implements OnInit {
         if (!this.monobankService.monobankActiveCardId) {
             this.monthTransactions.set([]);
             this.loadingTransactions.set(false);
-            this.transactionError.set('Select a card on the dashboard to see monthly transactions here.');
+            this.transactionError.set('Виберіть картку на сторінці «Огляд», щоб бачити тут операції за місяць.');
             return;
         }
 
@@ -233,7 +247,7 @@ export default class CalendarComponent implements OnInit {
             error: () => {
                 this.monthTransactions.set([]);
                 this.loadingTransactions.set(false);
-                this.transactionError.set('Could not load transactions for the active card.');
+                this.transactionError.set('Не вдалося завантажити операції вибраної картки.');
             },
         });
     }

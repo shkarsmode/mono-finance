@@ -83,7 +83,8 @@
     }
 
     &__val {
-        font-size: var(--fs-kpi);
+        // whole hryvnias, and a step down on a phone, so two tiles side by side never ellipsize
+        font-size: clamp(20px, 5.6vw, var(--fs-kpi));
         font-weight: 600;
         letter-spacing: var(--tracking-tight);
         line-height: var(--lh-tight);
@@ -320,8 +321,9 @@
     .day__amt { display: none; }
 }
 
-// Fixed-width month label: every month is laid over an invisible "September 2026",
-// so stepping through months never shifts the arrows away from the cursor.
+// Fixed-width month label: every month is laid over an invisible "Листопад 2026" and
+// "Вересень 2026" (the widest, depending on the font), so stepping through months never
+// shifts the arrows away from the cursor.
 .period__text {
     display: inline-grid;
     justify-items: center;

@@ -1,8 +1,12 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, HostListener, Input, Output } from '@angular/core';
 import { currencyCodesMap } from '@core/data';
+import { cardName } from '@core/helpers/card-names';
 import { IAccount } from '@core/interfaces';
 import { MaskedCardPipe } from '../../../../pipes/masked-card.pipe';
+
+/** Display only: the type codes themselves stay the filter values. */
+export const accountTypeLabel = cardName;
 
 @Component({
     selector: 'app-card',
@@ -31,6 +35,10 @@ export class CardComponent {
             event.preventDefault();
             this.onClick.emit(this.account);
         }
+    }
+
+    get typeLabel(): string {
+        return accountTypeLabel(this.account?.type);
     }
 
     get currencyName(): string {

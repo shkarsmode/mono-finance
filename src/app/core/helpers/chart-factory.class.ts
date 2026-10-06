@@ -2,14 +2,15 @@ import { ChartType } from '@core/enums';
 import { ITransaction } from '@core/interfaces';
 import Chart from 'chart.js/auto';
 
-const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] as const;
+const SHORT_MONTHS = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'] as const;
 
 function formatMonthYear(year: number, month: number): string {
     return `${SHORT_MONTHS[month - 1]} ${year}`;
 }
 
+/** Day first, month in lower case: "5 жов". */
 function formatMonthDay(date: Date): string {
-    return `${SHORT_MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`;
+    return `${date.getUTCDate()} ${SHORT_MONTHS[date.getUTCMonth()].toLowerCase()}`;
 }
 
 function formatDateKey(date: Date): string {
@@ -147,7 +148,7 @@ export class ChartFactory {
                         callbacks: {
                             label: (ctx) => {
                                 const v = ctx.parsed.y ?? 0;
-                                return `${this.type === ChartType.Income ? 'Income' : 'Expense'}: ${this.fmt(v)} ${this.currency}`;
+                                return `${this.type === ChartType.Income ? 'Надходження' : 'Витрати'}: ${this.fmt(v)} ${this.currency}`;
                             },
                         },
                     },

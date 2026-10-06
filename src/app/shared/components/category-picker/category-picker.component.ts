@@ -22,17 +22,17 @@ type Option =
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="picker" role="dialog" aria-label="Choose category" (keydown)="onKeydown($event)">
+        <div class="picker" role="dialog" aria-label="Вибір категорії" (keydown)="onKeydown($event)">
             <label class="picker__search">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.6-3.6" /></svg>
                 <input #query
                        type="text"
-                       placeholder="Find or create category"
+                       placeholder="Знайти або створити категорію"
                        autocomplete="off"
                        spellcheck="false"
                        [value]="term()"
                        (input)="onInput($event)"
-                       aria-label="Find or create category" />
+                       aria-label="Знайти або створити категорію" />
             </label>
 
             <ul class="picker__list" role="listbox">
@@ -51,15 +51,15 @@ type Option =
                                 {{ option.title }}
                             </span>
                             @if (option.index === currentIndex) {
-                                <svg class="picker__check" viewBox="0 0 24 24" aria-label="current"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                                <svg class="picker__check" viewBox="0 0 24 24" aria-label="поточна"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
                             }
                         } @else {
                             <svg class="picker__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                            <span class="picker__name">Create <strong>“{{ option.title }}”</strong></span>
+                            <span class="picker__name">Створити <strong>«{{ option.title }}»</strong></span>
                         }
                     </li>
                 } @empty {
-                    <li class="picker__empty">Type a name to create a category</li>
+                    <li class="picker__empty">Введіть назву, щоб створити категорію</li>
                 }
             </ul>
 
@@ -67,8 +67,8 @@ type Option =
                 <label class="picker__scope">
                     <input type="checkbox" [checked]="mode() === 'merchant'" (change)="toggleMode()" />
                     <span>
-                        Every <strong>{{ merchant }}</strong> transaction
-                        @if (merchantCount > 1) { <span class="num">· {{ merchantCount }} here</span> }
+                        Усі операції <strong>{{ merchant }}</strong>
+                        @if (merchantCount > 1) { <span class="num">· тут {{ merchantCount }}</span> }
                     </span>
                 </label>
             }

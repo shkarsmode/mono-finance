@@ -1,5 +1,7 @@
 // Type is loaded from Google Fonts in index.html:
-//   Archivo        — interface + figures (400/500/600/700)
+//   Inter          — interface + figures (400/500/600/700), Latin and Cyrillic
+//                    (Archivo, used before, has no Cyrillic: Ukrainian fell back
+//                    to the system font while the digits stayed in Archivo)
 //   JetBrains Mono — machine values: MCC, IBAN, ids, balances
 // Fallback stacks live on the --font-* tokens in _tokens.scss.
 //

@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
 import { AssignMode, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { OTHER_TITLE, OWN_MONEY_TITLE } from '@core/helpers/category-titles';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 
 import { flowOf, isPendingHold } from '@core/helpers/flows';
@@ -16,6 +17,15 @@ import { mccName } from '../../../../features/analytics-mcc/mcc-map';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
 type DetailRow = { label: string; value: string; mono?: boolean; copy?: boolean };
+
+/** Ukrainian plural: 1 операція, 2–4 операції, 5+ операцій (11–14 take the last form). */
+function plural(n: number, forms: readonly [string, string, string]): string {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return forms[0];
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+    return forms[2];
+}
 
 @Component({
     selector: 'app-transaction-details',
@@ -35,6 +45,9 @@ export default class TransactionDetailsComponent implements OnInit {
 
     readonly transaction = signal<ITransaction | null>(null);
     readonly transactionId = signal('');
+
+    readonly OTHER_TITLE = OTHER_TITLE;
+    readonly OWN_MONEY_TITLE = OWN_MONEY_TITLE;
 
     readonly groups = toSignal(this.categories.categoryGroups$ as Observable<ICategoryGroup[]>, { initialValue: [] as ICategoryGroup[] });
     private readonly monthRows = toSignal(
@@ -56,11 +69,11 @@ export default class TransactionDetailsComponent implements OnInit {
     readonly categoryReason = computed(() => {
         const reason = this.explained().reason;
         switch (reason.by) {
-            case 'pin': return 'pinned';
-            case 'system': return 'recognised automatically';
-            case 'text': return `matched “${reason.key}”`;
-            case 'mcc': return `by MCC ${reason.mcc}`;
-            default: return 'no rule matched';
+            case 'pin': return 'закріплено';
+            case 'system': return 'розпізнано автоматично';
+            case 'text': return `збіг із «${reason.key}»`;
+            case 'mcc': return `за MCC ${reason.mcc}`;
+            default: return 'жодне правило не підійшло';
         }
     });
 
@@ -91,6 +104,10 @@ export default class TransactionDetailsComponent implements OnInit {
         return this.monthRows().filter(tx => merchantLabel(tx).toLocaleLowerCase() === label);
     });
     readonly siblingsNet = computed(() => this.siblings().reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0));
+    readonly siblingsCountLabel = computed(() => {
+        const n = this.siblings().length;
+        return `${n} ${plural(n, ['операція', 'операції', 'операцій'])}`;
+    });
 
     // ── figures ──────────────────────────────────────────────
     readonly foreign = computed(() => {
@@ -114,15 +131,15 @@ export default class TransactionDetailsComponent implements OnInit {
         };
         // mccName already reads "5411 · Grocery Stores & Supermarkets"
         if (tx.mcc) add('MCC', this.mccLabel() || tx.mcc);
-        if (tx.originalMcc && tx.originalMcc !== tx.mcc) add('Original MCC', tx.originalMcc, { mono: true });
-        add('Comment', tx.comment);
-        add('Merchant', tx.merchantName && tx.merchantName !== tx.description ? tx.merchantName : '');
-        add('Counterparty', tx.counterName);
-        add('EDRPOU', tx.counterEdrpou, { mono: true, copy: true });
+        if (tx.originalMcc && tx.originalMcc !== tx.mcc) add('Оригінальний MCC', tx.originalMcc, { mono: true });
+        add('Коментар', tx.comment);
+        add('Торговець', tx.merchantName && tx.merchantName !== tx.description ? tx.merchantName : '');
+        add('Контрагент', tx.counterName);
+        add('ЄДРПОУ', tx.counterEdrpou, { mono: true, copy: true });
         add('IBAN', tx.counterIban, { mono: true, copy: true });
-        add('Receipt', tx.receiptId, { mono: true, copy: true });
-        add('Invoice', tx.invoiceId, { mono: true, copy: true });
-        add('Transaction ID', tx.id, { mono: true, copy: true });
+        add('Квитанція', tx.receiptId, { mono: true, copy: true });
+        add('Інвойс', tx.invoiceId, { mono: true, copy: true });
+        add('ID операції', tx.id, { mono: true, copy: true });
         return rows;
     });
 
@@ -150,8 +167,8 @@ export default class TransactionDetailsComponent implements OnInit {
 
     copy(row: DetailRow): void {
         navigator.clipboard?.writeText(row.value).then(
-            () => this.toast.success(`${row.label} copied`),
-            () => this.toast.error('Could not copy'),
+            () => this.toast.success(`Скопійовано: ${row.label}`),
+            () => this.toast.error('Не вдалося скопіювати'),
         );
     }
 
@@ -184,7 +201,7 @@ export default class TransactionDetailsComponent implements OnInit {
         const tx = this.transaction();
         if (!tx) return;
         this.categories.assign(tx, choice.index, choice.mode);
-        this.toast.success(`Moved to ${this.groups()[choice.index]?.title ?? ''}`);
+        this.toast.success(`Перенесено до «${this.groups()[choice.index]?.title ?? ''}»`);
         this.closePicker();
     }
 
@@ -192,7 +209,7 @@ export default class TransactionDetailsComponent implements OnInit {
         const tx = this.transaction();
         if (!tx) return;
         this.categories.createAndAssign(tx, { title: choice.title }, choice.mode);
-        this.toast.success(`Moved to ${choice.title}`);
+        this.toast.success(`Перенесено до «${choice.title}»`);
         this.closePicker();
     }
 }

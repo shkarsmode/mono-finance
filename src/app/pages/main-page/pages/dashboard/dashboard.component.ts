@@ -4,6 +4,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { BETWEEN_ACCOUNTS_TITLE } from '@core/helpers/category-titles';
 import { CountMode, flowOf, flowTotals } from '@core/helpers/flows';
 import { LocalStorage } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -17,14 +18,23 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { MonthPaceComponent } from '../../../../shared/charts/month-pace.component';
 import { TrendsService } from '@core/services/trends.service';
-import { CardComponent, TransactionsComponent } from './components';
+import { accountTypeLabel, CardComponent, TransactionsComponent } from './components';
 import { CategoryBreakdownComponent } from './components/category-breakdown/category-breakdown.component';
 import { INTERNAL_FILTER, UNCATEGORIZED_FILTER } from './components/transactions/transactions.component';
 
 const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+    'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень',
 ];
+
+/** Ukrainian plural: 1 операція, 2–4 операції, 5+ операцій (11–14 take the last form). */
+function plural(n: number, forms: readonly [string, string, string]): string {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return forms[0];
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+    return forms[2];
+}
 
 /** "2024-06" ⇄ { year: 2024, month: 6 } — the period lives in the URL too. */
 function parsePeriod(value: string | null): { month: number; year: number } | null {
@@ -75,6 +85,9 @@ export default class DashboardComponent implements OnInit {
     readonly categoryMode = toSignal(this.categoryGroupService.mode$, { requireSync: true });
     readonly countMode = toSignal(this.categoryGroupService.countMode$, { requireSync: true });
     private readonly flowContext = toSignal(this.categoryGroupService.flowContext$, { requireSync: true });
+
+    readonly BETWEEN_ACCOUNTS_TITLE = BETWEEN_ACCOUNTS_TITLE;
+    readonly accountTypeLabel = accountTypeLabel;
 
     activeCardId$ = this.monobankService.activeCardId$;
 
@@ -135,6 +148,10 @@ export default class DashboardComponent implements OnInit {
     });
 
     readonly transactionCount = computed(() => this.transactions().length);
+    readonly transactionCountLabel = computed(() => {
+        const n = this.transactionCount();
+        return `${n} ${plural(n, ['операція', 'операції', 'операцій'])}`;
+    });
     readonly currency = computed(() => (this.transactions().length ? this.transactions()[0].cardCurrencyCode : 980));
 
     readonly periodLabel = computed(() => `${MONTHS[this.activeMonthSignal() - 1] ?? ''} ${this.activeYearSignal()}`);
@@ -272,10 +289,12 @@ export default class DashboardComponent implements OnInit {
             .pipe(first(), takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: ({ jobs }) => {
-                    this.toast.success(`Backfill started — ${jobs} months queued. You can close the tab.`);
+                    this.toast.success(
+                        `Завантаження історії почалося: у черзі ${jobs} ${plural(jobs, ['місяць', 'місяці', 'місяців'])}. Вкладку можна закрити.`,
+                    );
                     this.syncStatus.start();
                 },
-                error: () => this.toast.error('Could not start backfill. Try again.'),
+                error: () => this.toast.error('Не вдалося почати завантаження історії. Спробуйте ще раз.'),
             });
     }
 

@@ -3,6 +3,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { buildAutoCategories } from '@core/helpers/auto-categories';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { OTHER_TITLE, UNCATEGORIZED_TITLE } from '@core/helpers/category-titles';
 import { flowOf } from '@core/helpers/flows';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
@@ -10,7 +11,11 @@ import { first } from 'rxjs';
 import { CategoryColorsService } from './category-colors.service';
 import { CategoryGroupService } from './category-group.service';
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_SHORT = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'];
+const MONTH_NAME = [
+    'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
+    'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень',
+];
 /** How much history the charts can reach back: a year on screen, a year more for "usual". */
 const HISTORY_MONTHS = 24;
 const STALE_MS = 5 * 60 * 1000;
@@ -19,7 +24,10 @@ export interface TrendMonth {
     key: string;
     year: number;
     month: number;
+    /** Short, for axes: «Жов». */
     label: string;
+    /** Full, for tooltips: «Жовтень». */
+    name: string;
     /** The current month — still running, so never compared like-for-like. */
     partial: boolean;
 }
@@ -108,7 +116,11 @@ export class TrendsService {
             const d = new Date(now.getFullYear(), now.getMonth() - 12 + i, 1);
             const year = d.getFullYear();
             const month = d.getMonth() + 1;
-            return { key: `${year}-${month}`, year, month, label: MONTH_SHORT[month - 1], partial: i === 12 };
+            return {
+                key: `${year}-${month}`, year, month,
+                label: MONTH_SHORT[month - 1], name: MONTH_NAME[month - 1],
+                partial: i === 12,
+            };
         });
     });
 
@@ -117,7 +129,7 @@ export class TrendsService {
         const months = this.months();
         const slot = new Map(months.map((m, i) => [m.key, i]));
         const byTitle = new Map<string, TrendCategory>();
-        const uncategorizedTitle = this.mode() === 'auto' ? 'Other' : 'Uncategorized';
+        const uncategorizedTitle = this.mode() === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE;
 
         for (const row of this.classified()) {
             const d = new Date(row.time * 1000);
@@ -208,7 +220,7 @@ export class TrendsService {
         // keep the app-wide category colours in step with the last year's ranking
         effect(() => {
             const ranked = this.categoryTrends()
-                .filter(c => c.title !== 'Other' && c.title !== 'Uncategorized')
+                .filter(c => c.title !== OTHER_TITLE && c.title !== UNCATEGORIZED_TITLE)
                 .map(c => c.title);
             if (ranked.length) this.colors.setRanking(this.mode(), ranked);
         }, { allowSignalWrites: true });
@@ -236,7 +248,7 @@ export class TrendsService {
                 },
                 error: () => {
                     this.loading.set(false);
-                    this.error.set('Could not load the history for the charts.');
+                    this.error.set('Не вдалося завантажити історію для графіків.');
                 },
             });
     }

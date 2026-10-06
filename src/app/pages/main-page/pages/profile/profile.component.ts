@@ -26,13 +26,13 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                     <span class="material-icons-round">person</span>
                 </div>
                 <h1 class="profile-name">{{ clientName() }}</h1>
-                <p class="profile-sub">Monobank • Personal Finance</p>
+                <p class="profile-sub">Monobank • Особисті фінанси</p>
             </header>
 
             <section class="section">
                 <h2 class="section__title">
                     <span class="material-icons-round">settings</span>
-                    Settings
+                    Налаштування
                 </h2>
 
                 <div class="settings-grid">
@@ -43,8 +43,8 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                             </span>
                         </div>
                         <div class="setting-card__info">
-                            <span class="setting-card__label">Theme</span>
-                            <span class="setting-card__value">{{ isDark() ? 'Dark' : 'Light' }}</span>
+                            <span class="setting-card__label">Тема</span>
+                            <span class="setting-card__value">{{ isDark() ? 'Темна' : 'Світла' }}</span>
                         </div>
                         <button class="toggle" [class.toggle--on]="isDark()" (click)="toggleTheme()">
                             <span class="toggle__knob"></span>
@@ -56,9 +56,9 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                             <span class="material-icons-round">visibility_off</span>
                         </div>
                         <div class="setting-card__info">
-                            <span class="setting-card__label">Blur Card Balance</span>
+                            <span class="setting-card__label">Приховати баланс карток</span>
                             <span class="setting-card__value">
-                                {{ balanceBlurred() ? 'Balances hidden' : 'Balances visible' }}
+                                {{ balanceBlurred() ? 'Баланси приховано' : 'Баланси видно' }}
                             </span>
                         </div>
                         <button class="toggle" [class.toggle--on]="balanceBlurred()" (click)="toggleBalanceBlur()">
@@ -71,7 +71,7 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                             <span class="material-icons-round">currency_exchange</span>
                         </div>
                         <div class="setting-card__info">
-                            <span class="setting-card__label">Currency Display</span>
+                            <span class="setting-card__label">Валюта відображення</span>
                             <span class="setting-card__value">{{ currencyDisplay.selectedLabel() }}</span>
                             <span class="setting-card__value">{{ currencyDisplay.rateHint() }}</span>
                         </div>
@@ -83,9 +83,9 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                             <span class="material-icons-round">dashboard_customize</span>
                         </div>
                         <div class="setting-card__info">
-                            <span class="setting-card__label">Compact Mode</span>
+                            <span class="setting-card__label">Компактний режим</span>
                             <span class="setting-card__value">
-                                {{ compactMode() ? 'Enabled' : 'Disabled' }}
+                                {{ compactMode() ? 'Увімкнено' : 'Вимкнено' }}
                             </span>
                         </div>
                         <button class="toggle" [class.toggle--on]="compactMode()" (click)="toggleCompactMode()">
@@ -98,7 +98,7 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
             <section class="section">
                 <h2 class="section__title">
                     <span class="material-icons-round">bar_chart</span>
-                    Account Overview
+                    Зведення
                 </h2>
 
                 <div class="stats-grid">
@@ -106,28 +106,28 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                         <span class="stat-card__icon material-icons-round">account_balance</span>
                         <div class="stat-card__info">
                             <span class="stat-card__value">{{ totalAccounts() }}</span>
-                            <span class="stat-card__label">Accounts</span>
+                            <span class="stat-card__label">Рахунки</span>
                         </div>
                     </div>
                     <div class="stat-card stat-card--success">
                         <span class="stat-card__icon material-icons-round">savings</span>
                         <div class="stat-card__info">
                             <span class="stat-card__value">{{ totalJars() }}</span>
-                            <span class="stat-card__label">Jars</span>
+                            <span class="stat-card__label">Банки</span>
                         </div>
                     </div>
                     <div class="stat-card stat-card--warn">
                         <span class="stat-card__icon material-icons-round">category</span>
                         <div class="stat-card__info">
                             <span class="stat-card__value">{{ totalCategories() }}</span>
-                            <span class="stat-card__label">Categories</span>
+                            <span class="stat-card__label">Категорії</span>
                         </div>
                     </div>
                     <div class="stat-card">
                         <span class="stat-card__icon material-icons-round">receipt_long</span>
                         <div class="stat-card__info">
                             <span class="stat-card__value">{{ totalTransactions() }}</span>
-                            <span class="stat-card__label">Transactions this year</span>
+                            <span class="stat-card__label">Операції цього року</span>
                         </div>
                     </div>
                 </div>
@@ -137,7 +137,7 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
                 <section class="section">
                     <h2 class="section__title">
                         <span class="material-icons-round">savings</span>
-                        Your Jars
+                        Ваші банки
                     </h2>
                     <div class="jars-grid">
                         @for (jar of jars(); track jar.title) {
@@ -172,11 +172,11 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
             <section class="section section--danger">
                 <h2 class="section__title">
                     <span class="material-icons-round">warning</span>
-                    Account
+                    Обліковий запис
                 </h2>
                 <button class="btn btn--danger" (click)="logout()">
                     <span class="material-icons-round">logout</span>
-                    Sign out
+                    Вийти
                 </button>
             </section>
         </div>
@@ -511,7 +511,7 @@ export default class ProfileComponent implements OnInit {
     readonly compactMode = signal(localStorage.getItem('finance-compact') === 'true');
     readonly isDark = computed(() => this.themeService.theme() === 'dark');
 
-    readonly clientName = computed(() => this.clientInfo()?.name ?? 'User');
+    readonly clientName = computed(() => this.clientInfo()?.name ?? 'Користувач');
     readonly totalAccounts = computed(() => this.clientInfo()?.accounts?.length ?? 0);
     readonly totalJars = computed(() => this.clientInfo()?.jars?.length ?? 0);
     readonly totalCategories = computed(() => this.clientInfo()?.categoryGroups?.length ?? 0);

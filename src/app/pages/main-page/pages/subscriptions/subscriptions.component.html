@@ -1,25 +1,25 @@
 <section class="page">
     <header class="page__head">
-        <h1 class="page__title">Subscriptions</h1>
+        <h1 class="page__title">Підписки</h1>
         <span class="page__fill"></span>
         <button type="button" class="btn" (click)="onDetect()" [disabled]="isDetecting()">
             <span class="material-icons-round" [class.spin]="isDetecting()">autorenew</span>
-            {{ isDetecting() ? 'Detecting…' : 'Detect' }}
+            {{ isDetecting() ? 'Пошук…' : 'Знайти' }}
         </button>
     </header>
 
     <div class="totals">
         <div class="totals__cell">
-            <span class="micro">Per month</span>
+            <span class="micro">На місяць</span>
             <span class="totals__val num">{{ totalMonthly() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
-            <span class="totals__hint">weekly plans counted at their monthly rate</span>
+            <span class="totals__hint">щотижневі платежі перераховано на місяць</span>
         </div>
         <div class="totals__cell">
-            <span class="micro">Active</span>
+            <span class="micro">Активні</span>
             <span class="totals__val num">{{ activeSubs().length }}</span>
         </div>
         <div class="totals__cell">
-            <span class="micro">Due this week</span>
+            <span class="micro">Цього тижня</span>
             <span class="totals__val num">{{ upcomingSubs().length }}</span>
         </div>
     </div>
@@ -28,14 +28,14 @@
         <div class="sk"></div><div class="sk"></div>
     } @else if (!subscriptions().length) {
         <div class="empty">
-            <p>No recurring payments detected yet.</p>
-            <span>Press Detect to scan the last 90 days for repeating charges.</span>
+            <p>Регулярних платежів поки не знайдено.</p>
+            <span>Натисніть «Знайти», щоб перевірити останні 90 днів на повторювані списання.</span>
         </div>
     } @else {
 
         @if (upcomingSubs().length) {
             <section class="group">
-                <h2 class="group__title micro">Coming up · next 7 days</h2>
+                <h2 class="group__title micro">Незабаром · найближчі 7 днів</h2>
                 <div class="upcoming">
                     @for (sub of upcomingSubs(); track sub.id) {
                         <div class="upcoming__row">
@@ -50,7 +50,7 @@
 
         @if (confidentSubs().length) {
             <section class="group">
-                <h2 class="group__title micro">Active · {{ confidentSubs().length }}</h2>
+                <h2 class="group__title micro">Активні · {{ confidentSubs().length }}</h2>
                 <div class="list">
                     @for (sub of confidentSubs(); track sub.id) {
                         <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub }"></ng-container>
@@ -61,8 +61,8 @@
 
         @if (reviewSubs().length) {
             <section class="group">
-                <h2 class="group__title micro">Needs review · {{ reviewSubs().length }}</h2>
-                <p class="group__note">Detected from few occurrences — confirm these are really recurring.</p>
+                <h2 class="group__title micro">Потребують перевірки · {{ reviewSubs().length }}</h2>
+                <p class="group__note">Знайдено лише за кількома платежами — переконайтеся, що вони справді регулярні.</p>
                 <div class="list">
                     @for (sub of reviewSubs(); track sub.id) {
                         <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub, review: true }"></ng-container>
@@ -73,7 +73,7 @@
 
         @if (pausedSubs().length) {
             <section class="group">
-                <h2 class="group__title micro">Paused · {{ pausedSubs().length }}</h2>
+                <h2 class="group__title micro">Призупинені · {{ pausedSubs().length }}</h2>
                 <div class="list">
                     @for (sub of pausedSubs(); track sub.id) {
                         <ng-container *ngTemplateOutlet="subCard; context: { $implicit: sub }"></ng-container>
@@ -90,11 +90,11 @@
             <div class="sub__top">
                 <span class="sub__name">{{ sub.title }}</span>
                 <span class="chip">{{ getCadenceLabel(sub.cadence) }}</span>
-                @if (review) { <span class="chip chip--review">Review</span> }
+                @if (review) { <span class="chip chip--review">Перевірити</span> }
             </div>
             <div class="sub__meta num">
-                @if (toDate(sub.lastSeenAt); as last) { <span>last {{ last | date: 'd MMM y' }}</span> }
-                @if (toDate(sub.nextExpectedAt); as next) { <span>· next {{ next | date: 'd MMM y' }}</span> }
+                @if (toDate(sub.lastSeenAt); as last) { <span>останній {{ last | date: 'd MMM y' }}</span> }
+                @if (toDate(sub.nextExpectedAt); as next) { <span>· наступний {{ next | date: 'd MMM y' }}</span> }
                 <span>· {{ sub.occurrenceCount }}×</span>
             </div>
         </div>
@@ -107,9 +107,9 @@
                 [class.toggle--on]="sub.isActive"
                 (click)="onToggle(sub)"
                 [attr.aria-pressed]="sub.isActive"
-                [attr.aria-label]="sub.isActive ? 'Pause ' + sub.title : 'Activate ' + sub.title">
+                [attr.aria-label]="sub.isActive ? 'Призупинити ' + sub.title : 'Відновити ' + sub.title">
             <span class="toggle__track"><span class="toggle__thumb"></span></span>
-            <span class="toggle__label">{{ sub.isActive ? 'Active' : 'Paused' }}</span>
+            <span class="toggle__label">{{ sub.isActive ? 'Активна' : 'Призупинена' }}</span>
         </button>
     </article>
 </ng-template>

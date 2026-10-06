@@ -57,15 +57,15 @@ export class SyncStatusService {
         return s.accounts.some(a => a.backfillState === 'running') || s.queue.pending > 0;
     });
 
-    /** e.g. "Backfilling · 2021-04 · 63 done · 129 left" — for the topbar capsule. */
+    /** e.g. "Синхронізація · 2021-04 · готово 63 · залишилось 129" — for the topbar capsule. */
     readonly capsuleLabel = computed(() => {
         const s = this.status();
         if (!s || !this.isBackfilling()) return '';
         const next = s.queue.nextBackfill;
         const at = next ? `${next.year}-${String(next.month).padStart(2, '0')}` : '';
-        const parts = ['Syncing'];
+        const parts = ['Синхронізація'];
         if (at) parts.push(at);
-        parts.push(`${s.queue.done} done`, `${s.queue.pending} left`);
+        parts.push(`готово ${s.queue.done}`, `залишилось ${s.queue.pending}`);
         return parts.join(' · ');
     });
 

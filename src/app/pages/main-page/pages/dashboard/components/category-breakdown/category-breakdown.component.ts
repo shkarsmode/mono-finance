@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, EventEmitter, inject, Inp
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { BETWEEN_ACCOUNTS_TITLE, OTHER_TITLE, UNCATEGORIZED_TITLE } from '@core/helpers/category-titles';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 
 import { CountMode, Flow, flowOf } from '@core/helpers/flows';
@@ -40,21 +41,21 @@ const empty = (): Bucket => ({ spent: 0, income: 0, refunds: 0, spentCount: 0, i
     template: `
         <section class="bd">
             <header class="bd__head">
-                <h2 class="bd__title">By category</h2>
-                <a class="bd__manage" routerLink="/categories">Manage</a>
+                <h2 class="bd__title">За категоріями</h2>
+                <a class="bd__manage" routerLink="/categories">Керувати</a>
             </header>
             <div class="bd__switches">
-                <div class="seg" role="tablist" aria-label="Spending or income">
+                <div class="seg" role="tablist" aria-label="Витрати чи надходження">
                     <button type="button" role="tab" [attr.aria-selected]="side() === 'spent'"
-                            [class.seg--on]="side() === 'spent'" (click)="side.set('spent')">Spending</button>
+                            [class.seg--on]="side() === 'spent'" (click)="side.set('spent')">Витрати</button>
                     <button type="button" role="tab" [attr.aria-selected]="side() === 'income'"
-                            [class.seg--on]="side() === 'income'" (click)="side.set('income')">Income</button>
+                            [class.seg--on]="side() === 'income'" (click)="side.set('income')">Надходження</button>
                 </div>
-                <div class="seg" role="group" aria-label="Which categories">
+                <div class="seg" role="group" aria-label="Які категорії">
                     <button type="button" [class.seg--on]="categoryMode === 'auto'" (click)="categoryModeChange.emit('auto')"
-                            title="Built-in categories by MCC and merchant">Auto</button>
+                            title="Вбудовані категорії за MCC і назвою торговця">Авто</button>
                     <button type="button" [class.seg--on]="categoryMode === 'mine'" (click)="categoryModeChange.emit('mine')"
-                            title="The categories you defined">Mine</button>
+                            title="Категорії, які ви створили">Мої</button>
                 </div>
             </div>
 
@@ -78,20 +79,20 @@ const empty = (): Bucket => ({ spent: 0, income: 0, refunds: 0, spentCount: 0, i
                                 </span>
                                 <span class="line__bar"><span [style.width.%]="line.width" [style.background]="line.color"></span></span>
                                 <span class="line__meta num">
-                                    {{ line.count }} tx · {{ line.share }}%
-                                    @if (line.uncategorized && categoryMode === 'mine') { <span class="line__cta">Categorize →</span> }
+                                    {{ line.count }} оп. · {{ line.share }}%
+                                    @if (line.uncategorized && categoryMode === 'mine') { <span class="line__cta">Вибрати категорії →</span> }
                                 </span>
                             </button>
                         </li>
                     }
                 </ul>
             } @else {
-                <p class="bd__empty">{{ side() === 'spent' ? 'No spending' : 'No income' }} this period.</p>
+                <p class="bd__empty">{{ side() === 'spent' ? 'Витрат' : 'Надходжень' }} за цей період немає.</p>
             }
 
             @if (notCounted().length) {
                 <div class="bd__excluded">
-                    <span class="micro">Not counted</span>
+                    <span class="micro">Не враховано</span>
                     @for (line of notCounted(); track line.filter) {
                         <button type="button" class="ex" [class.ex--on]="active === line.filter" (click)="toggle(line.filter)">
                             <span class="dot" [style.background]="line.color"></span>
@@ -356,7 +357,7 @@ export class CategoryBreakdownComponent {
         if (magnitude(uncategorized) > 0) {
             raw.push({
                 filter: UNCATEGORIZED_FILTER,
-                title: this.categoryMode === 'auto' ? 'Other' : 'Uncategorized',
+                title: this.categoryMode === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE,
                 emoji: '',
                 color: this.colors.colorFor(null),
                 magnitude: magnitude(uncategorized),
@@ -385,7 +386,7 @@ export class CategoryBreakdownComponent {
         const groups = this.groupList();
         const out: Array<{ filter: string; title: string; color: string; value: number }> = [];
         if (internal.count) {
-            out.push({ filter: INTERNAL_FILTER, title: 'Between your accounts', color: 'var(--line-2)', value: internal.net });
+            out.push({ filter: INTERNAL_FILTER, title: BETWEEN_ACCOUNTS_TITLE, color: 'var(--line-2)', value: internal.net });
         }
         groups.forEach((group, index) => {
             if (group.excluded && excluded[index].count) {

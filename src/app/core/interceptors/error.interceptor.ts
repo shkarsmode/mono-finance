@@ -39,7 +39,7 @@ export class ErrorInterceptor implements HttpInterceptor {
                 if (error.status === 401) {
                     this.authService.logout();
                     this.router.navigateByUrl('/login');
-                    this.toast.error('Session expired — sign in again.');
+                    this.toast.error('Сесія завершилася — увійдіть знову.');
                     return throwError(() => error);
                 }
 
@@ -47,11 +47,13 @@ export class ErrorInterceptor implements HttpInterceptor {
                 // (cooldown timers / reschedule). Do not surface it as an error toast.
                 if (error.status !== 429) {
                     const params = this.removeBasePathUrl(error.url ?? '');
+                    // Angular's own error.message is always set and always English
+                    // ("Http failure response for …"), so it would hide the fallback;
+                    // the status code keeps the diagnostic part of it.
                     const description =
                         error.error?.message ??
                         error.error?.errorDescription ??
-                        error.message ??
-                        'Request failed';
+                        (error.status ? `Запит не вдався (${error.status})` : 'Запит не вдався');
                     this.toast.error(`${description} · ${params}`);
                 }
 

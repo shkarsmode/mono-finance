@@ -15,9 +15,9 @@ type CurrencyOption = {
 };
 
 const DISPLAY_CURRENCY_OPTIONS: CurrencyOption[] = [
-    { code: 'UAH', numericCode: 980, label: 'UAH - Ukrainian Hryvnia', shortLabel: 'Hryvnia' },
-    { code: 'USD', numericCode: 840, label: 'USD - US Dollar', shortLabel: 'US Dollar' },
-    { code: 'EUR', numericCode: 978, label: 'EUR - Euro', shortLabel: 'Euro' },
+    { code: 'UAH', numericCode: 980, label: 'UAH — українська гривня', shortLabel: 'Гривня' },
+    { code: 'USD', numericCode: 840, label: 'USD — долар США', shortLabel: 'Долар США' },
+    { code: 'EUR', numericCode: 978, label: 'EUR — євро', shortLabel: 'Євро' },
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -39,12 +39,12 @@ export class CurrencyDisplayService {
     readonly rateHint = computed(() => {
         const code = this.selectedCode();
         if (code === 'UAH') {
-            return 'Base currency, no conversion needed';
+            return 'Базова валюта, без перерахунку';
         }
 
         const directRate = this.getRateBetween(980, this.selectedNumericCode());
         if (!directRate) {
-            return 'Live rate unavailable';
+            return 'Актуальний курс недоступний';
         }
 
         return `1 ${code} ~= ${this.formatPlainNumber(1 / directRate, 2)} UAH`;
@@ -164,16 +164,14 @@ export class CurrencyDisplayService {
         minimumFractionDigits: number,
         maximumFractionDigits: number,
     ): string {
-        return new Intl.NumberFormat(this.resolveLocale(), {
+        // narrowSymbol keeps $ and € (uk-UA alone would print "USD" / "EUR"); ₴ is unchanged.
+        return new Intl.NumberFormat('uk-UA', {
             style: 'currency',
             currency: this.selectedCode(),
+            currencyDisplay: 'narrowSymbol',
             minimumFractionDigits,
             maximumFractionDigits,
         }).format(value);
-    }
-
-    private resolveLocale(): string {
-        return this.selectedCode() === 'UAH' ? 'uk-UA' : 'en-US';
     }
 
     private readSelectedCode(): DisplayCurrencyCode {

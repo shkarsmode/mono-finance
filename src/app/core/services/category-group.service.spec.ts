@@ -45,7 +45,7 @@ describe('CategoryGroupService', () => {
         // …categories second — the order that used to produce zeros
         monobank.categoryGroups$.next([
             { emoji: '🍰', title: 'Шарлотка', keys: ['Шарлотка'], amount: 0 },
-            { emoji: '🛒', title: 'Shops', keys: ['Сільпо'], amount: 0 },
+            { emoji: '🛒', title: 'Магазини', keys: ['Сільпо'], amount: 0 },
         ]);
 
         const groups = service.categoryGroups$.getValue();
@@ -54,7 +54,7 @@ describe('CategoryGroupService', () => {
 
     it('re-totals when the period changes', () => {
         const { service, monobank, currentTransactions$ } = make();
-        monobank.categoryGroups$.next([{ emoji: '🛒', title: 'Shops', keys: ['Сільпо'], amount: 0 }]);
+        monobank.categoryGroups$.next([{ emoji: '🛒', title: 'Магазини', keys: ['Сільпо'], amount: 0 }]);
 
         currentTransactions$.next([tx({ description: 'Сільпо', amount: -100 })]);
         expect(service.categoryGroups$.getValue()[0].amount).toBe(-100);
@@ -66,8 +66,8 @@ describe('CategoryGroupService', () => {
     it('matches a numeric key as an MCC and text keys case-insensitively', () => {
         const { service, monobank, currentTransactions$ } = make();
         monobank.categoryGroups$.next([
-            { emoji: '🍔', title: 'FastFood', keys: ['5814'], amount: 0 },
-            { emoji: '🚕', title: 'Transport', keys: ['uklon'], amount: 0 },
+            { emoji: '🍔', title: 'Фастфуд', keys: ['5814'], amount: 0 },
+            { emoji: '🚕', title: 'Транспорт', keys: ['uklon'], amount: 0 },
         ]);
 
         currentTransactions$.next([
@@ -80,7 +80,7 @@ describe('CategoryGroupService', () => {
 
     it('does not mutate the stored definitions when totalling', () => {
         const { service, monobank, currentTransactions$ } = make();
-        const stored = [{ emoji: '🛒', title: 'Shops', keys: ['Сільпо'], amount: 0 }];
+        const stored = [{ emoji: '🛒', title: 'Магазини', keys: ['Сільпо'], amount: 0 }];
         monobank.categoryGroups$.next(stored);
         currentTransactions$.next([tx({ description: 'Сільпо', amount: -777 })]);
 
@@ -90,7 +90,7 @@ describe('CategoryGroupService', () => {
 
     it('ignores a category with no keys instead of matching everything', () => {
         const { service, monobank, currentTransactions$ } = make();
-        monobank.categoryGroups$.next([{ emoji: '❓', title: 'Some', keys: [], amount: 0 }]);
+        monobank.categoryGroups$.next([{ emoji: '❓', title: 'Різне', keys: [], amount: 0 }]);
         currentTransactions$.next([tx({ description: 'anything', amount: -500 })]);
 
         expect(service.categoryGroups$.getValue()[0].amount).toBe(0);
@@ -106,8 +106,8 @@ describe('CategoryGroupService', () => {
         ]);
 
         const groups = service.categoryGroups$.getValue();
-        expect(groups.find(g => g.title === 'Own money')?.amount).toBe(-500000);
-        expect(groups.find(g => g.title === 'Groceries')?.amount).toBe(-84260);
+        expect(groups.find(g => g.title === 'Власні кошти')?.amount).toBe(-500000);
+        expect(groups.find(g => g.title === 'Продукти')?.amount).toBe(-84260);
     });
 
     it('remembers the chosen modes', () => {

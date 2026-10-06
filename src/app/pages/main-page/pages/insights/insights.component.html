@@ -1,13 +1,13 @@
 <section class="page">
     <header class="page__head">
-        <h1 class="page__title">Insights</h1>
+        <h1 class="page__title">Інсайти</h1>
         @if (!loading() && !error()) {
-            <span class="page__count num">{{ visibleCount() }} active</span>
+            <span class="page__count num">{{ activeLabel() }}</span>
         }
         <span class="page__fill"></span>
         <button type="button" class="btn" (click)="loadInsights()" [disabled]="loading()">
             <span class="material-icons-round">refresh</span>
-            Refresh
+            Оновити
         </button>
     </header>
 
@@ -17,12 +17,12 @@
     } @else if (error()) {
         <div class="empty">
             <p>{{ error() }}</p>
-            <button type="button" class="btn" (click)="loadInsights()">Try again</button>
+            <button type="button" class="btn" (click)="loadInsights()">Спробувати ще</button>
         </div>
     } @else if (!visibleCount()) {
         <div class="empty">
-            <p>Nothing stands out this period.</p>
-            <span>Insights appear when spending deviates from your usual pattern.</span>
+            <p>За цей період нічого незвичного.</p>
+            <span>Інсайти з’являються, коли витрати відхиляються від звичних.</span>
         </div>
     } @else {
         @for (band of bands(); track band.severity) {
@@ -38,7 +38,7 @@
                                 <div class="card__top">
                                     <span class="card__type micro">{{ typeLabel(insight.type) }}</span>
                                     <span class="card__when num">{{ detectedLabel(insight) }}</span>
-                                    <button type="button" class="card__dismiss" (click)="dismiss(insight.id)" aria-label="Dismiss insight">
+                                    <button type="button" class="card__dismiss" (click)="dismiss(insight.id)" aria-label="Приховати інсайт">
                                         <span class="material-icons-round">close</span>
                                     </button>
                                 </div>
@@ -52,7 +52,7 @@
                                             <span class="card__value num">{{ insight.value | displayMoney: 980 }}</span>
                                         }
                                         @if (insight.previousValue !== undefined) {
-                                            <span class="card__prev num">was {{ insight.previousValue | displayMoney: 980 }}</span>
+                                            <span class="card__prev num">було {{ insight.previousValue | displayMoney: 980 }}</span>
                                         }
                                         @if (changeLabel(insight); as change) {
                                             <span class="card__change" [class.is-up]="(insight.changePercent ?? 0) >= 0">{{ change }}</span>

@@ -90,9 +90,9 @@ export default class SubscriptionsComponent implements OnInit {
 
     getCadenceLabel(cadence: string): string {
         switch (cadence) {
-            case 'monthly': return 'Monthly';
-            case 'weekly': return 'Weekly';
-            default: return 'Recurring';
+            case 'monthly': return 'Щомісяця';
+            case 'weekly': return 'Щотижня';
+            default: return 'Регулярно';
         }
     }
 

@@ -482,7 +482,7 @@ export class MonobankService {
         ) as IAccountInfo;
 
         if (!clientInfo) {
-            return of({ error: 'Invalid token' });
+            return of({ error: 'Недійсний токен' });
         }
 
         this.updateLocalStorage(LocalStorage.MonobankClientInfo, clientInfo);

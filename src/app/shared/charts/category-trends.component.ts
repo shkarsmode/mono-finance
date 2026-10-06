@@ -15,12 +15,12 @@ const SPARK_H = 30;
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="table" role="table" aria-label="Spending by category, last 12 months">
+        <div class="table" role="table" aria-label="Витрати за категоріями за 12 місяців">
             <div class="row row--head" role="row">
-                <span role="columnheader" class="micro">Category</span>
-                <span role="columnheader" class="micro">12 months</span>
-                <span role="columnheader" class="micro r">Total</span>
-                <span role="columnheader" class="micro r">Per month</span>
+                <span role="columnheader" class="micro">Категорія</span>
+                <span role="columnheader" class="micro">12 місяців</span>
+                <span role="columnheader" class="micro r">Разом</span>
+                <span role="columnheader" class="micro r">На місяць</span>
                 <span role="columnheader" class="micro r">{{ lastLabel }}</span>
             </div>
 
@@ -49,7 +49,7 @@ const SPARK_H = 30;
                     <span role="cell" class="r num strong">{{ fmt(c.total) }}</span>
                     <span role="cell" class="r num">{{ fmt(c.average) }}</span>
                     <span role="cell" class="r num delta" [class.delta--up]="change(c) > 0.1" [class.delta--down]="change(c) < -0.1"
-                          [attr.title]="money(lastFull(c)) + ' vs ' + money(c.average) + ' a month'">
+                          [attr.title]="money(lastFull(c)) + ' проти ' + money(c.average) + ' на місяць в середньому'">
                         @if (c.average > 0) {
                             {{ change(c) >= 0 ? '↑' : '↓' }} {{ pct(change(c)) }}%
                         } @else { — }
@@ -122,8 +122,17 @@ const SPARK_H = 30;
         .delta--down { color: var(--pos); }
 
         @media (max-width: 760px) {
-            .row { grid-template-columns: minmax(0, 1fr) 96px 64px; }
+            .row { grid-template-columns: minmax(0, 1fr) 76px 56px; }
             .row > :nth-child(2), .row > :nth-child(4) { display: none; }
+            /* Ukrainian names run long («Податки й держпослуги»): two lines beat an ellipsis */
+            .name__text {
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                white-space: normal;
+                line-height: 1.25;
+                padding: 6px 0;
+            }
         }
     `],
 })
@@ -139,10 +148,10 @@ export class CategoryTrendsComponent {
     public readonly sparkW = SPARK_W;
     public readonly sparkH = SPARK_H;
 
-    /** Label of the last FULL month, e.g. "Sep vs avg". */
+    /** Label of the last FULL month, e.g. «Вер до сер.». */
     public get lastLabel(): string {
         const last = this.months[this.months.length - 2];
-        return last ? `${last.label} vs avg` : 'Last month';
+        return last ? `${last.label} до сер.` : 'Минулий місяць';
     }
 
     public step(c: TrendCategory): number {

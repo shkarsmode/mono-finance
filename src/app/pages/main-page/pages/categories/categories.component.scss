@@ -206,6 +206,9 @@
         font-size: var(--fs-micro);
         color: var(--ink-3);
         white-space: nowrap;
+        // the Ukrainian line is longer — cut it, never run it under the amount
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &__val {

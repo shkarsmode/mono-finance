@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signa
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { cardName } from '@core/helpers/card-names';
 import { IAccountInfo } from '@core/interfaces';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService } from '@core/services/category-group.service';
@@ -11,7 +12,7 @@ import { compactMoney, currencySign, fullMoney } from '../../../../shared/charts
 import { CategoryTrendsComponent } from '../../../../shared/charts/category-trends.component';
 import { TrendColumnsComponent } from '../../../../shared/charts/trend-columns.component';
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
 
 @Component({
     selector: 'app-trends',
@@ -39,7 +40,7 @@ export default class TrendsComponent {
     public readonly card = computed(() => {
         const account = this.info()?.accounts?.find(a => a.id === this.cardId());
         if (!account) return '';
-        return `${account.type || 'card'} · ${currencySign(account.currencyCode)}`;
+        return `${cardName(account.type)} · ${currencySign(account.currencyCode)}`;
     });
 
     public readonly months = this.trends.months;

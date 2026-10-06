@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import {
     AssignMode, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
+import { OTHER_TITLE, OWN_MONEY_TITLES, UNCATEGORIZED_TITLE } from '@core/helpers/category-titles';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
@@ -18,10 +19,16 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
 const INBOX = '\u0000inbox';
 
+/** Lower case: the period sits inside a sentence, «Дані за лютий 2026». */
 const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'січень', 'лютий', 'березень', 'квітень', 'травень', 'червень',
+    'липень', 'серпень', 'вересень', 'жовтень', 'листопад', 'грудень',
 ];
+
+/** The not-counted category one click creates for own-money merchants. */
+const TRANSFERS_TITLE = 'Перекази';
+/** Names that count as that category already, including the one it had in English. */
+const TRANSFERS_NAMES = [TRANSFERS_TITLE, 'Transfers'].map(name => name.toLocaleLowerCase());
 
 type MerchantBucket = {
     label: string;
@@ -49,6 +56,8 @@ export default class CategoriesComponent {
     private readonly router = inject(Router);
 
     readonly INBOX = INBOX;
+    readonly OTHER_TITLE = OTHER_TITLE;
+    readonly UNCATEGORIZED_TITLE = UNCATEGORIZED_TITLE;
     private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
     readonly mode = toSignal(this.categories.mode$, { requireSync: true });
     readonly readonly = computed(() => this.mode() === 'auto');
@@ -69,7 +78,7 @@ export default class CategoriesComponent {
         }
         this.confirmReplace.set(false);
         this.categories.adoptAuto(how, only ? [only] : undefined);
-        this.toast.success(only ? `“${only}” copied to your categories` : 'Copied — switch to Mine to edit them');
+        this.toast.success(only ? `«${only}» скопійовано до ваших категорій` : 'Скопійовано — перейдіть у «Мої», щоб їх змінити');
     }
     readonly groups = toSignal(this.categories.categoryGroups$, { initialValue: [] as ICategoryGroup[] });
     readonly transactions = toSignal(
@@ -84,8 +93,19 @@ export default class CategoriesComponent {
     private readonly colors = inject(CategoryColorsService);
     readonly color = (title: string | null | undefined) => this.colors.colorFor(title);
 
-    plural(n: number, one: string, many: string): string {
-        return `${n} ${n === 1 ? one : many}`;
+    /** «1 правило», «3 правила», «5 правил»: `forms` are the words for 1, for 2–4 and for 5+. */
+    plural(n: number, forms: readonly string[]): string {
+        const mod10 = n % 10;
+        const mod100 = n % 100;
+        const form = mod10 === 1 && mod100 !== 11 ? forms[0]
+            : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? forms[1]
+            : forms[2];
+        return `${n} ${form}`;
+    }
+
+    /** The built-in own-money category, under its current or its old English title. */
+    isOwnMoney(title: string): boolean {
+        return OWN_MONEY_TITLES.includes(title);
     }
 
     // ── list ─────────────────────────────────────────────────
@@ -146,15 +166,15 @@ export default class CategoriesComponent {
 
     /**
      * Where "own money" goes: the first not-counted category, else one already called
-     * "Transfers", else a new one.
+     * «Перекази» (or "Transfers", its English name), else a new one.
      */
     readonly transfersTarget = computed(() => {
         const groups = this.groups();
         const excluded = groups.findIndex(g => g.excluded);
         if (excluded >= 0) return { index: excluded, title: groups[excluded].title };
-        const named = groups.findIndex(g => g.title.trim().toLocaleLowerCase() === 'transfers');
+        const named = groups.findIndex(g => TRANSFERS_NAMES.includes(g.title.trim().toLocaleLowerCase()));
         if (named >= 0) return { index: named, title: groups[named].title };
-        return { index: -1, title: 'Transfers' };
+        return { index: -1, title: TRANSFERS_TITLE };
     });
 
     /** One click: every own-money merchant into a category that is not counted. */
@@ -178,7 +198,7 @@ export default class CategoriesComponent {
         });
 
         this.categories.replaceAll(groups);
-        this.toast.success(`${target.title}: ${keys.length} more merchants, left out of Spent and Income`);
+        this.toast.success(`${target.title}: ще ${this.plural(keys.length, ['опис', 'описи', 'описів'])} — не враховано у витратах і надходженнях`);
     }
 
     // ── picker (inbox rows) ──────────────────────────────────
@@ -205,7 +225,7 @@ export default class CategoriesComponent {
         const open = this.picker();
         if (!open) return;
         this.categories.assign(open.bucket.sample, choice.index, choice.mode);
-        this.toast.success(`“${open.bucket.label}” → ${this.groups()[choice.index]?.title ?? ''}`);
+        this.toast.success(`«${open.bucket.label}» → ${this.groups()[choice.index]?.title ?? ''}`);
         this.closePicker();
     }
 
@@ -213,7 +233,7 @@ export default class CategoriesComponent {
         const open = this.picker();
         if (!open) return;
         this.categories.createAndAssign(open.bucket.sample, { title: choice.title }, choice.mode);
-        this.toast.success(`“${open.bucket.label}” → ${choice.title}`);
+        this.toast.success(`«${open.bucket.label}» → ${choice.title}`);
         this.closePicker();
     }
 
@@ -288,7 +308,7 @@ export default class CategoriesComponent {
         if (!group || title === group.title) return;
         if (!title) { input.value = group.title; return; }
         if (this.categories.isTitleTaken(title, group.title)) {
-            this.toast.error(`“${title}” already exists`);
+            this.toast.error(`«${title}» вже існує`);
             input.value = group.title;
             return;
         }
@@ -341,12 +361,12 @@ export default class CategoriesComponent {
             return;
         }
         this.categories.delete(group);
-        this.toast.success(`Deleted “${group.title}”`);
+        this.toast.success(`Видалено «${group.title}»`);
         this.select(INBOX);
     }
 
     createCategory(): void {
-        const title = this.uniqueTitle('New category');
+        const title = this.uniqueTitle('Нова категорія');
         this.categories.upsert(null, { emoji: '', title, keys: [], amount: 0 });
         this.select(title);
         // let the editor render, then put the cursor in the name

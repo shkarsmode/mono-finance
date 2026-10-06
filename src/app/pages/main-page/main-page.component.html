@@ -1,6 +1,6 @@
 <!-- One loading bar for the whole app -->
 @if (loadingService.loading$ | async) {
-    <div class="progress" role="progressbar" aria-label="Loading"><span class="progress__bar"></span></div>
+    <div class="progress" role="progressbar" aria-label="Завантаження"><span class="progress__bar"></span></div>
 }
 
 <!-- Left rail — always visible on desktop, hidden on mobile in favour of the bottom nav -->
@@ -10,7 +10,7 @@
         <span class="rail__name">mono<span>·</span>finance</span>
     </div>
 
-    <nav class="rail__nav" aria-label="Main">
+    <nav class="rail__nav" aria-label="Головне меню">
         @for (item of navItems; track item.path) {
             <a class="rail__link"
                [routerLink]="item.path"
@@ -26,7 +26,7 @@
     <div class="rail__foot">
         <span class="rail__sync">
             <span class="rail__dot"></span>
-            Synced
+            Синхронізовано
         </span>
     </div>
 </aside>
@@ -35,11 +35,11 @@
     <header class="topbar">
         <span class="topbar__spacer"></span>
 
-        <button type="button" class="iconbtn" (click)="syncData()" [disabled]="isSyncing()" aria-label="Sync now">
+        <button type="button" class="iconbtn" (click)="syncData()" [disabled]="isSyncing()" aria-label="Синхронізувати зараз">
             <span class="material-icons-round" [class.spinning]="isSyncing()">sync</span>
         </button>
         <!-- Appearance lives here and nowhere else -->
-        <button type="button" class="iconbtn" (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Switch to light appearance' : 'Switch to dark appearance'">
+        <button type="button" class="iconbtn" (click)="toggleTheme()" [attr.aria-label]="isDark() ? 'Увімкнути світлу тему' : 'Увімкнути темну тему'">
             <span class="material-icons-round">{{ isDark() ? 'light_mode' : 'dark_mode' }}</span>
         </button>
     </header>
@@ -50,7 +50,7 @@
 </div>
 
 <!-- Mobile: five primary destinations -->
-<nav class="bottomnav" aria-label="Main">
+<nav class="bottomnav" aria-label="Головне меню">
     @for (item of navItems.slice(0, 5); track item.path) {
         <a class="bottomnav__item"
            [routerLink]="item.path"

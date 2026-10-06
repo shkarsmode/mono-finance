@@ -1,19 +1,21 @@
 <!-- ── Period band: one shared time context for the whole screen ── -->
 <header class="period">
     <div class="period__nav">
-        <button type="button" class="period__step" (click)="stepPeriod(-1)" aria-label="Previous month">
+        <button type="button" class="period__step" (click)="stepPeriod(-1)" aria-label="Попередній місяць">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
         </button>
         <button type="button" class="period__label" cdkOverlayOrigin #periodOrigin="cdkOverlayOrigin"
                 (click)="pickerOpen.set(!pickerOpen())" [attr.aria-expanded]="pickerOpen()" aria-haspopup="dialog">
-            <!-- the widest month reserves the width, so the arrows never move under the cursor -->
+            <!-- the widest month reserves the width, so the arrows never move under the cursor.
+                 Листопад is the widest in Segoe UI, Вересень in Arial-like fonts: both sit underneath. -->
             <span class="period__text num">
-                <span class="period__sizer" aria-hidden="true">September 2026</span>
+                <span class="period__sizer" aria-hidden="true">Листопад 2026</span>
+                <span class="period__sizer" aria-hidden="true">Вересень 2026</span>
                 <span>{{ periodLabel() }}</span>
             </span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
-        <button type="button" class="period__step" (click)="stepPeriod(1)" [disabled]="!canStepForward" aria-label="Next month">
+        <button type="button" class="period__step" (click)="stepPeriod(1)" [disabled]="!canStepForward" aria-label="Наступний місяць">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
     </div>
@@ -28,7 +30,7 @@
     } @else {
         <button type="button" class="btn btn--quiet" (click)="onBackfillClick()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
-            Backfill history
+            Завантажити історію
         </button>
     }
 
@@ -52,36 +54,36 @@
 <!-- ── Hero: the net position for the period ── -->
 <section class="hero">
     <div class="hero__net">
-        <span class="micro">Net this period</span>
+        <span class="micro">Різниця за період</span>
         <span class="hero__figure num" [class.is-pos]="netTotal() > 0" [class.is-neg]="netTotal() < 0">
             {{ netTotal() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
         </span>
-        <span class="hero__sub num">{{ transactionCount() }} transactions</span>
-        <div class="seg seg--hero" role="group" aria-label="How totals are counted">
+        <span class="hero__sub num">{{ transactionCountLabel() }}</span>
+        <div class="seg seg--hero" role="group" aria-label="Як рахувати підсумки">
             <button type="button" [class.seg--on]="countMode() === 'real'" (click)="setCountMode('real')"
-                    title="Leaves out money moving between your own jars, cards and accounts; refunds reduce spending">Real</button>
+                    title="Без переказів між вашими банками, картками й рахунками; повернення зменшують витрати">Реальні</button>
             <button type="button" [class.seg--on]="countMode() === 'all'" (click)="setCountMode('all')"
-                    title="Every debit and credit, exactly as the statement has them">All operations</button>
+                    title="Усі списання й зарахування — точно як у виписці">Усі операції</button>
         </div>
     </div>
 
     <div class="hero__flow">
         <div class="flow__row">
-            <span class="flow__key"><i class="swatch swatch--pos"></i>Income</span>
+            <span class="flow__key"><i class="swatch swatch--pos"></i>Надходження</span>
             <span class="flow__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
         </div>
         <!-- one bar, two proportions: the ratio reads without arithmetic -->
-        <div class="flow__bar" role="img" [attr.aria-label]="'Income share ' + incomeShare() + ' percent'">
+        <div class="flow__bar" role="img" [attr.aria-label]="'Частка надходжень: ' + incomeShare() + '%'">
             <span class="flow__bar-pos" [style.width.%]="incomeShare()"></span>
         </div>
         <div class="flow__row">
-            <span class="flow__key"><i class="swatch swatch--neg"></i>Spent</span>
+            <span class="flow__key"><i class="swatch swatch--neg"></i>Витрачено</span>
             <span class="flow__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
         </div>
         @if (countMode() === 'real' && (internalOut() || internalIn())) {
             <!-- shown, not hidden: the money that only changed pockets -->
             <div class="flow__own">
-                <span class="flow__key"><i class="swatch swatch--own"></i>Between your accounts</span>
+                <span class="flow__key"><i class="swatch swatch--own"></i>{{ BETWEEN_ACCOUNTS_TITLE }}</span>
                 <span class="flow__own-val num">
                     −{{ internalOut() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
                     · +{{ internalIn() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
@@ -96,10 +98,10 @@
     @if (availableCardTypes().length > 1) {
         <div class="accounts__filters">
             @for (type of availableCardTypes(); track type) {
-                <button type="button" class="chip" [class.chip--on]="cardTypeFilters().has(type)" (click)="toggleCardTypeFilter(type)">{{ type }}</button>
+                <button type="button" class="chip" [class.chip--on]="cardTypeFilters().has(type)" (click)="toggleCardTypeFilter(type)">{{ accountTypeLabel(type) }}</button>
             }
             @if (cardTypeFilters().size > 0) {
-                <button type="button" class="chip chip--clear" (click)="clearCardTypeFilters()">Clear</button>
+                <button type="button" class="chip chip--clear" (click)="clearCardTypeFilters()">Скинути</button>
             }
         </div>
     }
@@ -121,24 +123,24 @@
     </div>
 </section>
 
-<!-- ── KPI strip: one instrument, divided ── -->
+<!-- ── KPI strip: one instrument, divided — whole hryvnias; the exact figures are in the card above ── -->
 <section class="kpis">
     <div class="kpi">
-        <span class="micro">Spent</span>
-        <span class="kpi__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+        <span class="micro">Витрачено</span>
+        <span class="kpi__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
     </div>
     <div class="kpi">
-        <span class="micro">Income</span>
-        <span class="kpi__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
+        <span class="micro">Надходження</span>
+        <span class="kpi__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
     </div>
     <div class="kpi">
-        <span class="micro">Avg / active day</span>
-        <span class="kpi__val num">{{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 2 }}</span>
+        <span class="micro">Сер. за активний день</span>
+        <span class="kpi__val num">{{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
     </div>
     <div class="kpi">
-        <span class="micro">Largest</span>
+        <span class="micro">Найбільша витрата</span>
         @if (biggestExpense(); as biggest) {
-            <span class="kpi__val num">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode }}</span>
+            <span class="kpi__val num">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode : 0 : 0 }}</span>
             <span class="kpi__sub">{{ biggest.description }}</span>
         } @else {
             <span class="kpi__val num">—</span>
@@ -182,7 +184,7 @@
 } @else {
     <div class="empty-state">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
-        <h3>No transactions this month</h3>
-        <p>Pick another month or card — history syncs in the background.</p>
+        <h3>Цього місяця операцій немає</h3>
+        <p>Виберіть інший місяць або картку — історія синхронізується у фоні.</p>
     </div>
 }

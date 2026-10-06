@@ -2,11 +2,11 @@
 <header class="toolbar">
     <div class="filters">
       <label class="date">
-        <span>From</span>
+        <span>Від</span>
         <input type="date" [value]="from()" (change)="setFrom($event)" />
       </label>
       <label class="date">
-        <span>To</span>
+        <span>До</span>
         <input type="date" [value]="to()" (change)="setTo($event)" />
       </label>
 
@@ -14,32 +14,32 @@
         <span>MCC</span>
         <div class="chips">
           @for (n of mccList(); track n) {
-            <button class="chip" (click)="mccRemove(n)" title="Remove">{{ n }}</button>
+            <button class="chip" (click)="mccRemove(n)" title="Прибрати">{{ n }}</button>
           }
-          <input type="text" placeholder="e.g. 5411 5499, 5814" [value]="mccInput()" (change)="mccChipAdd($event)" />
+          <input type="text" placeholder="напр., 5411 5499, 5814" [value]="mccInput()" (change)="mccChipAdd($event)" />
           @if (mccList().length) {
-            <button class="btn sm ghost" (click)="mccClear()">Clear</button>
+            <button class="btn sm ghost" (click)="mccClear()">Очистити</button>
           }
         </div>
       </div>
 
       <button class="btn primary" (click)="fetch()">
         <span class="material-icons-round" style="font-size:16px;vertical-align:middle">search</span>
-        Apply
+        Застосувати
       </button>
     </div>
 
     <div class="right-tools">
-      <input class="search" type="search" placeholder="Search MCC or merchant..." [value]="search()" (change)="setSearch($event)" />
-      <button class="btn" (click)="exportCsv()" title="Export current view to CSV">
+      <input class="search" type="search" placeholder="Пошук за MCC або продавцем…" [value]="search()" (change)="setSearch($event)" />
+      <button class="btn" (click)="exportCsv()" title="Експортувати поточну таблицю в CSV">
         <span class="material-icons-round" style="font-size:16px;vertical-align:middle">download</span>
-        Export CSV
+        Експорт CSV
       </button>
     </div>
   </header>
 
   <div class="card" style="max-width: 310px; margin-bottom: 12px;">
-    <div class="k">Tx</div>
+    <div class="k">Операції</div>
     <div class="v">{{ totals().txCount | number }}</div>
   </div>
 
@@ -48,13 +48,13 @@
       <thead>
         <tr>
           <th (click)="setSort('mcc')">MCC</th>
-          <th>Label</th>
-          <th (click)="setSort('txCount')">Tx</th>
-          <th (click)="setSort('totalSpent')">Σ Spent</th>
-          <th (click)="setSort('totalIncome')">Σ Income</th>
-          <th (click)="setSort('net')">Net</th>
-          <th (click)="setSort('avgAbs')">Avg</th>
-          <th>Top merchants</th>
+          <th>Назва</th>
+          <th (click)="setSort('txCount')">Оп.</th>
+          <th (click)="setSort('totalSpent')">Σ Витрачено</th>
+          <th (click)="setSort('totalIncome')">Σ Надходження</th>
+          <th (click)="setSort('net')">Різниця</th>
+          <th (click)="setSort('avgAbs')">Сер.</th>
+          <th>Топ продавців</th>
         </tr>
       </thead>
       <tbody>
@@ -86,7 +86,7 @@
                 <div class="trend-inline" [class.loading]="trendLoading">
                     <div class="trend-inline__header">
                         <strong>{{ selectedTrendLabel }}</strong>
-                        <span class="muted">monthly trend</span>
+                        <span class="muted">помісячна динаміка</span>
                         <div class="spacer"></div>
                         <button class="btn sm ghost" (click)="clearTrend()" type="button">
                             <span class="material-icons-round" style="font-size:16px">close</span>
@@ -104,7 +104,7 @@
                           <div class="progress__text">
                               {{ trendCurrent() }}/{{ trendTotal() }} ({{ trendPercent() | number:'1.0-0' }}%)
                               @if (trendEtaMs() !== null && trendEtaMs()! > 0) {
-                                · ~{{ (trendEtaMs()! / 1000) | number:'1.0-0' }}s left
+                                · залишилось ~{{ (trendEtaMs()! / 1000) | number:'1.0-0' }} с
                               }
                           </div>
                       </div>

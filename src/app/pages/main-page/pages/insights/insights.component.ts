@@ -19,6 +19,15 @@ interface Insight {
     detectedAt: number;
 }
 
+/** Ukrainian plural form: 1 активний · 2 активні · 5 активних. */
+function plural(n: number, forms: [string, string, string]): string {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return forms[0];
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+    return forms[2];
+}
+
 @Component({
     selector: 'app-insights',
     standalone: true,
@@ -48,7 +57,7 @@ export default class InsightsComponent implements OnInit {
                 this.loading.set(false);
             },
             error: (err) => {
-                this.error.set(err?.error?.message ?? 'Failed to load insights');
+                this.error.set(err?.error?.message ?? 'Не вдалося завантажити інсайти');
                 this.loading.set(false);
             },
         });
@@ -61,7 +70,7 @@ export default class InsightsComponent implements OnInit {
         return order
             .map(severity => ({
                 severity,
-                label: severity === 'critical' ? 'Needs attention' : severity === 'warn' ? 'Worth a look' : 'For information',
+                label: severity === 'critical' ? 'Потребує уваги' : severity === 'warn' ? 'Варто глянути' : 'До відома',
                 items: all.filter(i => i.severity === severity),
             }))
             .filter(band => band.items.length > 0);
@@ -69,6 +78,10 @@ export default class InsightsComponent implements OnInit {
 
     readonly dismissed = signal<Set<string>>(new Set());
     readonly visibleCount = computed(() => this.bands().reduce((n, b) => n + b.items.length, 0));
+    readonly activeLabel = computed(() => {
+        const n = this.visibleCount();
+        return `${n} ${plural(n, ['активний', 'активні', 'активних'])}`;
+    });
 
     dismiss(id: string): void {
         const next = new Set(this.dismissed());
@@ -79,13 +92,13 @@ export default class InsightsComponent implements OnInit {
     /** "new-merchant" is not a label a person should read. */
     typeLabel(type: string): string {
         switch (type) {
-            case 'anomaly': return 'Unusual day';
-            case 'comparison': return 'Vs last month';
-            case 'new-merchant': return 'New merchant';
-            case 'burst': return 'Spending burst';
-            case 'trend': return 'Trend';
-            case 'milestone': return 'Milestone';
-            default: return 'Insight';
+            case 'anomaly': return 'Незвичний день';
+            case 'comparison': return 'Порівняно з минулим місяцем';
+            case 'new-merchant': return 'Новий продавець';
+            case 'burst': return 'Сплеск витрат';
+            case 'trend': return 'Тенденція';
+            case 'milestone': return 'Рубіж';
+            default: return 'Інсайт';
         }
     }
 
@@ -93,11 +106,11 @@ export default class InsightsComponent implements OnInit {
     changeLabel(insight: Insight): string | null {
         if (insight.changePercent === undefined || insight.changePercent === null) return null;
         const pct = Math.abs(Math.round(insight.changePercent));
-        return `${insight.changePercent >= 0 ? '↑' : '↓'} ${pct}% vs last month`;
+        return `${insight.changePercent >= 0 ? '↑' : '↓'} ${pct}% до минулого місяця`;
     }
 
     detectedLabel(insight: Insight): string {
-        return new Date(insight.detectedAt * 1000).toLocaleString(undefined, {
+        return new Date(insight.detectedAt * 1000).toLocaleString('uk-UA', {
             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
         });
     }

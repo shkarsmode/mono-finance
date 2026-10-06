@@ -1,5 +1,5 @@
 <span class="acct__head">
-    <span class="acct__label">{{ account.type || 'account' }}</span>
+    <span class="acct__label">{{ typeLabel }}</span>
     <span class="acct__cur mono">{{ currencyName }}</span>
 </span>
 
@@ -8,5 +8,5 @@
 <span class="acct__balance num balance-cell">{{ balanceFormatted | number: '1.2-2' }}</span>
 
 @if (account.creditLimit) {
-    <span class="acct__meta num">credit limit {{ (account.creditLimit / 100) | number: '1.0-0' }}</span>
+    <span class="acct__meta num">кредитний ліміт {{ (account.creditLimit / 100) | number: '1.0-0' }}</span>
 }

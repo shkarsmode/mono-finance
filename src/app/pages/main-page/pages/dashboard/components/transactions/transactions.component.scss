@@ -83,6 +83,9 @@
     &:focus-within .search__kbd { display: none; }
 }
 
+// no keyboard on a phone: the "/" shortcut hint only takes room
+.ledger--narrow .search__kbd { display: none; }
+
 .search__clear {
     display: grid;
     place-items: center;
@@ -133,6 +136,10 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+
+    // the select already names the order (and carries the aria-label); on a phone
+    // the caption only squeezed the search box down to a letter
+    > .micro { display: none; }
 
     select {
         height: var(--control-md);
@@ -217,7 +224,7 @@
 // down the whole sheet.
 %grid {
     display: grid;
-    grid-template-columns: 3px 58px minmax(0, 1fr) 176px 136px 112px;
+    grid-template-columns: 3px 62px minmax(0, 1fr) 176px 136px 112px;
     align-items: center;
     column-gap: var(--space-3);
 }
@@ -366,14 +373,25 @@
 
     &__name {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: var(--space-2);
+        gap: 2px var(--space-2);
         font-size: var(--fs-body);
         font-weight: 500;
         color: var(--ink);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    // In a narrow column a tag drops under the description instead of squeezing it:
+    // the description stays readable, and only a description longer than the whole
+    // column ends in an ellipsis.
+    &__desc {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &__meta {

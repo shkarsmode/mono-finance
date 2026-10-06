@@ -225,7 +225,7 @@ export default class MccAnalyticsComponent {
     }
 
     exportCsv() {
-        const header = ['MCC', 'Label', 'Tx', 'Spent', 'Income', 'Net', 'Avg', 'TopMerchants'];
+        const header = ['MCC', 'Назва', 'Операції', 'Витрачено', 'Надходження', 'Різниця', 'Середнє', 'Топ продавців'];
         const lines = [header.join(',')];
         for (const r of this.rows()) {
             const tops = r.topMerchants.map(t => `${t.name} (${t.total.toFixed(2)})`).join(' | ').replace(/,/g, ';');
@@ -241,7 +241,8 @@ export default class MccAnalyticsComponent {
             ];
             lines.push(row.join(','));
         }
-        const csv = lines.join('\n');
+        // The BOM makes Excel read the file as UTF-8, so the Cyrillic labels stay legible.
+        const csv = String.fromCharCode(0xfeff) + lines.join('\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');

@@ -58,7 +58,7 @@ export default class LoginPageComponent {
                 } else if (typeof error?.error === 'string') {
                     this.errorMessage.set(error.error);
                 } else {
-                    this.errorMessage.set('Something went wrong. Please try again.');
+                    this.errorMessage.set('Щось пішло не так. Спробуйте ще раз.');
                 }
                 throw error;
             })

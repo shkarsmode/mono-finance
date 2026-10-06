@@ -1,6 +1,6 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, Input, Output, signal } from '@angular/core';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'];
 const FIRST_YEAR = 2017;
 
 /**
@@ -12,13 +12,13 @@ const FIRST_YEAR = 2017;
     standalone: true,
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-        <div class="mp" role="dialog" aria-label="Choose month" (keydown.escape)="close.emit()">
+        <div class="mp" role="dialog" aria-label="Вибір місяця" (keydown.escape)="close.emit()">
             <div class="mp__year">
-                <button type="button" class="mp__step" (click)="shiftYear(-1)" [disabled]="viewYear() <= firstYear" aria-label="Previous year">
+                <button type="button" class="mp__step" (click)="shiftYear(-1)" [disabled]="viewYear() <= firstYear" aria-label="Попередній рік">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
                 </button>
                 <span class="mp__label num">{{ viewYear() }}</span>
-                <button type="button" class="mp__step" (click)="shiftYear(1)" [disabled]="viewYear() >= nowYear" aria-label="Next year">
+                <button type="button" class="mp__step" (click)="shiftYear(1)" [disabled]="viewYear() >= nowYear" aria-label="Наступний рік">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                 </button>
             </div>
@@ -37,7 +37,7 @@ const FIRST_YEAR = 2017;
                 }
             </div>
 
-            <button type="button" class="mp__today" (click)="pick.emit({ month: nowMonth, year: nowYear })">This month</button>
+            <button type="button" class="mp__today" (click)="pick.emit({ month: nowMonth, year: nowYear })">Цей місяць</button>
         </div>
     `,
     styles: [`

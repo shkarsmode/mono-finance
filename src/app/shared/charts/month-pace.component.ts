@@ -21,7 +21,7 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
     template: `
         <section class="pace">
             <header class="pace__head">
-                <h3 class="pace__title">Spending pace</h3>
+                <h3 class="pace__title">Темп витрат</h3>
                 @if (verdict(); as v) {
                     <span class="pace__verdict" [class.pace__verdict--up]="v.delta > 0.03" [class.pace__verdict--down]="v.delta < -0.03">
                         {{ v.text }}
@@ -30,18 +30,18 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
             </header>
             <p class="pace__sub num">
                 @if (running()) {
-                    {{ total() }} so far
-                    @if (usual()) { <span>· usual by day {{ lastDay() }}: {{ usualAtToday() }}</span> }
+                    {{ total() }} наразі
+                    @if (usual()) { <span>· зазвичай на {{ lastDay() }}-й день: {{ usualAtToday() }}</span> }
                 } @else {
-                    {{ total() }} spent
-                    @if (usual()) { <span>· a usual month: {{ usualAtToday() }}</span> }
+                    {{ total() }} витрачено
+                    @if (usual()) { <span>· звичайний місяць: {{ usualAtToday() }}</span> }
                 }
             </p>
 
             <div class="pace__plot" #plot (pointerleave)="leave($event)">
                 @if (width() > 0 && actual(); as a) {
                     <svg [attr.width]="width()" [attr.height]="height" role="img"
-                         [attr.aria-label]="'Cumulative spending this month: ' + total()"
+                         [attr.aria-label]="'Витрати з початку місяця: ' + total()"
                          tabindex="0"
                          (pointerdown)="onMove($event)"
                          (pointermove)="onMove($event)"
@@ -67,7 +67,7 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
                         <circle class="dot" [attr.cx]="x(a.length)" [attr.cy]="y(a[a.length - 1])" r="4" />
                         <text class="end" [attr.x]="x(a.length) + 8" [attr.y]="y(a[a.length - 1])" dy="0.32em">{{ fmt(a[a.length - 1]) }}</text>
                         @if (usual(); as u) {
-                            <text class="end end--muted" [attr.x]="width() - m.right + 8" [attr.y]="usualLabelY()" dy="0.32em">usual</text>
+                            <text class="end end--muted" [attr.x]="width() - m.right + 8" [attr.y]="usualLabelY()" dy="0.32em">звично</text>
                         }
 
                         @if (hover(); as h) {
@@ -80,17 +80,17 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
 
                     @if (hover(); as h) {
                         <div class="tip" [style.left.px]="tipLeft(h)">
-                            <div class="tip__day num">Day {{ h }}</div>
+                            <div class="tip__day num">День {{ h }}</div>
                             @if (h <= a.length) {
-                                <div class="tip__row"><i class="key key--now"></i><b class="num">{{ money(a[h - 1]) }}</b><span>this month</span></div>
+                                <div class="tip__row"><i class="key key--now"></i><b class="num">{{ money(a[h - 1]) }}</b><span>цей місяць</span></div>
                             }
                             @if (usual(); as u) {
-                                <div class="tip__row"><i class="key key--usual"></i><b class="num">{{ money(u[h - 1]) }}</b><span>usual</span></div>
+                                <div class="tip__row"><i class="key key--usual"></i><b class="num">{{ money(u[h - 1]) }}</b><span>звично</span></div>
                             }
                         </div>
                     }
                 } @else if (width() > 0) {
-                    <p class="pace__empty">No spending this month yet.</p>
+                    <p class="pace__empty">Цього місяця витрат ще немає.</p>
                 }
             </div>
         </section>
@@ -281,7 +281,9 @@ export class MonthPaceComponent implements AfterViewInit, OnDestroy {
         if (!(usual > 0)) return null;
         const delta = now / usual - 1;
         const pct = Math.round(Math.abs(delta) * 100);
-        const text = Math.abs(delta) <= 0.03 ? 'on your usual pace' : `${delta > 0 ? '↑' : '↓'} ${pct}% vs usual`;
+        const text = Math.abs(delta) <= 0.03
+            ? 'у звичному темпі'
+            : delta > 0 ? `↑ на ${pct}% більше звичного` : `↓ на ${pct}% менше звичного`;
         return { delta, text };
     });
 

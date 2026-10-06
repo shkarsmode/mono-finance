@@ -5,12 +5,12 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.6-3.6" /></svg>
             <input #inputRef
                    type="text"
-                   placeholder="Search merchant, MCC or comment"
+                   placeholder="Пошук за описом, MCC або коментарем"
                    [value]="searchValue"
                    (input)="onInputEvent($event)"
-                   aria-label="Search transactions" />
+                   aria-label="Пошук операцій" />
             @if (inputRef.value) {
-                <button type="button" class="search__clear" (click)="clearInputEvent()" aria-label="Clear search">
+                <button type="button" class="search__clear" (click)="clearInputEvent()" aria-label="Очистити пошук">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>
             } @else {
@@ -20,21 +20,21 @@
 
         @if (isNarrow()) {
             <label class="sortsel">
-                <span class="micro">Sort</span>
-                <select [value]="sort().key" (change)="onSortSelect($event)" aria-label="Sort transactions">
+                <span class="micro">Порядок</span>
+                <select [value]="sort().key" (change)="onSortSelect($event)" aria-label="Сортування операцій">
                     @for (key of sortOptions; track key) {
                         <option [value]="key">{{ sortLabel[key] }}</option>
                     }
                 </select>
                 <button type="button" class="sortsel__dir" (click)="sortBy(sort().key)"
-                        [attr.aria-label]="sort().dir === 'asc' ? 'Ascending — switch to descending' : 'Descending — switch to ascending'">
+                        [attr.aria-label]="sort().dir === 'asc' ? 'За зростанням — змінити на спадання' : 'За спаданням — змінити на зростання'">
                     <svg viewBox="0 0 24 24" aria-hidden="true" [class.flip]="sort().dir === 'asc'"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
                 </button>
             </label>
         } @else {
-            <div class="seg" role="group" aria-label="Row density">
-                <button type="button" [class.seg--on]="!compact()" (click)="setCompact(false)">Comfortable</button>
-                <button type="button" [class.seg--on]="compact()" (click)="setCompact(true)">Compact</button>
+            <div class="seg" role="group" aria-label="Щільність рядків">
+                <button type="button" [class.seg--on]="!compact()" (click)="setCompact(false)">Просторо</button>
+                <button type="button" [class.seg--on]="compact()" (click)="setCompact(true)">Компактно</button>
             </div>
         }
     </header>
@@ -45,8 +45,8 @@
             @if (dayFilter()) {
                 <span class="pill">
                     {{ dayFilterLabel() }}
-                    <span class="pill__meta num">{{ count() }} tx · {{ visibleNet() | displayMoney: currencyCode() }}</span>
-                    <button type="button" class="pill__x" (click)="clearDay()" aria-label="Show the whole month">
+                    <span class="pill__meta num">{{ count() }} оп. · {{ visibleNet() | displayMoney: currencyCode() }}</span>
+                    <button type="button" class="pill__x" (click)="clearDay()" aria-label="Показати весь місяць">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                     </button>
                 </span>
@@ -55,16 +55,16 @@
                 <span class="pill">
                     <span class="dot" [style.background]="filterColor()"></span>
                     {{ label }}
-                    <span class="pill__meta num">{{ count() }} tx · {{ visibleNet() | displayMoney: currencyCode() }}</span>
-                    <button type="button" class="pill__x" (click)="clearCategoryFilter.emit()" aria-label="Show all categories">
+                    <span class="pill__meta num">{{ count() }} оп. · {{ visibleNet() | displayMoney: currencyCode() }}</span>
+                    <button type="button" class="pill__x" (click)="clearCategoryFilter.emit()" aria-label="Показати всі категорії">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                     </button>
                 </span>
             }
             @if (sort().key !== 'date') {
                 <span class="pill pill--quiet">
-                    Sorted by {{ sortLabel[sort().key] }} {{ sort().dir === 'asc' ? '↑' : '↓' }}
-                    <button type="button" class="pill__x" (click)="resetSort()" aria-label="Back to newest first">
+                    Сортування: {{ sortLabel[sort().key] }} {{ sort().dir === 'asc' ? '↑' : '↓' }}
+                    <button type="button" class="pill__x" (click)="resetSort()" aria-label="Повернути порядок: спершу нові">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                     </button>
                 </span>
@@ -108,7 +108,7 @@
                      [attr.role]="sort().key === 'date' ? 'button' : null"
                      [attr.tabindex]="sort().key === 'date' ? 0 : null"
                      [attr.aria-pressed]="sort().key === 'date' ? dayFilter() === section.key : null"
-                     [attr.title]="sort().key === 'date' ? (dayFilter() === section.key ? 'Show the whole month' : 'Show only this day') : null"
+                     [attr.title]="sort().key === 'date' ? (dayFilter() === section.key ? 'Показати весь місяць' : 'Показати лише цей день') : null"
                      (click)="toggleDay(section)"
                      (keydown.enter)="toggleDay(section)"
                      (keydown.space)="$event.preventDefault(); toggleDay(section)">
@@ -116,7 +116,7 @@
                     <span class="rule__title">{{ section.title }}</span>
                     @if (section.subtitle) { <span class="rule__sub num">{{ section.subtitle }}</span> }
                     <span class="rule__fill"></span>
-                    <span class="rule__count num">{{ section.count }} tx</span>
+                    <span class="rule__count num">{{ section.count }} оп.</span>
                     <span class="rule__net num" [class.is-pos]="section.net > 0" [class.is-neg]="section.net < 0">
                         {{ section.net | displayMoney: currencyCode() }}
                     </span>
@@ -130,8 +130,8 @@
         } @empty {
             <div class="ledger__empty">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
-                <p>No transactions match this view.</p>
-                <span>Try a different month, card, category or search.</span>
+                <p>Жодна операція не відповідає цим умовам.</p>
+                <span>Спробуйте інший місяць, картку, категорію або пошук.</span>
             </div>
         }
 
@@ -147,15 +147,15 @@
                 <span class="row__merchant">
                     <span class="row__name">
                         <svg class="ru__chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-                        Round-ups → {{ ru.jar }}
+                        Округлення → {{ ru.jar }}
                     </span>
                     <span class="row__meta num">
-                        <span>{{ ru.count }} small transfers into the jar</span>
-                        <span>{{ roundUpsOpen() ? 'hide' : 'show' }}</span>
+                        <span>{{ ru.countLabel }}</span>
+                        <span>{{ roundUpsOpen() ? 'згорнути' : 'показати' }}</span>
                     </span>
                 </span>
                 @if (!isNarrow()) {
-                    <span class="row__cat"><span class="cat cat--static"><span class="dot" style="background: var(--line-2)"></span>own money</span></span>
+                    <span class="row__cat"><span class="cat cat--static"><span class="dot" style="background: var(--line-2)"></span>{{ OWN_MONEY_TITLE }}</span></span>
                 }
                 <span class="row__amount num">{{ ru.net | displayMoney: currencyCode() }}</span>
                 @if (!isNarrow()) { <span class="row__balance"></span> }
@@ -214,13 +214,13 @@
 
         <span class="row__merchant">
             <span class="row__name">
-                {{ row.tx.description }}
-                @if (row.pending) { <span class="tag tag--hold" title="Not settled yet">Hold</span> }
+                <span class="row__desc">{{ row.tx.description }}</span>
+                @if (row.pending) { <span class="tag tag--hold" title="Ще в обробці">Холд</span> }
                 @if (countMode() === 'real' && row.flow === 'internal') {
-                    <span class="tag tag--own" title="Moved between your own jars, cards or accounts — not counted">own money</span>
+                    <span class="tag tag--own" title="Переказ між вашими банками, картками чи рахунками — не враховано">Свої</span>
                 }
                 @if (countMode() === 'real' && row.flow === 'refund') {
-                    <span class="tag tag--refund" title="Reduces spending, not counted as income">refund</span>
+                    <span class="tag tag--refund" title="Зменшує витрати, не рахується як надходження">Повернення</span>
                 }
             </span>
             <span class="row__meta num">
@@ -233,15 +233,15 @@
             @if (isNarrow() && categoryMode() === 'auto') {
                 <span class="cat cat--inline cat--static" [title]="row.reason">
                     <span class="dot" [style.background]="row.color"></span>
-                    {{ row.category ?? 'Other' }}
+                    {{ row.category ?? OTHER_TITLE }}
                 </span>
             } @else if (isNarrow()) {
                 <button type="button" class="cat cat--inline"
                         [class.cat--none]="row.index === -1"
                         (click)="openPicker($event, row)"
-                        [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
+                        [attr.aria-label]="row.category ? 'Категорія ' + row.category + ' — змінити' : 'Вибрати категорію: ' + row.tx.description">
                     <span class="dot" [style.background]="row.color"></span>
-                    {{ row.category ?? 'Categorize' }}
+                    {{ row.category ?? 'Вибрати категорію' }}
                 </button>
             }
         </span>
@@ -250,7 +250,7 @@
             <span class="row__cat">
                 <span class="cat cat--static" [title]="row.reason">
                     <span class="dot" [style.background]="row.color"></span>
-                    <span class="cat__name">{{ row.category ?? 'Other' }}</span>
+                    <span class="cat__name">{{ row.category ?? OTHER_TITLE }}</span>
                 </span>
             </span>
         } @else if (!isNarrow()) {
@@ -259,10 +259,10 @@
                         [class.cat--none]="row.index === -1"
                         [class.cat--open]="picker()?.row?.tx?.id === row.tx.id"
                         (click)="openPicker($event, row)"
-                        [attr.aria-label]="row.category ? 'Category ' + row.category + ' — change' : 'Categorize ' + row.tx.description">
+                        [attr.aria-label]="row.category ? 'Категорія ' + row.category + ' — змінити' : 'Вибрати категорію: ' + row.tx.description">
                     @if (row.index === -1) {
                         <svg class="cat__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                        Categorize
+                        Вибрати категорію
                     } @else {
                         <span class="dot" [style.background]="row.color"></span>
                         <span class="cat__name">{{ row.category }}</span>

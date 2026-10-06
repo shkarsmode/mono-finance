@@ -2,6 +2,7 @@ import {
     AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, HostListener, inject, Input,
     OnDestroy, Output, signal, ViewChild,
 } from '@angular/core';
+import { OTHER_TITLE } from '@core/helpers/category-titles';
 import { TrendCategory, TrendMonth } from '@core/services/trends.service';
 import {
     axisTick, axisUnit, compactMoney, currencySign, fullMoney, niceTicks, observeWidth, topRoundedBar,
@@ -30,7 +31,7 @@ type Column = { month: TrendMonth; index: number; x: number; total: number; segm
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { '[class.compact]': 'compact()' },
     template: `
-        <div class="legend" role="group" aria-label="Categories">
+        <div class="legend" role="group" aria-label="Категорії">
             @for (item of legend(); track item.title) {
                 <button type="button" class="chip"
                         [class.chip--on]="selected === item.title"
@@ -44,8 +45,8 @@ type Column = { month: TrendMonth; index: number; x: number; total: number; segm
                 </button>
             }
             @if (average() > 0) {
-                <span class="avg-key num" title="Average of the full months — the running one is left out">
-                    <i class="avg-key__line"></i>avg {{ fmt(average()) }}
+                <span class="avg-key num" title="Середнє за повні місяці — поточний не враховано">
+                    <i class="avg-key__line"></i>сер. {{ fmt(average()) }}
                 </span>
             }
         </div>
@@ -53,7 +54,7 @@ type Column = { month: TrendMonth; index: number; x: number; total: number; segm
         <div class="plot" #plot (pointerdown)="down($event)" (pointerleave)="leave($event)">
             @if (width() > 0) {
                 <svg [attr.width]="width()" [attr.height]="height" role="img"
-                     [attr.aria-label]="selected ? 'Monthly spending on ' + selected : 'Monthly spending by category'">
+                     [attr.aria-label]="selected ? 'Витрати по місяцях: ' + selected : 'Витрати по місяцях за категоріями'">
                     <text class="unit" x="0" y="10">{{ unitCaption() }}</text>
                     @for (t of ticks(); track t) {
                         <line class="grid" [attr.x1]="m.left" [attr.x2]="width() - m.right" [attr.y1]="y(t)" [attr.y2]="y(t)" />
@@ -73,7 +74,9 @@ type Column = { month: TrendMonth; index: number; x: number; total: number; segm
                                       (click)="tap(col, seg.title)" />
                             }
                         </g>
-                        <text class="tick tick--x" [attr.x]="col.x" [attr.y]="height - m.bottom + 15" text-anchor="middle">{{ monthLabel(col.month) }}</text>
+                        @if (labeled().has(col.index)) {
+                            <text class="tick tick--x" [attr.x]="col.x" [attr.y]="height - m.bottom + 15" text-anchor="middle">{{ col.month.label }}</text>
+                        }
                         @if (yearAt().has(col.index)) {
                             <text class="tick tick--year" [attr.x]="col.x" [attr.y]="height - m.bottom + 29" text-anchor="middle">{{ col.month.year }}</text>
                         }
@@ -87,14 +90,14 @@ type Column = { month: TrendMonth; index: number; x: number; total: number; segm
                 @if (hovered(); as h) {
                     <div class="tip" [style.left.px]="tipLeft(h.col)" [style.top.px]="12">
                         <div class="tip__head">
-                            <span>{{ h.col.month.label }} {{ h.col.month.year }}</span>
-                            @if (h.col.month.partial) { <span class="tip__so">so far</span> }
+                            <span>{{ h.col.month.name }} {{ h.col.month.year }}</span>
+                            @if (h.col.month.partial) { <span class="tip__so">поки що</span> }
                         </div>
                         @if (!selected && h.seg; as s) {
                             <div class="tip__row"><i class="key" [style.background]="s.color"></i><b class="num">{{ money(s.value) }}</b><span>{{ s.title }} · {{ share(s.value, h.col.total) }}%</span></div>
                         }
-                        <div class="tip__row tip__row--total"><b class="num">{{ money(h.col.total) }}</b><span>{{ selected ? selected : 'spent in total' }}</span></div>
-                        <div class="tip__hint">{{ touch() ? 'tap again to open the month' : 'click to open the month' }}</div>
+                        <div class="tip__row tip__row--total"><b class="num">{{ money(h.col.total) }}</b><span>{{ selected ? selected : 'усього витрачено' }}</span></div>
+                        <div class="tip__hint">{{ touch() ? 'торкніться ще раз, щоб відкрити місяць' : 'клікніть, щоб відкрити місяць' }}</div>
                     </div>
                 }
             }
@@ -226,7 +229,8 @@ export class TrendColumnsComponent implements AfterViewInit, OnDestroy {
     @ViewChild('plot') private readonly plotRef!: ElementRef<HTMLElement>;
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-    public readonly OTHER = 'Other ';
+    /** Trailing space: the fold can never clash with a real category of the same name. */
+    public readonly OTHER = `${OTHER_TITLE} `;
     public readonly height = HEIGHT;
     public readonly m = M;
     public readonly width = signal(0);
@@ -299,14 +303,32 @@ export class TrendColumnsComponent implements AfterViewInit, OnDestroy {
     private readonly unit = computed(() => axisUnit(this.ticks()[this.ticks().length - 1]));
     public readonly unitCaption = computed(() => [this.unit().unit, currencySign(this.currency)].filter(Boolean).join(' '));
 
-    /** Where the year goes under the months: each January, and the first column unless a January is right next to it. */
+    /**
+     * Columns that carry a month label: all of them while three letters fit, else every
+     * other one counted back from this month (Ukrainian initials would be ambiguous —
+     * С is both січень and серпень).
+     */
+    public readonly labeled = computed(() => {
+        const n = this.months_().length;
+        const every = this.band() >= 28 ? 1 : 2;
+        const out = new Set<number>();
+        for (let i = n - 1; i >= 0; i -= every) out.add(i);
+        return out;
+    });
+
+    /** The year goes under the first labelled month of each year, unless it would crowd the next one. */
     public readonly yearAt = computed(() => {
         const months = this.months_();
-        const marks = new Set<number>();
-        months.forEach((m, i) => { if (m.month === 1) marks.add(i); });
-        const firstJanuary = months.findIndex(m => m.month === 1);
-        if (firstJanuary === -1 || firstJanuary > 2) marks.add(0);
-        return marks;
+        const marks: number[] = [];
+        let year: number | null = null;
+        for (const i of [...this.labeled()].sort((a, b) => a - b)) {
+            if (months[i].year !== year) {
+                marks.push(i);
+                year = months[i].year;
+            }
+        }
+        if (marks.length > 1 && (marks[1] - marks[0]) * this.band() < 40) marks.shift();
+        return new Set(marks);
     });
 
     /** Average of the FULL months — the running one would drag it down. */
@@ -378,11 +400,6 @@ export class TrendColumnsComponent implements AfterViewInit, OnDestroy {
             return;
         }
         this.openMonth.emit({ year: col.month.year, month: col.month.month });
-    }
-
-    /** Three letters while they fit, the initial once the columns get narrow. */
-    public monthLabel(month: TrendMonth): string {
-        return this.band() >= 28 ? month.label : month.label.charAt(0);
     }
 
     public tick(value: number): string {

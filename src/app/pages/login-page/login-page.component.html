@@ -3,24 +3,24 @@
         <header class="auth__head">
             <span class="auth__mark">M</span>
             <h1 class="auth__title">mono<span>·</span>finance</h1>
-            <p class="auth__sub">Your Monobank ledger</p>
+            <p class="auth__sub">Облік ваших фінансів з Monobank</p>
         </header>
 
         <form class="form" [formGroup]="loginForm" (ngSubmit)="login()">
             <label class="field">
-                <span class="field__label micro">Email</span>
+                <span class="field__label micro">Електронна пошта</span>
                 <input class="field__input"
                        type="email"
                        formControlName="email"
                        autocomplete="username"
                        placeholder="you@example.com" />
                 @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
-                    <span class="field__err">Enter a valid email address.</span>
+                    <span class="field__err">Введіть коректну адресу електронної пошти.</span>
                 }
             </label>
 
             <label class="field">
-                <span class="field__label micro">Password</span>
+                <span class="field__label micro">Пароль</span>
                 <span class="field__wrap">
                     <input class="field__input"
                            [type]="showPassword() ? 'text' : 'password'"
@@ -30,12 +30,12 @@
                     <button type="button"
                             class="field__reveal"
                             (click)="togglePassword()"
-                            [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'">
+                            [attr.aria-label]="showPassword() ? 'Сховати пароль' : 'Показати пароль'">
                         <span class="material-icons-round">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
                     </button>
                 </span>
                 @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
-                    <span class="field__err">Password is required.</span>
+                    <span class="field__err">Введіть пароль.</span>
                 }
             </label>
 
@@ -44,7 +44,7 @@
             }
 
             <button class="submit" type="submit" [disabled]="isLoading()">
-                {{ isLoading() ? 'Signing in…' : 'Sign in' }}
+                {{ isLoading() ? 'Вхід…' : 'Увійти' }}
             </button>
         </form>
 
@@ -52,16 +52,16 @@
         <div class="guide">
             <button type="button" class="guide__toggle" (click)="toggleTokenGuide()" [attr.aria-expanded]="showTokenGuide()">
                 <span class="material-icons-round">{{ showTokenGuide() ? 'expand_less' : 'expand_more' }}</span>
-                Where do I get a Monobank token?
+                Де взяти токен Monobank?
             </button>
             @if (showTokenGuide()) {
                 <ol class="guide__steps">
-                    <li>Open <span class="mono">api.monobank.ua</span> in a browser.</li>
-                    <li>Sign in by scanning the QR code with the Monobank app.</li>
-                    <li>Create a personal API token.</li>
-                    <li>Paste it into Profile → Monobank token.</li>
+                    <li>Відкрийте <span class="mono">api.monobank.ua</span> у браузері.</li>
+                    <li>Увійдіть, відсканувавши QR-код у застосунку Monobank.</li>
+                    <li>Створіть особистий API-токен.</li>
+                    <li>Вставте його в Профіль → Токен Monobank.</li>
                 </ol>
-                <p class="guide__note">Tokens expire periodically — regenerate one the same way when syncing stops.</p>
+                <p class="guide__note">Термін дії токена час від часу спливає — коли синхронізація зупиниться, створіть новий так само.</p>
             }
         </div>
     </section>

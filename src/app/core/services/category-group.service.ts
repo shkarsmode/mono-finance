@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { buildAutoCategories } from '@core/helpers/auto-categories';
+import { OWN_MONEY_TITLES } from '@core/helpers/category-titles';
 import { AssignMode, assignTransaction, summarize, toDefinitions } from '@core/helpers/categorize';
 import { buildFlowContext, CountMode, EMPTY_FLOW_CONTEXT, FlowContext } from '@core/helpers/flows';
 import { IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -137,7 +138,7 @@ export class CategoryGroupService {
                 next: () => this.loadingService.loading$.next(false),
                 error: () => {
                     this.loadingService.loading$.next(false);
-                    this.toast.error('Categories were not saved — check the connection and try again.');
+                    this.toast.error('Категорії не збереглися — перевірте з’єднання й спробуйте ще раз.');
                 },
             });
     }
@@ -157,7 +158,7 @@ export class CategoryGroupService {
         const copies: ICategoryGroup[] = auto.map(g => ({
             emoji: g.emoji,
             title: g.title,
-            keys: g.title === 'Own money' ? [...OWN_MONEY_KEYS, ...ownJarKeys] : [...g.keys],
+            keys: OWN_MONEY_TITLES.includes(g.title) ? [...OWN_MONEY_KEYS, ...ownJarKeys] : [...g.keys],
             excluded: g.excluded,
             direction: g.direction,
             amount: 0,

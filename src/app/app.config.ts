@@ -1,5 +1,7 @@
+import { registerLocaleData } from '@angular/common';
 import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import localeUk from '@angular/common/locales/uk';
+import { ApplicationConfig, LOCALE_ID, provideZoneChangeDetection } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withViewTransitions } from '@angular/router';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
@@ -9,8 +11,12 @@ import { BASE_PATH_API, MONOBANK_API } from '@core/tokens/monobank-environment.t
 import { environment } from '../environments';
 import { routes } from './app.routing';
 
+// The app speaks Ukrainian: dates, weekdays and numbers from Angular's pipes follow it.
+registerLocaleData(localeUk);
+
 export const appConfig: ApplicationConfig = {
     providers: [
+        { provide: LOCALE_ID, useValue: 'uk' },
         provideZoneChangeDetection({ eventCoalescing: true }),
         provideRouter(routes, withViewTransitions()),
         provideHttpClient(withInterceptorsFromDi()),

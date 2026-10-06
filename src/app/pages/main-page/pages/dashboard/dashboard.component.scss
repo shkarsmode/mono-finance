@@ -349,7 +349,8 @@
     & + & { border-left: 1px solid var(--line); }
 
     &__val {
-        font-size: var(--fs-kpi);
+        // two tiles share a phone's width: the figure steps down instead of ellipsizing
+        font-size: clamp(20px, 5.6vw, var(--fs-kpi));
         font-weight: 600;
         line-height: var(--lh-tight);
         letter-spacing: var(--tracking-tight);
@@ -426,8 +427,9 @@
     .board { grid-template-columns: minmax(0, 1fr); }
 }
 
-// Fixed-width month label: every month is laid over an invisible "September 2026",
-// so stepping through months never shifts the arrows away from the cursor.
+// Fixed-width month label: every month is laid over an invisible "Листопад 2026" and
+// "Вересень 2026" (the widest, depending on the font), so stepping through months never
+// shifts the arrows away from the cursor.
 .period__text {
     display: inline-grid;
     justify-items: center;

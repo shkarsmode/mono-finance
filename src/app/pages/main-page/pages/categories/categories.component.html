@@ -1,35 +1,35 @@
 <section class="page">
     <header class="page__head">
         <div>
-            <h1 class="page__title">Categories</h1>
+            <h1 class="page__title">Категорії</h1>
             @if (readonly()) {
                 <p class="page__sub">
-                    <strong>Automatic</strong> — built from MCC codes and merchant names, checked against two years of your
-                    statement. Own money is recognised and left out. Figures are for <span class="num">{{ periodLabel }}</span>.
+                    <strong>Автоматичні</strong> — складені за MCC-кодами та описами операцій і перевірені на вашій виписці
+                    за два роки. Власні кошти розпізнаються й не враховуються. Дані за <span class="num">{{ periodLabel }}</span>.
                 </p>
             } @else {
                 <p class="page__sub">
-                    A pinned transaction wins, then the <strong>longest</strong> matching merchant rule, then MCC rules in list order.
-                    Figures are for <span class="num">{{ periodLabel }}</span>.
+                    Пріоритет: закріплена операція, потім <strong>найдовше</strong> правило за описом, що підходить, далі правила MCC у порядку списку.
+                    Дані за <span class="num">{{ periodLabel }}</span>.
                 </p>
             }
         </div>
         <div class="page__actions">
-            <div class="seg" role="group" aria-label="Which categories">
-                <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Auto</button>
-                <button type="button" [class.seg--on]="mode() === 'mine'" (click)="setMode('mine')">Mine</button>
+            <div class="seg" role="group" aria-label="Які категорії">
+                <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Автоматичні</button>
+                <button type="button" [class.seg--on]="mode() === 'mine'" (click)="setMode('mine')">Мої</button>
             </div>
             @if (readonly()) {
-                <button type="button" class="btn" (click)="adopt('append')" title="Adds the automatic categories you do not have yet">
-                    Add missing to Mine
+                <button type="button" class="btn" (click)="adopt('append')" title="Додає автоматичні категорії, яких у вас ще немає">
+                    Додати відсутні до моїх
                 </button>
                 <button type="button" class="btn btn--primary" [class.btn--confirm]="confirmReplace()" (click)="adopt('replace')">
-                    {{ confirmReplace() ? 'Click again — replaces yours' : (mineCount().length ? 'Replace Mine with these' : 'Start Mine from these') }}
+                    {{ confirmReplace() ? 'Натисніть ще раз — замінить ваші' : (mineCount().length ? 'Замінити мої цими' : 'Створити мої з цих') }}
                 </button>
             } @else {
                 <button type="button" class="btn btn--primary" (click)="createCategory()">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                    New category
+                    Нова категорія
                 </button>
             }
         </div>
@@ -37,24 +37,24 @@
 
     <div class="split">
         <!-- ── list ── -->
-        <nav class="list" aria-label="Categories">
+        <nav class="list" aria-label="Категорії">
             <button type="button" class="item item--inbox" [class.item--on]="selected() === INBOX" (click)="select(INBOX)">
                 <span class="item__icon">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2 3h4l2-3h4M5 5h14l1 8v6H4v-6z" /></svg>
                 </span>
                 <span class="item__main">
-                    <span class="item__title">{{ readonly() ? 'Other' : 'Uncategorized' }}</span>
-                    <span class="item__meta num">{{ uncategorized().length }} tx · {{ plural(inbox().length, 'merchant', 'merchants') }}</span>
+                    <span class="item__title">{{ readonly() ? OTHER_TITLE : UNCATEGORIZED_TITLE }}</span>
+                    <span class="item__meta num">{{ uncategorized().length }} оп. · {{ plural(inbox().length, ['опис', 'описи', 'описів']) }}</span>
                 </span>
                 <span class="item__val num">{{ uncategorizedNet() | displayMoney: currency() }}</span>
             </button>
 
-            <div class="list__rule micro">{{ readonly() ? 'Automatic categories' : 'Your categories · drag to reorder' }}</div>
+            <div class="list__rule micro">{{ readonly() ? 'Автоматичні категорії' : 'Ваші категорії · можна перетягувати' }}</div>
 
             <div cdkDropList (cdkDropListDropped)="onDrop($event)" class="list__drop">
                 @for (group of groups(); track group.title; let i = $index) {
                     <div class="item" cdkDrag cdkDragLockAxis="y" [cdkDragDisabled]="readonly()" [class.item--on]="selected() === group.title">
-                        <span class="item__handle" cdkDragHandle aria-label="Drag to reorder" [class.item__handle--off]="readonly()">
+                        <span class="item__handle" cdkDragHandle aria-label="Перетягніть, щоб змінити порядок" [class.item__handle--off]="readonly()">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="1.3" /><circle cx="15" cy="7" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="9" cy="17" r="1.3" /><circle cx="15" cy="17" r="1.3" /></svg>
                         </span>
                         <button type="button" class="item__btn" (click)="select(group.title)">
@@ -65,8 +65,8 @@
                                     {{ group.title }}
                                 </span>
                                 <span class="item__meta num">
-                                    {{ group.count ?? 0 }} tx · {{ group.test && !group.keys.length ? 'automatic' : plural(group.keys.length, 'rule', 'rules') }}
-                                    @if (group.excluded) { · <span class="badge">not counted</span> }
+                                    {{ group.count ?? 0 }} оп. · {{ group.test && !group.keys.length ? 'автоматично' : plural(group.keys.length, ['правило', 'правила', 'правил']) }}
+                                    @if (group.excluded) { · <span class="badge">не враховано</span> }
                                 </span>
                             </span>
                             <span class="item__val num" [class.is-pos]="group.amount > 0">{{ group.amount | displayMoney: currency() }}</span>
@@ -74,7 +74,7 @@
                         <div *cdkDragPlaceholder class="item item--ghost"></div>
                     </div>
                 } @empty {
-                    <p class="list__empty">No categories yet — create one, or categorize straight from the ledger.</p>
+                    <p class="list__empty">Категорій поки немає — створіть першу або призначайте категорії прямо в списку операцій.</p>
                 }
             </div>
         </nav>
@@ -84,18 +84,18 @@
             @if (selected() === INBOX) {
                 <section class="panel">
                     <header class="panel__head">
-                        <h2 class="panel__title">{{ readonly() ? 'Not matched by any rule' : 'Uncategorized merchants' }}</h2>
-                        <span class="panel__meta num">{{ uncategorized().length }} transactions</span>
+                        <h2 class="panel__title">{{ readonly() ? 'Жодне правило не підійшло' : 'Описи без категорії' }}</h2>
+                        <span class="panel__meta num">{{ plural(uncategorized().length, ['операція', 'операції', 'операцій']) }}</span>
                     </header>
 
                     @if (!readonly() && ownMoneyBuckets().length) {
                         <div class="suggest">
                             <div class="suggest__text">
-                                <strong>{{ ownMoneyBuckets().length }} of these look like money moving between your own pockets</strong>
+                                <strong>Схоже, {{ ownMoneyBuckets().length }} з них — це рух коштів між вашими рахунками</strong>
                                 <span>{{ ownMoneyPreview() }}</span>
                             </div>
                             <button type="button" class="btn" (click)="createTransfers()">
-                                {{ transfersTarget().index >= 0 ? 'Move to “' + transfersTarget().title + '”' : 'Group as “Transfers”' }} — not counted
+                                {{ transfersTarget().index >= 0 ? 'Перенести до категорії «' + transfersTarget().title + '»' : 'Згрупувати як «' + transfersTarget().title + '»' }} — не враховано
                             </button>
                         </div>
                     }
@@ -106,14 +106,14 @@
                                 <li class="merchant">
                                     <span class="merchant__main">
                                         <span class="merchant__name">{{ bucket.label }}</span>
-                                        <span class="merchant__meta num">{{ bucket.count }} tx · last {{ bucket.last * 1000 | date: 'd MMM' }}</span>
+                                        <span class="merchant__meta num">{{ bucket.count }} оп. · остання {{ bucket.last * 1000 | date: 'd MMM' }}</span>
                                     </span>
                                     <span class="merchant__val num" [class.is-pos]="bucket.net > 0">{{ bucket.net | displayMoney: currency() }}</span>
                                     @if (!readonly()) {
                                         <button type="button" class="btn btn--small"
                                                 [class.btn--open]="picker()?.bucket?.label === bucket.label"
                                                 (click)="openPicker($event, bucket)">
-                                            Assign
+                                            Призначити
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                                         </button>
                                     }
@@ -123,7 +123,7 @@
                     } @else {
                         <div class="done">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-                            <p>Everything this month has a category.</p>
+                            <p>Цього місяця все має категорію.</p>
                         </div>
                     }
                 </section>
@@ -137,27 +137,27 @@
                                 @if (group.emoji) { <span class="emoji">{{ group.emoji }}</span> }
                                 {{ group.title }}
                             </h2>
-                            @if (group.excluded) { <span class="badge">not counted</span> }
-                            <button type="button" class="btn" (click)="adopt('append', group.title)">Copy to Mine</button>
+                            @if (group.excluded) { <span class="badge">не враховано</span> }
+                            <button type="button" class="btn" (click)="adopt('append', group.title)">Скопіювати до моїх</button>
                         </header>
                         @if (group.note) { <p class="editor__note">{{ group.note }}</p> }
                     } @else {
                     <header class="editor__head">
                         <span class="dot dot--lg" [style.background]="color(group.title)"></span>
                         <input class="editor__emoji" [value]="group.emoji" maxlength="4" placeholder="🙂"
-                               aria-label="Emoji" (change)="setEmoji($event)" />
+                               aria-label="Емодзі" (change)="setEmoji($event)" />
                         <input id="category-name" class="editor__name" [value]="group.title"
-                               aria-label="Category name" (change)="rename($event)" (keydown.enter)="$any($event.target).blur()" />
+                               aria-label="Назва категорії" (change)="rename($event)" (keydown.enter)="$any($event.target).blur()" />
                         <button type="button" class="btn btn--danger" [class.btn--confirm]="confirmDelete()" (click)="remove()">
-                            {{ confirmDelete() ? 'Click again to delete' : 'Delete' }}
+                            {{ confirmDelete() ? 'Натисніть ще раз, щоб видалити' : 'Видалити' }}
                         </button>
                     </header>
                     }
 
                     <div class="figures">
-                        <div><span class="micro">Spent</span><span class="figures__v num">{{ -(group.spent ?? 0) | displayMoney: currency() }}</span></div>
-                        <div><span class="micro">Income</span><span class="figures__v num is-pos">{{ group.income ?? 0 | displayMoney: currency() }}</span></div>
-                        <div><span class="micro">Transactions</span><span class="figures__v num">{{ group.count ?? 0 }}</span></div>
+                        <div><span class="micro">Витрачено</span><span class="figures__v num">{{ -(group.spent ?? 0) | displayMoney: currency() }}</span></div>
+                        <div><span class="micro">Надходження</span><span class="figures__v num is-pos">{{ group.income ?? 0 | displayMoney: currency() }}</span></div>
+                        <div><span class="micro">Операції</span><span class="figures__v num">{{ group.count ?? 0 }}</span></div>
                     </div>
 
                     @if (!readonly()) {
@@ -165,26 +165,26 @@
                         <input type="checkbox" [checked]="!group.excluded" (change)="toggleCounted()" />
                         <span class="switch__track"><span class="switch__thumb"></span></span>
                         <span class="switch__text">
-                            <strong>Count in Spent and Income</strong>
-                            <span>Turn off for jars, own-card transfers and other money that only changes pockets.</span>
+                            <strong>Враховувати у витратах і надходженнях</strong>
+                            <span>Вимкніть для банок, переказів між своїми картками та інших грошей, що лише переходять з кишені в кишеню.</span>
                         </span>
                     </label>
                     }
 
                     <div class="block">
-                        <h3 class="block__title micro">Rules</h3>
+                        <h3 class="block__title micro">Правила</h3>
                         @if (group.test) {
-                            <p class="block__empty">Plus a built-in rule: {{ group.title === 'Own money' ? 'your jars, your other cards, deposits and your own name at other banks' : 'recognised from the statement wording' }}.</p>
+                            <p class="block__empty">Плюс вбудоване правило: {{ isOwnMoney(group.title) ? 'ваші банки, інші ваші картки, депозити й ваші рахунки в інших банках' : 'розпізнавання за текстом виписки' }}.</p>
                         }
                         @if (rules().length) {
                             <ul class="rules">
                                 @for (rule of rules(); track rule.raw) {
                                     <li class="rule">
-                                        <span class="rule__kind">{{ rule.kind === 'MCC' ? 'MCC is' : rule.kind === 'Starts' ? 'starts with' : 'contains' }}</span>
+                                        <span class="rule__kind">{{ rule.kind === 'MCC' ? 'MCC =' : rule.kind === 'Starts' ? 'починається з' : 'містить' }}</span>
                                         <span class="rule__key" [class.mono]="rule.kind === 'MCC'">{{ rule.key }}</span>
-                                        <span class="rule__hits num" [class.rule__hits--zero]="!rule.hits">{{ rule.hits }} this month</span>
+                                        <span class="rule__hits num" [class.rule__hits--zero]="!rule.hits">{{ rule.hits }} цього місяця</span>
                                         @if (!readonly()) {
-                                            <button type="button" class="rule__x" (click)="removeRule(rule.raw)" [attr.aria-label]="'Remove rule ' + rule.key">
+                                            <button type="button" class="rule__x" (click)="removeRule(rule.raw)" [attr.aria-label]="'Видалити правило ' + rule.key">
                                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                                             </button>
                                         }
@@ -194,9 +194,9 @@
                         }
                         @if (!readonly()) {
                         <form class="addrule" (submit)="addRule($event)">
-                            <input type="text" list="merchant-suggestions" placeholder="Merchant text or 4-digit MCC"
-                                   [value]="ruleDraft()" (input)="onRuleInput($event)" aria-label="New rule" />
-                            <button type="submit" class="btn" [disabled]="!ruleDraft().trim()">Add rule</button>
+                            <input type="text" list="merchant-suggestions" placeholder="Текст опису або 4-значний MCC"
+                                   [value]="ruleDraft()" (input)="onRuleInput($event)" aria-label="Нове правило" />
+                            <button type="submit" class="btn" [disabled]="!ruleDraft().trim()">Додати правило</button>
                             <datalist id="merchant-suggestions">
                                 @for (s of suggestions(); track s) { <option [value]="s"></option> }
                             </datalist>
@@ -206,14 +206,14 @@
 
                     @if (pinned().length) {
                         <div class="block">
-                            <h3 class="block__title micro">Pinned transactions</h3>
+                            <h3 class="block__title micro">Закріплені операції</h3>
                             <ul class="rules">
                                 @for (pin of pinned(); track pin.id) {
                                     <li class="rule">
-                                        <span class="rule__kind">only</span>
-                                        <span class="rule__key">{{ pin.tx?.description ?? 'transaction from another month' }}</span>
+                                        <span class="rule__kind">лише</span>
+                                        <span class="rule__key">{{ pin.tx?.description ?? 'операція з іншого місяця' }}</span>
                                         @if (pin.tx) { <span class="rule__hits num">{{ pin.tx.time * 1000 | date: 'd MMM' }}</span> }
-                                        <button type="button" class="rule__x" (click)="unpin(pin.id)" aria-label="Unpin">
+                                        <button type="button" class="rule__x" (click)="unpin(pin.id)" aria-label="Відкріпити">
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                                         </button>
                                     </li>
@@ -223,7 +223,7 @@
                     }
 
                     <div class="block">
-                        <h3 class="block__title micro">In this category · {{ preview().won.length }}</h3>
+                        <h3 class="block__title micro">У цій категорії · {{ preview().won.length }}</h3>
                         @if (preview().won.length) {
                             <ul class="txs">
                                 @for (tx of preview().won.slice(0, 40); track tx.id) {
@@ -237,16 +237,16 @@
                                 }
                             </ul>
                             @if (preview().won.length > 40) {
-                                <p class="block__more num">and {{ preview().won.length - 40 }} more</p>
+                                <p class="block__more num">і ще {{ preview().won.length - 40 }}</p>
                             }
                         } @else {
-                            <p class="block__empty">Nothing this month yet. Add a rule above, or categorize from the ledger.</p>
+                            <p class="block__empty">Цього місяця тут поки нічого. Додайте правило вище або призначте категорію в списку операцій.</p>
                         }
                     </div>
 
                     @if (preview().lost.length) {
                         <div class="block">
-                            <h3 class="block__title micro">Matched, but taken by another category · {{ preview().lost.length }}</h3>
+                            <h3 class="block__title micro">Підходять, але дісталися іншій категорії · {{ preview().lost.length }}</h3>
                             <ul class="txs">
                                 @for (item of preview().lost.slice(0, 20); track item.tx.id) {
                                     <li class="tx tx--lost">
@@ -261,7 +261,7 @@
                 </section>
                 }
             } @else {
-                <section class="panel"><p class="block__empty">Pick a category on the left.</p></section>
+                <section class="panel"><p class="block__empty">Виберіть категорію ліворуч.</p></section>
             }
         </div>
     </div>

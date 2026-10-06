@@ -7,6 +7,9 @@ import {
 import {
     AssignMode, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
+import {
+    BETWEEN_ACCOUNTS_TITLE, OTHER_TITLE, OWN_MONEY_TITLE, UNCATEGORIZED_TITLE,
+} from '@core/helpers/category-titles';
 import { Flow, flowOf, isPendingHold, isRoundUp, roundUpJar } from '@core/helpers/flows';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
@@ -61,12 +64,24 @@ const DEFAULT_DIR: Record<LedgerSortKey, SortDir> = {
 };
 
 const SORT_LABEL: Record<LedgerSortKey, string> = {
-    date: 'Date',
-    merchant: 'Merchant',
-    category: 'Category',
-    amount: 'Amount',
-    balance: 'Balance',
+    date: 'Дата',
+    merchant: 'Опис',
+    category: 'Категорія',
+    amount: 'Сума',
+    balance: 'Баланс',
 };
+
+/** Short weekday for the day rules, indexed by Date.getDay() (0 = Sunday). */
+const WEEKDAY_SHORT = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+/** Ukrainian plural: 1 переказ, 2–4 перекази, 5+ переказів (11–14 take the last form). */
+function plural(n: number, forms: readonly [string, string, string]): string {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return forms[0];
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1];
+    return forms[2];
+}
 
 function readSort(): { key: LedgerSortKey; dir: SortDir } {
     try {
@@ -130,6 +145,8 @@ export class TransactionsComponent {
     public readonly groupsView = this.groupList.asReadonly();
     public readonly sortLabel = SORT_LABEL;
     public readonly UNCATEGORIZED_FILTER = UNCATEGORIZED_FILTER;
+    public readonly OTHER_TITLE = OTHER_TITLE;
+    public readonly OWN_MONEY_TITLE = OWN_MONEY_TITLE;
 
     @HostListener('window:resize')
     public onResize(): void {
@@ -203,8 +220,8 @@ export class TransactionsComponent {
     public readonly filterLabel = computed(() => {
         const filter = this.filter();
         if (filter === null) return null;
-        if (filter === INTERNAL_FILTER) return 'Between your accounts';
-        if (filter === UNCATEGORIZED_FILTER) return this.categoryMode() === 'auto' ? 'Other' : 'Uncategorized';
+        if (filter === INTERNAL_FILTER) return BETWEEN_ACCOUNTS_TITLE;
+        if (filter === UNCATEGORIZED_FILTER) return this.categoryMode() === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE;
         return filter;
     });
 
@@ -231,8 +248,10 @@ export class TransactionsComponent {
         if (this.searchValue?.trim()) return null;
         const folded = rows.filter(row => isRoundUp(row.tx));
         if (folded.length < 2 || folded.length === rows.length) return null;
+        const count = folded.length;
         return {
-            count: folded.length,
+            count,
+            countLabel: `${count} ${plural(count, ['дрібний переказ', 'дрібні перекази', 'дрібних переказів'])} на банку`,
             net: folded.reduce((sum, row) => sum + (Number(row.tx.amount) || 0), 0),
             jar: roundUpJar(folded[0].tx),
             rows: [...folded].sort((a, b) => b.tx.time - a.tx.time),
@@ -250,7 +269,8 @@ export class TransactionsComponent {
         const rows = this.listedRows();
         const sign = dir === 'asc' ? 1 : -1;
         const byTimeDesc = (a: LedgerRow, b: LedgerRow) => b.tx.time - a.tx.time;
-        const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+        const collator = new Intl.Collator('uk-UA', { sensitivity: 'base', numeric: true });
+        const uncategorizedTitle = this.categoryMode() === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE;
 
         if (key === 'amount' || key === 'balance') {
             const sorted = [...rows].sort((a, b) =>
@@ -269,11 +289,11 @@ export class TransactionsComponent {
             if (key === 'date') {
                 const d = new Date(row.tx.time * 1000);
                 id = dayKey(row.tx.time);
-                title = d.toLocaleDateString(undefined, { weekday: 'short' });
-                subtitle = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+                title = WEEKDAY_SHORT[d.getDay()];
+                subtitle = d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
             } else if (key === 'category') {
                 id = row.category ?? UNCATEGORIZED_FILTER;
-                title = row.category ?? 'Uncategorized';
+                title = row.category ?? uncategorizedTitle;
                 color = row.color;
             } else {
                 const label = merchantLabel(row.tx) || '—';
@@ -419,8 +439,8 @@ export class TransactionsComponent {
     private announce(tx: ITransaction, title: string, mode: AssignMode): void {
         const merchant = merchantLabel(tx);
         this.toast.success(mode === 'merchant' && merchant
-            ? `Every “${merchant}” → ${title}`
-            : `Moved to ${title}`);
+            ? `Усі операції «${merchant}» → ${title}`
+            : `Перенесено до «${title}»`);
     }
 }
 
@@ -431,10 +451,10 @@ function dayKey(unixSeconds: number): string {
 
 function describe(reason: MatchReason): string {
     switch (reason.by) {
-        case 'pin': return 'Pinned to this category';
-        case 'system': return 'Recognised automatically';
-        case 'text': return `Matched “${reason.key}”`;
-        case 'mcc': return `By MCC ${reason.mcc}`;
-        default: return 'No rule matched';
+        case 'pin': return 'Закріплено за цією категорією';
+        case 'system': return 'Розпізнано автоматично';
+        case 'text': return `Збіг із «${reason.key}»`;
+        case 'mcc': return `За MCC ${reason.mcc}`;
+        default: return 'Жодне правило не підійшло';
     }
 }

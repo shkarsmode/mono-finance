@@ -1,16 +1,18 @@
 <section class="page">
     <header class="page__head">
-        <h1 class="page__title">Calendar</h1>
+        <h1 class="page__title">Календар</h1>
         <div class="period">
-            <button type="button" class="period__step" (click)="prevMonth()" aria-label="Previous month">
+            <button type="button" class="period__step" (click)="prevMonth()" aria-label="Попередній місяць">
                 <span class="material-icons-round">chevron_left</span>
             </button>
-            <!-- the widest month reserves the width, so the arrows never move under the cursor -->
+            <!-- the widest month reserves the width, so the arrows never move under the cursor.
+                 Листопад is the widest in Segoe UI, Вересень in Arial-like fonts: both sit underneath. -->
             <span class="period__label period__text num">
-                <span class="period__sizer" aria-hidden="true">September 2026</span>
+                <span class="period__sizer" aria-hidden="true">Листопад 2026</span>
+                <span class="period__sizer" aria-hidden="true">Вересень 2026</span>
                 <span>{{ monthName() }} {{ activeYear() }}</span>
             </span>
-            <button type="button" class="period__step" (click)="nextMonth()" aria-label="Next month">
+            <button type="button" class="period__step" (click)="nextMonth()" aria-label="Наступний місяць">
                 <span class="material-icons-round">chevron_right</span>
             </button>
         </div>
@@ -24,19 +26,19 @@
 
         <div class="totals">
             <div class="totals__cell">
-                <span class="micro">Income</span>
-                <span class="totals__val num is-pos">{{ data.totals.income / 100 | displayMoneyMajor: 980 }}</span>
+                <span class="micro">Надходження</span>
+                <span class="totals__val num is-pos">{{ data.totals.income / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
             </div>
             <div class="totals__cell">
-                <span class="micro">Spent</span>
-                <span class="totals__val num">{{ data.totals.expense / 100 | displayMoneyMajor: 980 }}</span>
+                <span class="micro">Витрачено</span>
+                <span class="totals__val num">{{ data.totals.expense / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
             </div>
             <div class="totals__cell">
-                <span class="micro">Avg / active day</span>
-                <span class="totals__val num">{{ data.totals.avgDailySpend / 100 | displayMoneyMajor: 980 }}</span>
+                <span class="micro">Сер. за активний день</span>
+                <span class="totals__val num">{{ data.totals.avgDailySpend / 100 | displayMoneyMajor: 980 : 0 : 0 }}</span>
             </div>
             <div class="totals__cell">
-                <span class="micro">Transactions</span>
+                <span class="micro">Операції</span>
                 <span class="totals__val num">{{ data.totals.txCount }}</span>
             </div>
         </div>
@@ -70,45 +72,45 @@
 
             <!-- a legend, so the heat actually means something -->
             <div class="legend">
-                <span class="micro">Less</span>
+                <span class="micro">Менше</span>
                 <span class="legend__swatch" data-heat="0"></span>
                 @for (step of heatSteps; track step) {
                     <span class="legend__swatch" [attr.data-heat]="step"></span>
                 }
-                <span class="micro">More</span>
+                <span class="micro">Більше</span>
                 <span class="legend__spacer"></span>
-                <span class="micro">Daily spend</span>
+                <span class="micro">Витрати за день</span>
             </div>
         </section>
 
         @if (selectedDay(); as day) {
             <section class="detail">
                 <header class="detail__head">
-                    <h2 class="detail__title">{{ selectedDayLabel() }}</h2>
-                    <button type="button" class="detail__clear" (click)="selectDay(day)">Clear selection</button>
+                    <h2 class="detail__title">{{ selectedDayTitle() }}</h2>
+                    <button type="button" class="detail__clear" (click)="selectDay(day)">Скинути вибір</button>
                 </header>
                 <div class="detail__grid">
                     <div class="detail__cell">
-                        <span class="micro">Spent</span>
+                        <span class="micro">Витрачено</span>
                         <span class="detail__val num">{{ day.expense / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
                     <div class="detail__cell">
-                        <span class="micro">Income</span>
+                        <span class="micro">Надходження</span>
                         <span class="detail__val num is-pos">{{ day.income / 100 | displayMoneyMajor: 980 }}</span>
                     </div>
                     <div class="detail__cell">
-                        <span class="micro">Net</span>
+                        <span class="micro">Різниця</span>
                         <span class="detail__val num" [class.is-pos]="day.net > 0" [class.is-neg]="day.net < 0">
                             {{ day.net / 100 | displayMoneyMajor: 980 }}
                         </span>
                     </div>
                     <div class="detail__cell">
-                        <span class="micro">Transactions</span>
+                        <span class="micro">Операції</span>
                         <span class="detail__val num">{{ day.txCount }}</span>
                     </div>
                 </div>
                 @if (day.topMerchant) {
-                    <p class="detail__merchant">Top merchant · <strong>{{ day.topMerchant }}</strong></p>
+                    <p class="detail__merchant">Найбільше витрат · <strong>{{ day.topMerchant }}</strong></p>
                 }
             </section>
         }
@@ -116,9 +118,9 @@
         <section class="feed">
             <header class="feed__head">
                 <h2 class="feed__title">
-                    {{ selectedDay() ? 'Transactions on ' + selectedDayLabel() : 'Transactions in ' + monthName() }}
+                    {{ selectedDay() ? 'Операції за ' + selectedDayLabel() : 'Операції за ' + monthName().toLowerCase() }}
                 </h2>
-                <span class="feed__count num">{{ visibleTransactions().length }} of {{ monthTransactions().length }}</span>
+                <span class="feed__count num">{{ visibleTransactions().length }} з {{ monthTransactions().length }}</span>
             </header>
 
             @if (transactionError()) {
@@ -135,7 +137,7 @@
                 </app-transactions>
             } @else {
                 <div class="empty">
-                    <p>No transactions {{ selectedDay() ? 'on this day' : 'this month' }}.</p>
+                    <p>{{ selectedDay() ? 'Цього дня операцій немає.' : 'Цього місяця операцій немає.' }}</p>
                 </div>
             }
         </section>

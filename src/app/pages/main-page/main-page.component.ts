@@ -35,16 +35,16 @@ export class MainPageComponent implements OnInit {
 
     // The first five are the phone's bottom bar, so the daily tools come first.
     readonly navItems = [
-        { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { path: '/trends', icon: 'bar_chart', label: 'Trends' },
-        { path: '/categories', icon: 'category', label: 'Categories' },
-        { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
-        { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },
-        { path: '/subscriptions', icon: 'autorenew', label: 'Subscriptions' },
-        { path: '/insights', icon: 'psychology', label: 'Insights' },
-        { path: '/exchange', icon: 'currency_exchange', label: 'Exchange' },
-        { path: '/changelog', icon: 'timeline', label: 'Changes' },
-        { path: '/profile', icon: 'person', label: 'Profile' },
+        { path: '/dashboard', icon: 'dashboard', label: 'Огляд' },
+        { path: '/trends', icon: 'bar_chart', label: 'Динаміка' },
+        { path: '/categories', icon: 'category', label: 'Категорії' },
+        { path: '/calendar', icon: 'calendar_month', label: 'Календар' },
+        { path: '/analytics/mcc', icon: 'analytics', label: 'Аналітика' },
+        { path: '/subscriptions', icon: 'autorenew', label: 'Підписки' },
+        { path: '/insights', icon: 'psychology', label: 'Інсайти' },
+        { path: '/exchange', icon: 'currency_exchange', label: 'Обмін валют' },
+        { path: '/changelog', icon: 'timeline', label: 'Що нового' },
+        { path: '/profile', icon: 'person', label: 'Профіль' },
     ];
 
     ngOnInit(): void {
@@ -87,17 +87,17 @@ export class MainPageComponent implements OnInit {
                 ).pipe(first()).subscribe({
                     next: () => {
                         this.isSyncing.set(false);
-                        this.toastService.success('Data synced successfully');
+                        this.toastService.success('Дані синхронізовано');
                     },
                     error: () => {
                         this.isSyncing.set(false);
-                        this.toastService.error('Failed to sync transactions');
+                        this.toastService.error('Не вдалося синхронізувати операції');
                     },
                 });
             },
             error: () => {
                 this.isSyncing.set(false);
-                this.toastService.error('Failed to sync account info');
+                this.toastService.error('Не вдалося синхронізувати дані рахунків');
             },
         });
     }

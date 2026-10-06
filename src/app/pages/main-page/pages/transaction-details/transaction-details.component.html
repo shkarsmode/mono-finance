@@ -2,22 +2,22 @@
     <section class="page">
         <button class="back" type="button" (click)="goBack()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-            Back
+            Назад
         </button>
 
         <article class="card">
             <header class="hero">
                 <div class="hero__main">
                     <div class="hero__tags">
-                        <span class="tag" [class.tag--pos]="tx.amount > 0">{{ tx.amount > 0 ? 'Income' : 'Expense' }}</span>
-                        @if (pending()) { <span class="tag tag--hold">Hold · not settled yet</span> }
-                        @if (flow() === 'internal') { <span class="tag">Own money · not counted</span> }
-                        @if (flow() === 'refund') { <span class="tag tag--refund">Refund · reduces spending</span> }
+                        <span class="tag" [class.tag--pos]="tx.amount > 0">{{ tx.amount > 0 ? 'Надходження' : 'Витрата' }}</span>
+                        @if (pending()) { <span class="tag tag--hold">Холд · ще в обробці</span> }
+                        @if (flow() === 'internal') { <span class="tag">{{ OWN_MONEY_TITLE }} · не враховано</span> }
+                        @if (flow() === 'refund') { <span class="tag tag--refund">Повернення · зменшує витрати</span> }
                     </div>
                     <h1 class="hero__title">{{ tx.description }}</h1>
                     <p class="hero__when num">{{ tx.time * 1000 | date: 'EEEE, d MMMM y · HH:mm' }}</p>
                     @if (staleHold()) {
-                        <p class="hero__note">Monobank still marks this as a hold, but the money was taken — it never clears the flag on some operations.</p>
+                        <p class="hero__note">Monobank досі позначає це як холд, але гроші вже списано — для деяких операцій банк не знімає цю позначку.</p>
                     }
                 </div>
                 <div class="hero__amount">
@@ -30,7 +30,7 @@
 
             <!-- the one thing you are most likely to change here -->
             <div class="catrow">
-                <span class="micro">Category</span>
+                <span class="micro">Категорія</span>
                 @if (categoryMode() === 'auto') {
                     <span class="cat cat--static">
                         <span class="dot" [style.background]="categoryColor()"></span>
@@ -38,49 +38,49 @@
                             @if (c.emoji) { <span class="emoji">{{ c.emoji }}</span> }
                             {{ c.title }}
                         } @else {
-                            Other
+                            {{ OTHER_TITLE }}
                         }
                     </span>
-                    <span class="catrow__note">{{ categoryReason() }} · automatic</span>
+                    <span class="catrow__note">{{ categoryReason() }} · автоматично</span>
                 } @else {
                 <button type="button" class="cat" [class.cat--none]="!category()" [class.cat--open]="!!pickerOrigin()"
                         (click)="togglePicker($event)"
-                        [attr.aria-label]="category() ? 'Category ' + category()!.title + ' — change' : 'Categorize this transaction'">
+                        [attr.aria-label]="category() ? 'Категорія ' + category()!.title + ' — змінити' : 'Вибрати категорію для цієї операції'">
                     <span class="dot" [style.background]="categoryColor()"></span>
                     @if (category(); as c) {
                         @if (c.emoji) { <span class="emoji">{{ c.emoji }}</span> }
                         {{ c.title }}
                     } @else {
-                        Categorize
+                        Вибрати категорію
                     }
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
                 }
-                @if (category() && category()!.excluded) { <span class="catrow__note">not counted in Spent and Income</span> }
+                @if (category() && category()!.excluded) { <span class="catrow__note">не враховано у витратах і надходженнях</span> }
             </div>
 
             <div class="figures">
                 <div>
-                    <span class="micro">Balance after</span>
+                    <span class="micro">Баланс після</span>
                     <span class="figures__v num balance-cell">{{ tx.balance | displayMoney: tx.cardCurrencyCode }}</span>
                 </div>
                 @if (tx.cashbackAmount > 0) {
                     <div>
-                        <span class="micro">Cashback</span>
+                        <span class="micro">Кешбек</span>
                         <span class="figures__v num is-pos">+{{ tx.cashbackAmount | displayMoney: tx.cardCurrencyCode }}</span>
                     </div>
                 }
                 @if (tx.commissionRate > 0) {
                     <div>
-                        <span class="micro">Commission</span>
+                        <span class="micro">Комісія</span>
                         <span class="figures__v num">{{ tx.commissionRate | displayMoney: tx.cardCurrencyCode }}</span>
                     </div>
                 }
                 @if (siblings().length > 1) {
                     <div>
-                        <span class="micro">{{ merchant() }} this month</span>
+                        <span class="micro">{{ merchant() }} за цей місяць</span>
                         <span class="figures__v num">{{ siblingsNet() | displayMoney: tx.cardCurrencyCode }}</span>
-                        <span class="figures__sub num">{{ siblings().length }} transactions</span>
+                        <span class="figures__sub num">{{ siblingsCountLabel() }}</span>
                     </div>
                 }
             </div>
@@ -93,7 +93,7 @@
                             <dd [class.mono]="row.mono">
                                 <span class="kv__val">{{ row.value }}</span>
                                 @if (row.copy) {
-                                    <button type="button" class="kv__copy" (click)="copy(row)" [attr.aria-label]="'Copy ' + row.label">
+                                    <button type="button" class="kv__copy" (click)="copy(row)" [attr.aria-label]="'Скопіювати: ' + row.label">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5h10" /></svg>
                                     </button>
                                 }
@@ -106,7 +106,7 @@
             <footer class="foot">
                 <button type="button" class="btn" (click)="openMerchantSearch()">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 16V9M12 16V5M17 16v-4" /></svg>
-                    {{ merchant() || 'Merchant' }} across all months
+                    {{ merchant() || 'Торговець' }} за всі місяці
                 </button>
             </footer>
         </article>
@@ -132,8 +132,8 @@
 } @else {
     <section class="missing">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 10h16M9 10v9" /></svg>
-        <h1>Transaction not found</h1>
-        <p>Could not restore <span class="mono">{{ transactionId() }}</span>. Open it again from the ledger.</p>
-        <button class="btn" type="button" (click)="goBack()">Back</button>
+        <h1>Операцію не знайдено</h1>
+        <p>Не вдалося відновити <span class="mono">{{ transactionId() }}</span>. Відкрийте її ще раз зі списку операцій.</p>
+        <button class="btn" type="button" (click)="goBack()">Назад</button>
     </section>
 }
