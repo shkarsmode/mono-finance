@@ -116,6 +116,17 @@ export function roundUpJar(tx: ITransaction): string {
     return /«([^»]*)»/.exec(tx.description ?? '')?.[1]?.trim() || 'Reserve';
 }
 
+/**
+ * A hold that is still worth flagging as pending. Monobank never clears the flag on
+ * many charged operations, so after a week "hold" says nothing — by then the money
+ * has been taken (the balance chain shows it) and the row is an ordinary charge.
+ */
+export const PENDING_HOLD_SEC = 7 * 86400;
+
+export function isPendingHold(tx: ITransaction, nowSec = Date.now() / 1000): boolean {
+    return !!tx.hold && nowSec - tx.time < PENDING_HOLD_SEC;
+}
+
 export type CountMode = 'real' | 'all';
 
 export interface FlowTotals {

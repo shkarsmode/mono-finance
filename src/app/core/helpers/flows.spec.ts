@@ -1,5 +1,5 @@
 import { ITransaction } from '@core/interfaces';
-import { buildFlowContext, flowOf, flowTotals, isRoundUp, roundUpJar } from './flows';
+import { buildFlowContext, flowOf, flowTotals, isPendingHold, isRoundUp, roundUpJar } from './flows';
 
 // Every description below is wording taken from the user's real statement.
 const tx = (description: string, amount: number, over: Partial<ITransaction> = {}): ITransaction => ({
@@ -77,6 +77,13 @@ describe('flows', () => {
         expect(flowOf(tx('Розстрочка на картку', 10000000), ctx)).toBe('internal');
         expect(flowOf(tx('Каса Унiверсал Банку', 2050000), ctx)).toBe('internal');
         expect(flowOf(tx('Каса Унiверсал Банку', -7200000, { mcc: 6010 }), ctx)).toBe('spend');
+    });
+
+    it('calls a hold pending only for its first week', () => {
+        const now = 1_790_000_000;
+        expect(isPendingHold(tx('Glovo', -145079, { hold: true, time: now - 2 * 86400 }), now)).toBe(true);
+        expect(isPendingHold(tx('Glovo', -145079, { hold: true, time: now - 14 * 86400 }), now)).toBe(false);
+        expect(isPendingHold(tx('Glovo', -145079, { hold: false, time: now - 60 }), now)).toBe(false);
     });
 
     it('recognises round-ups and the jar they went to', () => {

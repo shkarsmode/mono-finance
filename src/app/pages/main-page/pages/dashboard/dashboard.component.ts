@@ -1,5 +1,5 @@
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -53,6 +53,7 @@ export default class DashboardComponent implements OnInit {
     private readonly categoryGroupService = inject(CategoryGroupService);
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
+    private readonly location = inject(Location);
     readonly currencyDisplay = inject(CurrencyDisplayService);
     readonly syncStatus = inject(SyncStatusService);
     private readonly toast = inject(ToastService);
@@ -62,7 +63,6 @@ export default class DashboardComponent implements OnInit {
     readonly transactions = signal<ITransaction[]>([]);
     readonly searchValue = signal('');
     readonly categoryFilter = signal<string | null>(null);
-    readonly showHoldTransactions = signal(this.monobankService.showHold);
 
     readonly clientInfoSignal = signal<IAccountInfo | null>(null);
     readonly groupsSignal = signal<ICategoryGroup[]>([]);
@@ -249,28 +249,23 @@ export default class DashboardComponent implements OnInit {
 
         const now = new Date();
         const isCurrent = year === now.getFullYear() && month === now.getMonth() + 1;
-        this.router.navigate([], {
+        // Rewrite the address quietly. A router navigation here started a view
+        // transition on every arrow click, and while it ran the page was covered by its
+        // snapshot: the 2nd and 3rd fast clicks hit the snapshot instead of the arrow,
+        // so they were lost and the browser selected text instead.
+        const tree = this.router.createUrlTree([], {
             relativeTo: this.route,
             queryParams: { month: isCurrent ? null : `${year}-${String(month).padStart(2, '0')}` },
             queryParamsHandling: 'merge',
-            replaceUrl: true,
         });
+        this.location.replaceState(this.router.serializeUrl(tree));
 
         if (fetch) {
             this.monobankService
-                .getTransactions(month, year, { includeHold: this.showHoldTransactions() })
+                .getTransactions(month, year)
                 .pipe(first(), takeUntilDestroyed(this.destroyRef))
                 .subscribe();
         }
-    }
-
-    toggleShowHold(): void {
-        this.showHoldTransactions.update(v => !v);
-        this.monobankService.setShowHold(this.showHoldTransactions());
-        this.monobankService
-            .getTransactions(this.activeMonthSignal(), this.activeYearSignal(), { includeHold: this.showHoldTransactions() })
-            .pipe(first(), takeUntilDestroyed(this.destroyRef))
-            .subscribe();
     }
 
     setCountMode(mode: CountMode): void {

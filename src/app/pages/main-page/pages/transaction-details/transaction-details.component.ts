@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
 import { AssignMode, categoryColor, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
-import { flowOf } from '@core/helpers/flows';
+import { flowOf, isPendingHold } from '@core/helpers/flows';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
@@ -61,6 +61,13 @@ export default class TransactionDetailsComponent implements OnInit {
             default: return 'no rule matched';
         }
     });
+
+    /** Fresh hold: still pending. Older: Monobank never cleared the flag, the money was taken. */
+    readonly pending = computed(() => {
+        const tx = this.transaction();
+        return !!tx && isPendingHold(tx);
+    });
+    readonly staleHold = computed(() => !!this.transaction()?.hold && !this.pending());
 
     readonly flow = computed(() => {
         const tx = this.transaction();

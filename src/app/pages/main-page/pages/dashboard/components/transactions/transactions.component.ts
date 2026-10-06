@@ -7,7 +7,7 @@ import {
 import {
     AssignMode, categoryColor, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
-import { Flow, flowOf, isRoundUp, roundUpJar } from '@core/helpers/flows';
+import { Flow, flowOf, isPendingHold, isRoundUp, roundUpJar } from '@core/helpers/flows';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService } from '@core/services/category-group.service';
@@ -30,6 +30,8 @@ type LedgerRow = {
     /** Why this category — shown on hover in the automatic mode. */
     reason: string;
     flow: Flow;
+    /** Only a FRESH hold is shown as pending — see isPendingHold. */
+    pending: boolean;
 };
 
 type LedgerSection = {
@@ -156,6 +158,7 @@ export class TransactionsComponent {
                 color: categoryColor(index),
                 reason: describe(reason),
                 flow: flowOf(tx, ctx),
+                pending: isPendingHold(tx),
             };
         });
     });

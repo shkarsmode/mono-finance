@@ -10,12 +10,15 @@
                 <div class="hero__main">
                     <div class="hero__tags">
                         <span class="tag" [class.tag--pos]="tx.amount > 0">{{ tx.amount > 0 ? 'Income' : 'Expense' }}</span>
-                        @if (tx.hold) { <span class="tag tag--hold">Hold</span> }
+                        @if (pending()) { <span class="tag tag--hold">Hold · not settled yet</span> }
                         @if (flow() === 'internal') { <span class="tag">Own money · not counted</span> }
                         @if (flow() === 'refund') { <span class="tag tag--refund">Refund · reduces spending</span> }
                     </div>
                     <h1 class="hero__title">{{ tx.description }}</h1>
                     <p class="hero__when num">{{ tx.time * 1000 | date: 'EEEE, d MMMM y · HH:mm' }}</p>
+                    @if (staleHold()) {
+                        <p class="hero__note">Monobank still marks this as a hold, but the money was taken — it never clears the flag on some operations.</p>
+                    }
                 </div>
                 <div class="hero__amount">
                     <span class="hero__figure num" [class.is-pos]="tx.amount > 0">{{ tx.amount | displayMoney: tx.cardCurrencyCode }}</span>

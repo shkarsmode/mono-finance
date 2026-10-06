@@ -47,6 +47,20 @@ body {
     color: var(--ink-3);
 }
 
+// ── Clicking is not selecting ────────────────────────────────
+// Fast clicks on a control are a double-click to the browser, which selects the
+// nearest text — stepping months highlighted "March 2026" and summoned the
+// translate bubble. Controls and the things you click repeatedly never select.
+button,
+[role="button"],
+.period__nav,
+.ledger__head,
+.seg {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 // ── Focus ────────────────────────────────────────────────────
 // One visible ring for the whole app. Two-stop so it reads on
 // any surface, light or dark.

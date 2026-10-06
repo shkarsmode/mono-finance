@@ -109,16 +109,13 @@ export class MonobankService {
      * Whether hold (pending) transactions are shown. Persisted, because it is a
      * standing preference — it used to reset to off on every reload.
      */
-    private _showHold = localStorage.getItem(LocalStorage.ShowHoldTransactions) === 'true';
-
-    public get showHold(): boolean {
-        return this._showHold;
-    }
-
-    public setShowHold(value: boolean): void {
-        this._showHold = value;
-        localStorage.setItem(LocalStorage.ShowHoldTransactions, String(value));
-    }
+    /**
+     * Holds are always loaded. Monobank leaves `hold: true` on many operations it has
+     * already charged — on the user's statement 82 of 83 holds older than five days
+     * were charged and none was ever released — so hiding holds hid real spending.
+     * The ledger marks only fresh holds as pending (see isPendingHold).
+     */
+    private readonly _showHold = true;
 
     constructor(
         private readonly router: Router,

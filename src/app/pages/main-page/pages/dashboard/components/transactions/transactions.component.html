@@ -191,7 +191,7 @@
 
 <ng-template #rowTpl let-row>
     <div class="row"
-         [class.row--hold]="row.tx.hold"
+         [class.row--hold]="row.pending"
          [class.row--internal]="countMode() === 'real' && row.flow === 'internal'"
          tabindex="0"
          role="row"
@@ -215,7 +215,7 @@
         <span class="row__merchant">
             <span class="row__name">
                 {{ row.tx.description }}
-                @if (row.tx.hold) { <span class="tag tag--hold">Hold</span> }
+                @if (row.pending) { <span class="tag tag--hold" title="Not settled yet">Hold</span> }
                 @if (countMode() === 'real' && row.flow === 'internal') {
                     <span class="tag tag--own" title="Moved between your own jars, cards or accounts — not counted">own money</span>
                 }

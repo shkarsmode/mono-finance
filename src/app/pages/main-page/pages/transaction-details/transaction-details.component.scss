@@ -69,6 +69,13 @@
         color: var(--ink-3);
     }
 
+    &__note {
+        margin: var(--space-2) 0 0;
+        max-width: 52ch;
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+
     &__amount {
         flex: none;
         display: flex;
