@@ -5,7 +5,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
 import { CountMode, flowOf, flowTotals } from '@core/helpers/flows';
-import { ChartType, LocalStorage } from '@core/enums';
+import { LocalStorage } from '@core/enums';
 import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { CategoryMode } from '@core/services/category-group.service';
@@ -15,7 +15,9 @@ import { first } from 'rxjs';
 import { DisplayMoneyMajorPipe } from '../../../../shared/pipes/display-money-major.pipe';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
-import { CardComponent, ChartComponent, TransactionsComponent } from './components';
+import { MonthPaceComponent } from '../../../../shared/charts/month-pace.component';
+import { TrendsService } from '@core/services/trends.service';
+import { CardComponent, TransactionsComponent } from './components';
 import { CategoryBreakdownComponent } from './components/category-breakdown/category-breakdown.component';
 import { INTERNAL_FILTER, UNCATEGORIZED_FILTER } from './components/transactions/transactions.component';
 
@@ -41,7 +43,7 @@ function parsePeriod(value: string | null): { month: number; year: number } | nu
     standalone: true,
     imports: [
         AsyncPipe, OverlayModule,
-        CardComponent, ChartComponent, TransactionsComponent, CategoryBreakdownComponent, MonthPickerComponent,
+        CardComponent, TransactionsComponent, CategoryBreakdownComponent, MonthPickerComponent, MonthPaceComponent,
         DisplayMoneyPipe, DisplayMoneyMajorPipe,
     ],
     templateUrl: './dashboard.component.html',
@@ -59,6 +61,7 @@ export default class DashboardComponent implements OnInit {
     private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
     private readonly searchPipe = new TransactionsFilterPipe();
+    private readonly trends = inject(TrendsService);
 
     readonly transactions = signal<ITransaction[]>([]);
     readonly searchValue = signal('');
@@ -74,7 +77,6 @@ export default class DashboardComponent implements OnInit {
     private readonly flowContext = toSignal(this.categoryGroupService.flowContext$, { requireSync: true });
 
     activeCardId$ = this.monobankService.activeCardId$;
-    readonly ChartType = ChartType;
 
     // ── Honest totals ────────────────────────────────────────
 
@@ -140,29 +142,7 @@ export default class DashboardComponent implements OnInit {
     // ── Scoping (search + category) ──────────────────────────
     readonly searched = computed(() => this.searchPipe.transform(this.transactions(), this.searchValue()) ?? []);
 
-    /** What the charts draw: the same slice the ledger shows. */
-    readonly chartTransactions = computed(() => {
-        const filter = this.categoryFilter();
-        const groups = this.groupsSignal();
-        const ctx = this.flowContext();
-        let rows = this.searched();
-        if (filter === INTERNAL_FILTER) {
-            return rows.filter(t => flowOf(t, ctx) === 'internal')
-                .map(t => this.currencyDisplay.convertTransactionForMinorUnitCharts(t));
-        }
-        if (this.countMode() === 'real') rows = rows.filter(t => flowOf(t, ctx) !== 'internal');
-        if (filter === UNCATEGORIZED_FILTER) rows = rows.filter(t => categoryIndexOf(t, groups) === UNCATEGORIZED);
-        else if (filter !== null) rows = rows.filter(t => groups[categoryIndexOf(t, groups)]?.title === filter);
-        return rows.map(t => this.currencyDisplay.convertTransactionForMinorUnitCharts(t));
-    });
 
-    readonly chartScope = computed(() => {
-        const filter = this.categoryFilter();
-        if (filter === null) return '';
-        if (filter === INTERNAL_FILTER) return ' · Between your accounts';
-        if (filter === UNCATEGORIZED_FILTER) return this.categoryMode() === 'auto' ? ' · Other' : ' · Uncategorized';
-        return ` · ${filter}`;
-    });
 
     // ── Accounts ─────────────────────────────────────────────
     readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
@@ -204,6 +184,11 @@ export default class DashboardComponent implements OnInit {
         const fromUrl = parsePeriod(this.route.snapshot.queryParamMap.get('month'));
         const target = fromUrl ?? { month: this.monobankService.activeMonth, year: this.monobankService.activeYear };
         this.applyPeriod(target.month, target.year, !this.monobankService.isLoaded(target.month, target.year));
+
+        // A year of history: the pace chart's "usual" line and the app-wide category colours.
+        this.monobankService.activeCardId$
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(id => this.trends.ensure(id));
 
         // Ambient background-sync status (backfill progress, month freshness).
         this.syncStatus.start();

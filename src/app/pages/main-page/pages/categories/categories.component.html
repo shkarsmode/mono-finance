@@ -58,7 +58,7 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="1.3" /><circle cx="15" cy="7" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="9" cy="17" r="1.3" /><circle cx="15" cy="17" r="1.3" /></svg>
                         </span>
                         <button type="button" class="item__btn" (click)="select(group.title)">
-                            <span class="dot" [style.background]="color(i)"></span>
+                            <span class="dot" [style.background]="color(group.title)"></span>
                             <span class="item__main">
                                 <span class="item__title">
                                     @if (group.emoji) { <span class="emoji">{{ group.emoji }}</span> }
@@ -132,7 +132,7 @@
                 <section class="panel">
                     @if (readonly()) {
                         <header class="editor__head">
-                            <span class="dot dot--lg" [style.background]="color(selectedIndex())"></span>
+                            <span class="dot dot--lg" [style.background]="color(group.title)"></span>
                             <h2 class="editor__title">
                                 @if (group.emoji) { <span class="emoji">{{ group.emoji }}</span> }
                                 {{ group.title }}
@@ -143,7 +143,7 @@
                         @if (group.note) { <p class="editor__note">{{ group.note }}</p> }
                     } @else {
                     <header class="editor__head">
-                        <span class="dot dot--lg" [style.background]="color(selectedIndex())"></span>
+                        <span class="dot dot--lg" [style.background]="color(group.title)"></span>
                         <input class="editor__emoji" [value]="group.emoji" maxlength="4" placeholder="🙂"
                                aria-label="Emoji" (change)="setEmoji($event)" />
                         <input id="category-name" class="editor__name" [value]="group.title"

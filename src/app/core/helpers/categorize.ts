@@ -292,11 +292,3 @@ export function toDefinitions(groups: readonly ICategoryGroup[]): ICategoryGroup
         return definition;
     });
 }
-
-/**
- * Stable category colour, by position: --cat-1 … --cat-12. Uncategorized gets a
- * neutral of its own so it never shares a hue with the twelfth category.
- */
-export function categoryColor(index: number): string {
-    return index < 0 ? 'var(--ink-3)' : `var(--cat-${(index % 12) + 1})`;
-}

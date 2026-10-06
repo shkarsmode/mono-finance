@@ -4,7 +4,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
-import { AssignMode, categoryColor, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { AssignMode, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { CategoryColorsService } from '@core/services/category-colors.service';
+
 import { flowOf, isPendingHold } from '@core/helpers/flows';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
@@ -74,7 +76,8 @@ export default class TransactionDetailsComponent implements OnInit {
         return tx ? flowOf(tx, this.flowContext()) : 'spend';
     });
     readonly category = computed(() => this.groups()[this.categoryIndex()] ?? null);
-    readonly categoryColor = computed(() => categoryColor(this.categoryIndex()));
+    private readonly colors = inject(CategoryColorsService);
+    readonly categoryColor = computed(() => this.colors.colorFor(this.category()?.title));
 
     readonly merchant = computed(() => {
         const tx = this.transaction();

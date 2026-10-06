@@ -5,9 +5,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
-    AssignMode, categoryColor, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
+    AssignMode, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
 import { MonobankService } from '@core/services/monobank.service';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
@@ -80,7 +81,8 @@ export default class CategoriesComponent {
     readonly periodLabel = `${MONTHS[this.monobank.activeMonth - 1] ?? ''} ${this.monobank.activeYear}`;
     readonly currency = computed(() => this.transactions()[0]?.cardCurrencyCode ?? 980);
 
-    readonly color = categoryColor;
+    private readonly colors = inject(CategoryColorsService);
+    readonly color = (title: string | null | undefined) => this.colors.colorFor(title);
 
     plural(n: number, one: string, many: string): string {
         return `${n} ${n === 1 ? one : many}`;
@@ -232,7 +234,7 @@ export default class CategoriesComponent {
             const winner = categoryIndexOf(tx, groups);
             if (winner === index) won.push(tx);
             else if (matchingIndexes(tx, groups).includes(index)) {
-                lost.push({ tx, to: groups[winner]?.title ?? '—', color: categoryColor(winner) });
+                lost.push({ tx, to: groups[winner]?.title ?? '—', color: this.colors.colorFor(groups[winner]?.title) });
             }
         }
         won.sort((a, b) => b.time - a.time);

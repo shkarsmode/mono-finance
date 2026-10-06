@@ -61,6 +61,19 @@
     --cat-10: #93365c;
     --cat-11: #68445a;
     --cat-12: #57606b;
+
+    // Chart series — six categorical slots, validated as a set (dataviz
+    // validate_palette.js, light on #ffffff): CVD ΔE ≥ 9.1 adjacent, normal-vision
+    // ≥ 19.6. Green and red are left out on purpose: here they mean income and
+    // expense. Slots 3–5 sit under 3:1 on white, so every chart that uses them also
+    // carries names and a table. Everything outside the top six is --series-other.
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #4a3aa7;
+    --series-other: #b3b9c2;
 }
 
 [data-theme="dark"] {
@@ -112,6 +125,16 @@
     --cat-10: #ba5c80;
     --cat-11: #8d6478;
     --cat-12: #78818d;
+
+    // Same six hues stepped for the dark surface (validated on #12161d:
+    // CVD ΔE ≥ 8.4, normal-vision ≥ 19.3, all ≥ 3:1).
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #9085e9;
+    --series-other: #4a5361;
 }
 
 // ── Back-compat aliases ──────────────────────────────────────

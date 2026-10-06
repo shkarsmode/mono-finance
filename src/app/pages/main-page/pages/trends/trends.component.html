@@ -1,0 +1,101 @@
+<section class="page">
+    <header class="page__head">
+        <div>
+            <h1 class="page__title">Trends</h1>
+            <p class="page__sub">
+                Last 12 months{{ card() ? ' · ' + card() : '' }} ·
+                {{ countMode() === 'real' ? 'real spending — your own money moves left out' : 'every debit, as the statement has it' }}
+            </p>
+        </div>
+    </header>
+
+    <!-- one filter row scopes everything below it -->
+    <div class="filters">
+        <div class="seg" role="group" aria-label="Which categories">
+            <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Auto categories</button>
+            <button type="button" [class.seg--on]="mode() === 'mine'" (click)="setMode('mine')">Mine</button>
+        </div>
+        <div class="seg" role="group" aria-label="How spending is counted">
+            <button type="button" [class.seg--on]="countMode() === 'real'" (click)="setCountMode('real')">Real</button>
+            <button type="button" [class.seg--on]="countMode() === 'all'" (click)="setCountMode('all')">All operations</button>
+        </div>
+        @if (selected(); as s) {
+            <button type="button" class="pill" (click)="selected.set(null)">
+                Showing {{ s }} only
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+        }
+    </div>
+
+    @if (trends.error(); as e) {
+        <div class="state"><p>{{ e }}</p></div>
+    } @else if (!categoryTrends().length && trends.loading()) {
+        <div class="sk sk--tiles"></div>
+        <div class="sk sk--chart"></div>
+    } @else if (!categoryTrends().length) {
+        <div class="state"><p>No spending in the last 12 months on this card.</p></div>
+    } @else {
+        <div class="body" [class.body--refreshing]="trends.loading()">
+            <div class="tiles">
+                <div class="tile">
+                    <span class="micro">Spent in 12 months</span>
+                    <span class="tile__v">{{ money(yearTotal()) }}</span>
+                </div>
+                <div class="tile">
+                    <span class="micro">Per month</span>
+                    <span class="tile__v">{{ money(perMonth()) }}</span>
+                </div>
+                @if (highest(); as h) {
+                    <div class="tile">
+                        <span class="micro">Biggest month</span>
+                        <span class="tile__v">{{ money(h.value) }}</span>
+                        <span class="tile__sub">{{ h.label }}</span>
+                    </div>
+                }
+                <div class="tile">
+                    <span class="micro">This month so far</span>
+                    <span class="tile__v">{{ money(soFar().value) }}</span>
+                    <span class="tile__sub" [class.is-up]="!soFar().steady && soFar().delta > 0" [class.is-down]="!soFar().steady && soFar().delta < 0">
+                        @if (soFar().steady) {
+                            on your usual pace
+                        } @else {
+                            {{ soFar().delta > 0 ? '↑' : '↓' }} {{ pct(soFar().delta) }}% vs usual by today
+                        }
+                    </span>
+                </div>
+            </div>
+
+            <section class="card">
+                <header class="card__head">
+                    <h2 class="card__title">{{ selected() ?? 'Spending by month' }}</h2>
+                    <span class="card__hint">Pick a category to see it alone · click a month to open it</span>
+                </header>
+                <app-trend-columns
+                    [months]="months()"
+                    [categories]="categoryTrends()"
+                    [slots]="colors.slots()"
+                    [selectedCategory]="selected()"
+                    [currency]="currency()"
+                    [colorFor]="colorFor"
+                    (selectCategory)="selected.set($event)"
+                    (openMonth)="openMonth($event)">
+                </app-trend-columns>
+            </section>
+
+            <section class="card card--flush">
+                <header class="card__head card__head--pad">
+                    <h2 class="card__title">Categories</h2>
+                    <span class="card__hint">{{ categoryTrends().length }} with spending · click one to chart it</span>
+                </header>
+                <app-category-trends
+                    [categories]="categoryTrends()"
+                    [months]="months()"
+                    [selected]="selected()"
+                    [currency]="currency()"
+                    [colorFor]="colorFor"
+                    (select)="selected.set($event)">
+                </app-category-trends>
+            </section>
+        </div>
+    }
+</section>

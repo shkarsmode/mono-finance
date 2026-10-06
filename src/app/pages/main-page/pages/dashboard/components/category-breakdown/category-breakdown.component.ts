@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { categoryColor, categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { CategoryColorsService } from '@core/services/category-colors.service';
+
 import { CountMode, Flow, flowOf } from '@core/helpers/flows';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
@@ -283,6 +285,7 @@ const empty = (): Bucket => ({ spent: 0, income: 0, refunds: 0, spentCount: 0, i
 })
 export class CategoryBreakdownComponent {
     private readonly flowContext = toSignal(inject(CategoryGroupService).flowContext$, { requireSync: true });
+    private readonly colors = inject(CategoryColorsService);
 
     @Input() public set transactions(value: ITransaction[] | null) { this.txList.set(value ?? []); }
     @Input() public set groups(value: ICategoryGroup[] | null) { this.groupList.set(value ?? []); }
@@ -344,7 +347,7 @@ export class CategoryBreakdownComponent {
                 filter: group.title,
                 title: group.title,
                 emoji: group.emoji ?? '',
-                color: categoryColor(index),
+                color: this.colors.colorFor(group.title),
                 magnitude: magnitude(bucket),
                 count: count(bucket),
                 uncategorized: false,
@@ -355,7 +358,7 @@ export class CategoryBreakdownComponent {
                 filter: UNCATEGORIZED_FILTER,
                 title: this.categoryMode === 'auto' ? 'Other' : 'Uncategorized',
                 emoji: '',
-                color: categoryColor(UNCATEGORIZED),
+                color: this.colors.colorFor(null),
                 magnitude: magnitude(uncategorized),
                 count: count(uncategorized),
                 uncategorized: true,
@@ -386,7 +389,7 @@ export class CategoryBreakdownComponent {
         }
         groups.forEach((group, index) => {
             if (group.excluded && excluded[index].count) {
-                out.push({ filter: group.title, title: group.title, color: categoryColor(index), value: excluded[index].net });
+                out.push({ filter: group.title, title: group.title, color: this.colors.colorFor(group.title), value: excluded[index].net });
             }
         });
         return out;

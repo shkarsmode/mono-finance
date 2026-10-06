@@ -1,0 +1,189 @@
+// ── Trends ───────────────────────────────────────────────────
+// A filter row, four headline figures, the year by month, then every category
+// with its own sparkline. Everything below the filters follows them.
+
+:host {
+    display: block;
+    padding: var(--space-5);
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-h1);
+        font-weight: 600;
+        letter-spacing: var(--tracking-snug);
+    }
+
+    &__sub {
+        margin: var(--space-1) 0 0;
+        font-size: var(--fs-meta);
+        color: var(--ink-3);
+    }
+}
+
+.filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.seg {
+    display: inline-flex;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+
+    button {
+        height: calc(var(--control-md) - 2px);
+        padding: 0 var(--space-3);
+        border: 0;
+        background: var(--surface);
+        font: inherit;
+        font-size: var(--fs-meta);
+        font-weight: 500;
+        color: var(--ink-3);
+        cursor: pointer;
+
+        & + button { border-left: 1px solid var(--line); }
+        &:hover { color: var(--ink); background: var(--hover); }
+    }
+
+    .seg--on { background: var(--accent-tint); color: var(--ink); font-weight: 600; }
+}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: var(--control-md);
+    padding: 0 var(--space-2) 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--accent-tint);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-meta);
+    font-weight: 600;
+    cursor: pointer;
+
+    svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+}
+
+// ── headline figures ─────────────────────────────────────────
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    min-width: 0;
+
+    & + & { border-left: 1px solid var(--line); }
+
+    // proportional figures: a big standalone number looks loose in tabular digits
+    &__v {
+        font-size: var(--fs-kpi);
+        font-weight: 600;
+        letter-spacing: var(--tracking-tight);
+        line-height: var(--lh-tight);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__sub {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+
+        &.is-up { color: var(--neg); }
+        &.is-down { color: var(--pos); }
+    }
+}
+
+// ── cards ────────────────────────────────────────────────────
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    transition: opacity var(--dur) var(--ease);
+
+    // a refresh keeps the frame: the previous render stays, just quieter
+    &--refreshing { opacity: .6; }
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+
+    &--flush { padding: 0; overflow: hidden; }
+
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-bottom: var(--space-3);
+
+        &--pad { padding: var(--space-4) var(--space-4) 0; }
+    }
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-h2);
+        font-weight: 600;
+    }
+
+    &__hint {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+}
+
+// ── states ───────────────────────────────────────────────────
+.state {
+    padding: var(--space-8) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    text-align: center;
+
+    p { margin: 0; font-size: var(--fs-meta); color: var(--ink-3); }
+}
+
+.sk {
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-shine) 50%, var(--skeleton) 100%);
+    background-size: 200% 100%;
+    animation: tr-shimmer 1.4s infinite linear;
+
+    &--tiles { height: 96px; }
+    &--chart { height: 380px; }
+}
+
+@keyframes tr-shimmer { to { background-position: -200% 0; } }
+
+@media (max-width: 900px) {
+    :host { padding: var(--space-4); }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tile:nth-child(3) { border-left: 0; }
+    .tile:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}

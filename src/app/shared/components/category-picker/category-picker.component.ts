@@ -1,8 +1,10 @@
 import {
-    AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, Input, Output,
+    AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, EventEmitter, inject, Input, Output,
     signal, ViewChild,
 } from '@angular/core';
-import { AssignMode, categoryColor } from '@core/helpers/categorize';
+import { AssignMode } from '@core/helpers/categorize';
+import { CategoryColorsService } from '@core/services/category-colors.service';
+
 import { ICategoryGroup } from '@core/interfaces';
 
 type Option =
@@ -192,6 +194,7 @@ export class CategoryPickerComponent implements AfterViewInit {
     @Output() public readonly close = new EventEmitter<void>();
 
     @ViewChild('query') private readonly queryRef!: ElementRef<HTMLInputElement>;
+    private readonly colors = inject(CategoryColorsService);
 
     private readonly groupList = signal<readonly ICategoryGroup[]>([]);
     public readonly term = signal('');
@@ -208,7 +211,7 @@ export class CategoryPickerComponent implements AfterViewInit {
                 index,
                 title: group.title,
                 emoji: group.emoji ?? '',
-                color: categoryColor(index),
+                color: this.colors.colorFor(group.title),
             }))
             .filter(option => !needle || option.title.toLocaleLowerCase().includes(needle));
 

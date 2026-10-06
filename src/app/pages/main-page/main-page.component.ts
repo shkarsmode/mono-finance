@@ -36,6 +36,7 @@ export class MainPageComponent implements OnInit {
     // The first five are the phone's bottom bar, so the daily tools come first.
     readonly navItems = [
         { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+        { path: '/trends', icon: 'bar_chart', label: 'Trends' },
         { path: '/categories', icon: 'category', label: 'Categories' },
         { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
         { path: '/analytics/mcc', icon: 'analytics', label: 'Analytics' },

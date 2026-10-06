@@ -171,22 +171,12 @@
                 (categoryModeChange)="setCategoryMode($event)">
             </app-category-breakdown>
 
-            @defer (on viewport) {
-                <app-chart
-                    [transactions]="chartTransactions()"
-                    [label]="'Spending by day' + chartScope()"
-                    [currency]="currencyDisplay.selectedCode()"
-                    [type]="ChartType.Expenses">
-                </app-chart>
-                <app-chart
-                    [transactions]="chartTransactions()"
-                    [label]="'Income by day' + chartScope()"
-                    [currency]="currencyDisplay.selectedCode()"
-                    [type]="ChartType.Income">
-                </app-chart>
-            } @placeholder {
-                <div class="chart-placeholder"></div>
-            }
+            <app-month-pace
+                [transactions]="transactions()"
+                [year]="activeYearSignal()"
+                [month]="activeMonthSignal()"
+                [currency]="currency()">
+            </app-month-pace>
         </aside>
     </div>
 } @else {

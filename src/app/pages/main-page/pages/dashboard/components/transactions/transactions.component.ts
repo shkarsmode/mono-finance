@@ -5,11 +5,12 @@ import {
     signal, ViewChild,
 } from '@angular/core';
 import {
-    AssignMode, categoryColor, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
+    AssignMode, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
 import { Flow, flowOf, isPendingHold, isRoundUp, roundUpJar } from '@core/helpers/flows';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService } from '@core/services/category-group.service';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
 import { DisplayMoneyPipe } from '../../../../../../shared/pipes/display-money.pipe';
@@ -89,6 +90,7 @@ function readCompact(): boolean {
 })
 export class TransactionsComponent {
     private readonly categories = inject(CategoryGroupService);
+    private readonly colors = inject(CategoryColorsService);
     private readonly toast = inject(ToastService);
 
     /** 'auto' categories are read-only here; 'mine' can be changed from the row. */
@@ -155,7 +157,7 @@ export class TransactionsComponent {
                 tx,
                 index,
                 category: index === UNCATEGORIZED ? null : groups[index]?.title ?? null,
-                color: categoryColor(index),
+                color: this.colors.colorFor(index === UNCATEGORIZED ? null : groups[index]?.title),
                 reason: describe(reason),
                 flow: flowOf(tx, ctx),
                 pending: isPendingHold(tx),
@@ -208,9 +210,9 @@ export class TransactionsComponent {
 
     public readonly filterColor = computed(() => {
         const filter = this.filter();
-        if (filter === null || filter === UNCATEGORIZED_FILTER) return categoryColor(UNCATEGORIZED);
+        if (filter === null || filter === UNCATEGORIZED_FILTER) return this.colors.colorFor(null);
         if (filter === INTERNAL_FILTER) return 'var(--line-2)';
-        return categoryColor(this.groupList().findIndex(g => g.title === filter));
+        return this.colors.colorFor(filter);
     });
 
     /** Grouped modes get sticky section rules; amount and balance are one flat sorted list. */

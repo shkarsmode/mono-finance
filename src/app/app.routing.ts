@@ -24,6 +24,11 @@ export const routes: Routes = [
                     import('./pages/main-page/pages/dashboard/dashboard.component'),
             },
             {
+                path: 'trends',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/trends/trends.component'),
+            },
+            {
                 path: 'categories',
                 loadComponent: () =>
                     import('./pages/main-page/pages/categories/categories.component'),
