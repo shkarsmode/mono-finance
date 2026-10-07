@@ -23,7 +23,7 @@
                 <div class="hero__amount">
                     <span class="hero__figure num" [class.is-pos]="tx.amount > 0">{{ tx.amount | displayMoney: tx.cardCurrencyCode }}</span>
                     @if (foreign()) {
-                        <span class="hero__orig num">{{ tx.operationAmount | displayMoney: tx.currencyCode }} · {{ currencyName(tx.currencyCode) }}</span>
+                        <span class="hero__orig num">{{ original(tx.operationAmount, tx.currencyCode) }}</span>
                     }
                 </div>
             </header>

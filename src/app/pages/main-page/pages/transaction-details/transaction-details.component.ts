@@ -8,8 +8,9 @@ import { AssignMode, explainCategory, merchantLabel, UNCATEGORIZED } from '@core
 import { OTHER_TITLE, OWN_MONEY_TITLE } from '@core/helpers/category-titles';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 
-import { flowOf, isPendingHold } from '@core/helpers/flows';
-import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { cardAccusative } from '@core/helpers/card-names';
+import { flowOf, InternalKind, internalKind, isPendingHold } from '@core/helpers/flows';
+import { IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
 import { Observable } from 'rxjs';
@@ -65,12 +66,43 @@ export default class TransactionDetailsComponent implements OnInit {
     });
     readonly categoryIndex = computed(() => this.explained().index);
 
+    private readonly accounts = toSignal(this.monobankService.clientInfo$ as Observable<IAccountInfo | null>, { initialValue: null });
+
+    /** Own money changing pockets — and how the app can tell. */
+    private readonly ownMove = computed(() => {
+        const tx = this.transaction();
+        return tx ? internalKind(tx, this.flowContext()) : null;
+    });
+
+    private ownMoveText(kind: InternalKind, tx: ITransaction): string {
+        switch (kind) {
+            case 'own-transfer': {
+                const twin = typeof tx.ownTransfer === 'object' ? tx.ownTransfer : null;
+                if (!twin) return 'переказ на вашу іншу картку';
+                const card = this.accounts()?.accounts?.find(a => a.id === twin.cardId);
+                const where = cardAccusative(card?.type, card?.currencyCode);
+                const amount = this.original(twin.amount, card?.currencyCode ?? 980);
+                return `переказ на ${where}: там у ту ж хвилину «${twin.description}» +${amount}`;
+            }
+            case 'own-card': return 'переказ між вашими картками';
+            case 'own-jar': return 'ваша банка';
+            case 'round-up': return 'округлення у вашу банку';
+            case 'deposit': return 'ваш депозит';
+            case 'installment-credit': return 'гроші розстрочки — не дохід';
+            case 'cash-in': return 'внесення готівки через касу';
+            case 'own-name': return 'ваш рахунок в іншому банку';
+        }
+    }
+
     /** Why it landed there — the automatic categories are read-only, so say how they decided. */
     readonly categoryReason = computed(() => {
+        const tx = this.transaction();
+        const kind = this.ownMove();
+        if (tx && kind) return this.ownMoveText(kind, tx);
         const reason = this.explained().reason;
         switch (reason.by) {
             case 'pin': return 'закріплено';
-            case 'system': return 'розпізнано автоматично';
+            case 'system': return 'за формулюванням виписки';
             case 'text': return `збіг із «${reason.key}»`;
             case 'mcc': return `за MCC ${reason.mcc}`;
             default: return 'жодне правило не підійшло';
@@ -163,6 +195,13 @@ export default class TransactionDetailsComponent implements OnInit {
 
     currencyName(code: number): string {
         return currencyCodesMap[code]?.name ?? 'UAH';
+    }
+
+    /** An amount in its own currency, never re-converted: −222,27 $. */
+    original(minor: number, code: number): string {
+        const symbol = ({ 980: '₴', 840: '$', 978: '€', 985: 'zł' } as Record<number, string>)[code] ?? this.currencyName(code);
+        const value = (Math.abs(minor) / 100).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `${minor < 0 ? '−' : ''}${value} ${symbol}`;
     }
 
     copy(row: DetailRow): void {

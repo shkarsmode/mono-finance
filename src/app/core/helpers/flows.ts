@@ -79,29 +79,41 @@ function isOwnName(text: string, ctx: FlowContext): boolean {
     return ctx.initials.some(i => new RegExp(`(^|[\\s.])${i}\\.`, 'u').test(lower));
 }
 
-export function flowOf(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CONTEXT): Flow {
-    if (tx.ownTransfer) return 'internal';
+/** Why a row is your own money changing pockets — the details page says it in words. */
+export type InternalKind =
+    | 'own-transfer' | 'own-card' | 'own-jar' | 'round-up' | 'deposit' | 'installment-credit' | 'cash-in' | 'own-name';
+
+/** Which kind of own-money move a row is, or null when it is real spending or income. */
+export function internalKind(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CONTEXT): InternalKind | null {
+    if (tx.ownTransfer) return 'own-transfer';
 
     const description = (tx.description ?? '').trim();
     const amount = Number(tx.amount) || 0;
-    const sign: Flow = amount < 0 ? 'spend' : 'income';
 
     const jar = JAR_OP.exec(description);
     if (jar) {
-        if (JAR_OWNERSHIP_PROOF.test(jar[1])) return 'internal';
-        if (CHARITY_MCC.has(tx.mcc)) return sign;
-        return ctx.ownJars.has(jar[2].trim().toLocaleLowerCase()) ? 'internal' : sign;
+        if (JAR_OWNERSHIP_PROOF.test(jar[1])) return 'own-jar';
+        if (CHARITY_MCC.has(tx.mcc)) return null;
+        return ctx.ownJars.has(jar[2].trim().toLocaleLowerCase()) ? 'own-jar' : null;
     }
 
-    if (ROUND_UP.test(description) || OWN_CARD.test(description) || DEPOSIT.test(description)) return 'internal';
-    if (LOAN_IN.test(description) && amount > 0) return 'internal';
-    if (CASH_DESK.test(description) && amount > 0) return 'internal';
+    if (ROUND_UP.test(description)) return 'round-up';
+    if (OWN_CARD.test(description)) return 'own-card';
+    if (DEPOSIT.test(description)) return 'deposit';
+    if (LOAN_IN.test(description) && amount > 0) return 'installment-credit';
+    if (CASH_DESK.test(description) && amount > 0) return 'cash-in';
 
     const party = `${description} ${tx.counterName ?? ''}`;
-    if (!BUSINESS.test(party) && isOwnName(party, ctx)) return 'internal';
+    if (!BUSINESS.test(party) && isOwnName(party, ctx)) return 'own-name';
+    return null;
+}
 
-    if (amount > 0 && REFUND.test(description)) return 'refund';
-    return sign;
+export function flowOf(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CONTEXT): Flow {
+    if (internalKind(tx, ctx)) return 'internal';
+
+    const amount = Number(tx.amount) || 0;
+    if (amount > 0 && REFUND.test((tx.description ?? '').trim())) return 'refund';
+    return amount < 0 ? 'spend' : 'income';
 }
 
 /**

@@ -1,3 +1,13 @@
+/** The other side of a transfer between your own cards, as the API found it. */
+export interface IOwnTransfer {
+    readonly cardId: string;
+    /** «З Білої картки», «З доларової картки»… */
+    readonly description: string;
+    /** Minor units of the receiving card's currency. */
+    readonly amount: number;
+    readonly time: number;
+}
+
 export interface ITransaction {
     readonly id: string;
     readonly time: number;
@@ -26,5 +36,5 @@ export interface ITransaction {
      * cannot tell — this is how buying and selling your own dollars stops looking like
      * money sent to strangers.
      */
-    readonly ownTransfer?: boolean;
+    readonly ownTransfer?: boolean | IOwnTransfer;
 }

@@ -1,5 +1,5 @@
 import { ITransaction } from '@core/interfaces';
-import { buildFlowContext, flowOf, flowTotals, isPendingHold, isRoundUp, roundUpJar } from './flows';
+import { buildFlowContext, flowOf, flowTotals, internalKind, isPendingHold, isRoundUp, roundUpJar } from './flows';
 
 // Every description below is wording taken from the user's real statement.
 const tx = (description: string, amount: number, over: Partial<ITransaction> = {}): ITransaction => ({
@@ -56,6 +56,17 @@ describe('flows', () => {
         // buying your own dollars: the white card only says «Переказ на картку»
         expect(flowOf(tx('Переказ на картку', -1_000_000, { ownTransfer: true }), ctx)).toBe('internal');
         expect(flowOf(tx('Переказ на картку', -100_000), ctx)).toBe('spend');
+    });
+
+    it('says which kind of own-money move a row is', () => {
+        const twin = { cardId: 'usd', description: 'З Білої картки', amount: 22_227, time: 1 };
+        expect(internalKind(tx('Переказ на картку', -1_000_000, { ownTransfer: twin }), ctx)).toBe('own-transfer');
+        expect(internalKind(tx('З доларової картки', 4100000), ctx)).toBe('own-card');
+        expect(internalKind(tx('Поповнення «Хата»', -500000), ctx)).toBe('own-jar');
+        expect(internalKind(tx('Reserve', -712), ctx)).toBe('round-up');
+        expect(internalKind(tx('Шкарупа Даніїл', -100000), ctx)).toBe('own-name');
+        expect(internalKind(tx('Сільпо', -84260, { mcc: 5411 }), ctx)).toBeNull();
+        expect(internalKind(tx('Поповнення «На ППО 3 ОШБР»', -50000), ctx)).toBeNull();
     });
 
     it('recognises your own name at another bank — but not a relative with the same surname', () => {
