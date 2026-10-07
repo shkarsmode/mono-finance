@@ -80,6 +80,8 @@ function isOwnName(text: string, ctx: FlowContext): boolean {
 }
 
 export function flowOf(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CONTEXT): Flow {
+    if (tx.ownTransfer) return 'internal';
+
     const description = (tx.description ?? '').trim();
     const amount = Number(tx.amount) || 0;
     const sign: Flow = amount < 0 ? 'spend' : 'income';

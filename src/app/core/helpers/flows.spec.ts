@@ -52,6 +52,12 @@ describe('flows', () => {
         expect(flowOf(tx('З єврової картки', 30000), ctx)).toBe('internal');
     });
 
+    it('trusts the API on «Переказ на картку»: own card when it says so, a stranger otherwise', () => {
+        // buying your own dollars: the white card only says «Переказ на картку»
+        expect(flowOf(tx('Переказ на картку', -1_000_000, { ownTransfer: true }), ctx)).toBe('internal');
+        expect(flowOf(tx('Переказ на картку', -100_000), ctx)).toBe('spend');
+    });
+
     it('recognises your own name at another bank — but not a relative with the same surname', () => {
         expect(flowOf(tx('Шкарупа Даніїл', -100000), ctx)).toBe('internal');
         expect(flowOf(tx('Від: Daniil Shkarupa', 150000), ctx)).toBe('internal');
