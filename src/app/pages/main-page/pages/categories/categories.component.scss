@@ -674,3 +674,155 @@
     font-size: var(--fs-meta);
     color: var(--ink-3);
 }
+
+// ── «Мої правила» ─────────────────────────────────────────
+.item--rules {
+    border-bottom: 1px solid var(--line);
+}
+
+.item__icon--rules {
+    color: var(--accent);
+}
+
+.mine {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.panel__lead {
+    margin: 0 0 var(--space-3);
+    max-width: 60ch;
+    font-size: var(--fs-meta);
+    color: var(--ink-2);
+}
+
+.rule--mine {
+    padding-left: var(--space-3);
+}
+
+.rule__what {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+
+    .rule__key { flex: 0 1 auto; }
+}
+
+.rule__note {
+    flex: none;
+    font-size: var(--fs-micro);
+    color: var(--ink-3);
+}
+
+.rule__cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    max-width: 45%;
+    padding: 2px var(--space-2);
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-meta);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:hover { background: var(--hover); }
+}
+
+.rule__arrow {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    fill: none;
+    stroke: var(--ink-3);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.addrule--full {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    margin-top: var(--space-3);
+
+    select {
+        height: var(--control-md);
+        min-width: 0;
+        padding: 0 var(--space-2);
+        border: 1px solid var(--line-2);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink);
+        font: inherit;
+        font-size: var(--fs-meta);
+
+        &:focus { outline: none; border-color: var(--accent); }
+    }
+}
+
+.addrule__note {
+    flex: 0 1 140px !important;
+}
+
+@media (max-width: 760px) {
+    .addrule--full { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .addrule--full > input:first-child { grid-column: 1 / -1; }
+
+    // two lines on a phone: what the rule says, then where it goes
+    .rule--mine {
+        flex-wrap: wrap;
+        row-gap: 2px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+    .rule--mine .rule__what { flex: 1 0 100%; }
+    .rule--mine .rule__hits { margin-left: auto; }
+    .rule__cat { max-width: 70%; padding-left: 0; }
+}
+
+// ── built-in rules, compact ───────────────────────────────
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip-rule {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px var(--space-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-full);
+    background: var(--raised);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-micro);
+
+    b { color: var(--ink-2); font-weight: 600; }
+
+    &--zero { color: var(--ink-3); }
+
+    &--more {
+        cursor: pointer;
+        color: var(--accent);
+        &:hover { border-color: var(--line-2); }
+    }
+}
+
+.chip-rule__kind {
+    font-size: 10px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-micro);
+}
+
+.addrule--full select.is-empty { color: var(--ink-3); }

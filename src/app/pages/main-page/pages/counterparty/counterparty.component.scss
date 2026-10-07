@@ -1,0 +1,422 @@
+// ── Counterparty ─────────────────────────────────────────────
+// Part of Динаміка: one party across every card and two years — six headline
+// figures, money in and out month by month, then every operation.
+
+:host {
+    display: block;
+    padding: var(--space-5);
+    max-width: 1180px;
+    margin: 0 auto;
+}
+
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    &__head {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+        min-width: 0;
+    }
+
+    &__heading { min-width: 0; max-width: 100%; }
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-h1);
+        font-weight: 600;
+        letter-spacing: var(--tracking-snug);
+        line-height: var(--lh-snug);
+        overflow-wrap: anywhere;
+    }
+
+    &__sub {
+        margin: var(--space-1) 0 0;
+        font-size: var(--fs-meta);
+        color: var(--ink-3);
+    }
+
+    // a merge of spellings is never silent
+    &__merged {
+        margin: 2px 0 0;
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+        overflow-wrap: anywhere;
+    }
+}
+
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: var(--control-sm);
+    padding: 0 var(--space-3) 0 var(--space-2);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-meta);
+    cursor: pointer;
+
+    svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    &:hover { background: var(--hover); color: var(--ink); }
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: var(--control-md);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-meta);
+    cursor: pointer;
+
+    &:hover { background: var(--hover); color: var(--ink); }
+}
+
+// ── body ─────────────────────────────────────────────────────
+.body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    transition: opacity var(--dur) var(--ease);
+
+    // a refresh keeps the frame: the previous render stays, just quieter
+    &--refreshing { opacity: .6; }
+}
+
+.note {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--warn-tint);
+    color: var(--warn);
+    font-size: var(--fs-meta);
+
+    &__retry {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+    }
+}
+
+// ── headline figures ─────────────────────────────────────────
+// The 1px gaps over a --line ground are the hairlines, whatever the column count.
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    min-width: 0;
+    background: var(--surface);
+    // the figure is sized by the tile itself, not the window
+    container-type: inline-size;
+
+    &__label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    // whole units, and a size that follows the tile's width: even «−11 037 752 ₴»
+    // fits a phone's half-width tile, so a figure never ellipsizes or spills
+    &__v {
+        font-size: clamp(16px, 14cqi, var(--fs-kpi));
+        font-weight: 600;
+        letter-spacing: var(--tracking-tight);
+        line-height: var(--lh-tight);
+        white-space: nowrap;
+
+        &.is-pos { color: var(--pos); }
+    }
+
+    &__dates {
+        display: flex;
+        flex-direction: column;
+        font-size: var(--fs-h3);
+        font-weight: 600;
+        line-height: var(--lh-snug);
+        white-space: nowrap;
+    }
+
+    &__sub {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+}
+
+.swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex: none;
+
+    &--in { background: var(--pos); }
+    &--out { background: var(--neg); }
+}
+
+// ── cards ────────────────────────────────────────────────────
+.card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+
+    &--flush { padding: 0; overflow: hidden; }
+
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-bottom: var(--space-3);
+
+        &--pad { padding: var(--space-4) var(--space-4) 0; }
+    }
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-h2);
+        font-weight: 600;
+    }
+
+    &__hint {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
+}
+
+// ── operations, a month at a time ────────────────────────────
+.list {
+    display: flex;
+    flex-direction: column;
+}
+
+.rule {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--sunken);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    // a jump from the chart lands with a little air above the month
+    scroll-margin-top: var(--space-3);
+    transition: background var(--dur-slow) var(--ease), box-shadow var(--dur-slow) var(--ease);
+
+    &__title {
+        font-size: var(--fs-meta);
+        font-weight: 600;
+        color: var(--ink);
+        white-space: nowrap;
+    }
+
+    &__count {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+        white-space: nowrap;
+    }
+
+    &__fill { flex: 1; }
+
+    &__in, &__out {
+        font-size: var(--fs-meta);
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    &__in { color: var(--pos); }
+    // spending stays ink so the sheet reads calm; money in is the signal
+    &__out { color: var(--ink-2); }
+
+    &--on {
+        background: var(--accent-tint);
+        box-shadow: inset 2px 0 0 var(--accent);
+    }
+}
+
+.op {
+    display: grid;
+    grid-template-columns: 112px 150px minmax(0, 1fr) auto;
+    grid-template-areas: "date meta note amount";
+    align-items: baseline;
+    column-gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease);
+
+    & + & { border-top: 1px solid var(--line); }
+    &:hover { background: var(--hover); }
+
+    &__date {
+        grid-area: date;
+        font-size: var(--fs-meta);
+        font-weight: 500;
+        color: var(--ink);
+        white-space: nowrap;
+    }
+
+    &__meta {
+        grid-area: meta;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        > span + span:not(.tag)::before {
+            content: '·';
+            margin-right: 6px;
+            color: var(--line-2);
+        }
+    }
+
+    &__note {
+        grid-area: note;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px var(--space-2);
+        min-width: 0;
+        font-size: var(--fs-meta);
+        color: var(--ink-2);
+    }
+
+    &__comment { overflow-wrap: anywhere; }
+
+    &__variant {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--ink-3);
+        overflow-wrap: anywhere;
+    }
+
+    &__amount {
+        grid-area: amount;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: var(--fs-body);
+        font-weight: 600;
+        color: var(--ink);
+        white-space: nowrap;
+        text-align: right;
+
+        &.is-pos { color: var(--pos); }
+    }
+
+    &__converted {
+        font-size: var(--fs-micro);
+        font-weight: 500;
+        color: var(--ink-3);
+    }
+}
+
+.tag {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: var(--tracking-micro);
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: var(--radius-xs);
+    background: var(--warn-tint);
+    color: var(--warn);
+}
+
+// ── states ───────────────────────────────────────────────────
+.state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-8) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    text-align: center;
+
+    &__title {
+        margin: 0;
+        font-size: var(--fs-h3);
+        font-weight: 600;
+        color: var(--ink-2);
+    }
+
+    &__text {
+        margin: 0;
+        max-width: 46ch;
+        font-size: var(--fs-meta);
+        color: var(--ink-3);
+        overflow-wrap: anywhere;
+    }
+
+    .btn { margin-top: var(--space-2); }
+}
+
+.sk {
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-shine) 50%, var(--skeleton) 100%);
+    background-size: 200% 100%;
+    animation: cp-shimmer 1.4s infinite linear;
+
+    &--tiles { height: 196px; }
+    &--chart { height: 352px; }
+    &--list { height: 280px; }
+}
+
+@keyframes cp-shimmer { to { background-position: -200% 0; } }
+
+@media (max-width: 900px) {
+    :host { padding: var(--space-4); }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sk--tiles { height: 288px; }
+}
+
+// Phone: date and card on the left, the amount on the right, the comment under both.
+@media (max-width: 640px) {
+    .op {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "date amount"
+            "meta amount"
+            "note note";
+        align-items: start;
+        row-gap: 2px;
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .op__note { margin-top: 2px; }
+}

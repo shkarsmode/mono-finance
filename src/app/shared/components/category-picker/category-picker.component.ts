@@ -7,15 +7,13 @@ import { CategoryColorsService } from '@core/services/category-colors.service';
 
 import { ICategoryGroup } from '@core/interfaces';
 
-type Option =
-    | { kind: 'existing'; index: number; title: string; emoji: string; color: string }
-    | { kind: 'create'; title: string };
+type Option = { kind: 'existing'; index: number; title: string; emoji: string; color: string };
 
 /**
- * Pick — or create — the category for a transaction. Keyboard first: it opens with
- * the search focused, arrows move, Enter picks, Escape closes. By default the choice
- * applies to every transaction from the same merchant; untick to move only this one
- * (useful for card-to-card transfers that mean different things each time).
+ * Pick the category for a transaction. Keyboard first: it opens with the search
+ * focused, arrows move, Enter picks, Escape closes. By default the choice becomes
+ * YOUR RULE for every transaction with the same description; untick to move only
+ * this one (useful for card-to-card transfers that mean different things each time).
  */
 @Component({
     selector: 'app-category-picker',
@@ -27,12 +25,12 @@ type Option =
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.6-3.6" /></svg>
                 <input #query
                        type="text"
-                       placeholder="Знайти або створити категорію"
+                       placeholder="Знайти категорію"
                        autocomplete="off"
                        spellcheck="false"
                        [value]="term()"
                        (input)="onInput($event)"
-                       aria-label="Знайти або створити категорію" />
+                       aria-label="Знайти категорію" />
             </label>
 
             <ul class="picker__list" role="listbox">
@@ -44,22 +42,17 @@ type Option =
                         (mouseenter)="active.set(i)"
                         (mousedown)="$event.preventDefault()"
                         (click)="choose(option)">
-                        @if (option.kind === 'existing') {
-                            <span class="picker__dot" [style.background]="option.color"></span>
-                            <span class="picker__name">
-                                @if (option.emoji) { <span class="emoji">{{ option.emoji }}</span> }
-                                {{ option.title }}
-                            </span>
-                            @if (option.index === currentIndex) {
-                                <svg class="picker__check" viewBox="0 0 24 24" aria-label="поточна"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-                            }
-                        } @else {
-                            <svg class="picker__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-                            <span class="picker__name">Створити <strong>«{{ option.title }}»</strong></span>
+                        <span class="picker__dot" [style.background]="option.color"></span>
+                        <span class="picker__name">
+                            @if (option.emoji) { <span class="emoji">{{ option.emoji }}</span> }
+                            {{ option.title }}
+                        </span>
+                        @if (option.index === currentIndex) {
+                            <svg class="picker__check" viewBox="0 0 24 24" aria-label="поточна"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
                         }
                     </li>
                 } @empty {
-                    <li class="picker__empty">Введіть назву, щоб створити категорію</li>
+                    <li class="picker__empty">Такої категорії немає</li>
                 }
             </ul>
 
@@ -67,7 +60,7 @@ type Option =
                 <label class="picker__scope">
                     <input type="checkbox" [checked]="mode() === 'merchant'" (change)="toggleMode()" />
                     <span>
-                        Усі операції <strong>{{ merchant }}</strong>
+                        Запам’ятати як правило для всіх <strong>«{{ merchant }}»</strong>
                         @if (merchantCount > 1) { <span class="num">· тут {{ merchantCount }}</span> }
                     </span>
                 </label>
@@ -190,7 +183,6 @@ export class CategoryPickerComponent implements AfterViewInit {
     @Input() public merchantCount = 0;
 
     @Output() public readonly pick = new EventEmitter<{ index: number; mode: AssignMode }>();
-    @Output() public readonly create = new EventEmitter<{ title: string; mode: AssignMode }>();
     @Output() public readonly close = new EventEmitter<void>();
 
     @ViewChild('query') private readonly queryRef!: ElementRef<HTMLInputElement>;
@@ -205,7 +197,7 @@ export class CategoryPickerComponent implements AfterViewInit {
         const term = this.term().trim();
         const needle = term.toLocaleLowerCase();
 
-        const existing: Option[] = this.groupList()
+        return this.groupList()
             .map((group, index) => ({
                 kind: 'existing' as const,
                 index,
@@ -214,9 +206,6 @@ export class CategoryPickerComponent implements AfterViewInit {
                 color: this.colors.colorFor(group.title),
             }))
             .filter(option => !needle || option.title.toLocaleLowerCase().includes(needle));
-
-        const exact = this.groupList().some(group => group.title.trim().toLocaleLowerCase() === needle);
-        return term && !exact ? [...existing, { kind: 'create', title: term }] : existing;
     });
 
     public ngAfterViewInit(): void {
@@ -235,8 +224,7 @@ export class CategoryPickerComponent implements AfterViewInit {
     }
 
     public choose(option: Option): void {
-        if (option.kind === 'existing') this.pick.emit({ index: option.index, mode: this.mode() });
-        else this.create.emit({ title: option.title, mode: this.mode() });
+        this.pick.emit({ index: option.index, mode: this.mode() });
     }
 
     public onKeydown(event: KeyboardEvent): void {

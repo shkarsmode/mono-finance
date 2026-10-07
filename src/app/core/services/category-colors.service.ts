@@ -43,11 +43,11 @@ export function assignSlots(previous: Slots, nextTop: readonly string[]): Slots 
  */
 @Injectable({ providedIn: 'root' })
 export class CategoryColorsService {
-    private readonly mode = toSignal(inject(CategoryGroupService).mode$, { requireSync: true });
-    private readonly slotsByMode = signal<Record<CategoryMode, Slots>>({ auto: readSlots('auto'), mine: readSlots('mine') });
+    // «Авто» and «Авто + мої правила» show the same automatic categories: one set of slots
+    private readonly slotSet = signal<Slots>(readSlots('auto'));
 
     /** Slot order: index 0 wears --series-1. */
-    public readonly slots = computed(() => this.slotsByMode()[this.mode()]);
+    public readonly slots = computed(() => this.slotSet());
 
     public colorFor(title: string | null | undefined): string {
         if (!title) return 'var(--ink-3)';
@@ -56,11 +56,11 @@ export class CategoryColorsService {
     }
 
     /** Feed the latest ranking (biggest first); slots only move for real entrants. */
-    public setRanking(mode: CategoryMode, ranked: readonly string[]): void {
-        const current = this.slotsByMode();
-        const next = assignSlots(current[mode], ranked);
-        if (next.every((title, i) => title === current[mode][i])) return;
-        this.slotsByMode.set({ ...current, [mode]: next });
-        try { localStorage.setItem(storageKey(mode), JSON.stringify(next)); } catch { /* private mode */ }
+    public setRanking(ranked: readonly string[]): void {
+        const current = this.slotSet();
+        const next = assignSlots(current, ranked);
+        if (next.every((title, i) => title === current[i])) return;
+        this.slotSet.set(next);
+        try { localStorage.setItem(storageKey('auto'), JSON.stringify(next)); } catch { /* private mode */ }
     }
 }

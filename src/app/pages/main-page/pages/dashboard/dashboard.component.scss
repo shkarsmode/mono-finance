@@ -1,6 +1,8 @@
 // ── Dashboard ────────────────────────────────────────────────
 // Reading order is set by type size and whitespace, not by six
 // equal-weight cards. Hairlines carry structure; nothing floats.
+//   period band → hero (all the money · the card · the month's pace)
+//   → the month in figures → ledger + categories
 
 :host {
     display: block;
@@ -9,12 +11,14 @@
     margin: 0 auto;
 }
 
+.nowrap { white-space: nowrap; }
+
 // ── Period band ──────────────────────────────────────────────
 .period {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    margin-bottom: var(--space-5);
+    gap: var(--space-2) var(--space-3);
+    margin-bottom: var(--space-4);
     flex-wrap: wrap;
 
     &__nav {
@@ -64,7 +68,8 @@
         &:hover { background: var(--hover); }
     }
 
-    &__fill { flex: 1; }
+    // the card switcher takes the right side; the history button follows it
+    &__card { margin-left: auto; }
 }
 
 .btn {
@@ -127,84 +132,226 @@
     }
 }
 
+// Fixed-width month label: every month is laid over an invisible "Листопад 2026" and
+// "Вересень 2026" (the widest, depending on the font), so stepping through months never
+// shifts the arrows away from the cursor.
+.period__text {
+    display: inline-grid;
+    justify-items: center;
+
+    > * { grid-area: 1 / 1; white-space: nowrap; }
+}
+
+.period__sizer { visibility: hidden; }
+
 // ── Hero ─────────────────────────────────────────────────────
+// Left: all the money, then the card in hand. Right: the month's pace,
+// on the same surface — a hairline divides, no frame inside a frame.
 .hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--space-6);
-    align-items: center;
-    padding: var(--space-5);
+    grid-template-columns: minmax(260px, 2fr) minmax(0, 3fr);
     margin-bottom: var(--space-4);
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
 
-    &__net {
+    &__money {
+        // the figures size to this column, not to the window: it is narrowest on a tablet
+        container: money / inline-size;
         display: flex;
         flex-direction: column;
-        gap: var(--space-1);
+        justify-content: space-between;
+        gap: var(--space-4);
         min-width: 0;
+        padding: var(--space-5);
     }
 
+    &__pace {
+        min-width: 0;
+        padding: var(--space-4) var(--space-5) var(--space-3);
+        border-left: 1px solid var(--line);
+    }
+}
+
+.worth {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+
+    .micro { cursor: help; align-self: flex-start; }
+
     &__figure {
-        font-size: var(--fs-hero);
+        // the biggest figure on the page; it steps down in a narrow column instead of breaking
+        font-size: clamp(28px, 8.6vw, var(--fs-hero));
+        font-size: clamp(24px, 12.5cqi, var(--fs-hero));
         font-weight: 700;
         line-height: var(--lh-tight);
         letter-spacing: var(--tracking-tight);
         color: var(--ink);
-        overflow-wrap: normal;
-        word-break: keep-all;
-
-        &.is-pos { color: var(--pos); }
+        white-space: nowrap;
     }
 
-    &__sub {
+    &__split {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: var(--space-4);
+        font-size: var(--fs-meta);
+        color: var(--ink-3);
+
+        .balance-value { color: var(--ink-2); font-weight: 500; }
+    }
+
+    &__note {
+        font-size: var(--fs-micro);
+        color: var(--warn);
+    }
+}
+
+// The card in hand: name, number and own money (the switch itself), and its IBAN one click away.
+.now {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+
+    &__switch {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &--loading {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+}
+
+.copy {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: var(--control-md);
+    padding: 0 var(--space-3) 0 10px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+
+    svg {
+        flex: none;
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        animation: fade-in 120ms var(--ease);
+    }
+
+    &:hover { background: var(--hover); color: var(--ink); }
+
+    // copied: a check for a moment — the confirmation colour is the accent, never green
+    &--done,
+    &--done:hover { color: var(--accent); border-color: var(--accent); }
+}
+
+// A narrow money column (the two-column hero on a tablet, a small phone): the card's
+// balance gets the room, the copy button keeps its icon.
+@container money (max-width: 290px) {
+    .copy {
+        justify-content: center;
+        width: var(--control-md);
+        padding: 0;
+    }
+    .copy__text { display: none; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+}
+
+// Loading placeholders keep the hero's height, so nothing jumps when the money lands.
+.sk {
+    display: block;
+    border-radius: var(--radius-xs);
+    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-shine) 50%, var(--skeleton) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite linear;
+
+    &--figure { width: 180px; max-width: 70%; height: 34px; margin: 2px 0; }
+    &--line { width: 240px; max-width: 90%; height: 12px; margin-top: 5px; }
+    &--id { width: 120px; height: 14px; }
+    &--bal { width: 150px; height: 22px; }
+}
+
+@keyframes shimmer {
+    to { background-position: -200% 0; }
+}
+
+// ── The month in figures ─────────────────────────────────────
+.sum {
+    margin-bottom: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-2) var(--space-3);
+        padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+        border-bottom: 1px solid var(--line);
+    }
+
+    &__title {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-2);
+        min-width: 0;
+    }
+
+    &__count {
+        font-size: var(--fs-meta);
+        color: var(--ink-3);
+        white-space: nowrap;
+    }
+
+    // money that only changed pockets: shown, quietly, and said to be left out
+    &__own {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 2px var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        border-top: 1px solid var(--line);
         font-size: var(--fs-meta);
         color: var(--ink-3);
     }
 
-    &__flow {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2);
-        min-width: 0;
-    }
-}
-
-.flow {
-    &__row {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: var(--space-3);
-    }
-    &__key {
-        display: flex;
+    &__own-key {
+        display: inline-flex;
         align-items: center;
         gap: var(--space-2);
-        font-size: var(--fs-meta);
         color: var(--ink-2);
     }
-    &__val {
-        font-size: var(--fs-h3);
-        font-weight: 600;
-        color: var(--ink);
-        white-space: nowrap;
 
-        &.is-pos { color: var(--pos); }
-    }
-    &__bar {
-        height: 6px;
-        border-radius: 3px;
-        background: var(--neg);
-        overflow: hidden;
-    }
-    &__bar-pos {
-        display: block;
-        height: 100%;
-        background: var(--pos);
-        transition: width var(--dur-slow) var(--ease);
-    }
+    &__own-val { color: var(--ink-2); }
+
+    &__own-hint { font-size: var(--fs-micro); }
 }
 
 .swatch {
@@ -212,34 +359,12 @@
     height: 8px;
     border-radius: 2px;
     flex: none;
-
-    &--pos { background: var(--pos); }
-    &--neg { background: var(--neg); }
-    &--own { background: var(--line-2); }
+    background: var(--line-2);
 }
 
-.flow__own {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-top: var(--space-1);
-    padding-top: var(--space-2);
-    border-top: 1px dashed var(--line);
-
-    .flow__key { color: var(--ink-3); }
-}
-
-.flow__own-val {
-    font-size: var(--fs-meta);
-    color: var(--ink-3);
-    white-space: nowrap;
-}
-
-// counting switch under the hero figure
+// counting switch in the head of the figures
 .seg {
     display: inline-flex;
-    align-self: flex-start;
     border: 1px solid var(--line-2);
     border-radius: var(--radius-sm);
     overflow: hidden;
@@ -264,79 +389,11 @@
         color: var(--ink);
         font-weight: 600;
     }
-
-    &--hero { margin-top: var(--space-2); }
 }
 
-// ── Accounts ─────────────────────────────────────────────────
-.accounts {
-    margin-bottom: var(--space-4);
-
-    &__filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2);
-        margin-bottom: var(--space-3);
-    }
-
-    &__row {
-        display: flex;
-        gap: var(--space-3);
-        overflow-x: auto;
-        padding-bottom: var(--space-2);
-        scroll-snap-type: x proximity;
-
-        > * { scroll-snap-align: start; }
-    }
-}
-
-.chip {
-    height: var(--control-sm);
-    padding: 0 var(--space-3);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius-full);
-    background: var(--surface);
-    color: var(--ink-2);
-    font: inherit;
-    font-size: var(--fs-micro);
-    font-weight: 500;
-    text-transform: capitalize;
-    cursor: pointer;
-
-    &:hover { background: var(--hover); color: var(--ink); }
-
-    &--on {
-        background: var(--accent-tint);
-        border-color: transparent;
-        color: var(--ink);
-        font-weight: 600;
-    }
-    &--clear { color: var(--ink-3); text-transform: none; }
-}
-
-.acct-skeleton {
-    flex: none;
-    width: 220px;
-    height: 116px;
-    border-radius: var(--radius-md);
-    background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-shine) 50%, var(--skeleton) 100%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite linear;
-}
-
-@keyframes shimmer {
-    to { background-position: -200% 0; }
-}
-
-// ── KPI strip ────────────────────────────────────────────────
 .kpis {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    margin-bottom: var(--space-4);
 }
 
 .kpi {
@@ -356,12 +413,11 @@
         letter-spacing: var(--tracking-tight);
         color: var(--ink);
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
 
         &.is-pos { color: var(--pos); }
     }
 
+    // a merchant name may be long: it, and only it, ellipsizes
     &__sub {
         font-size: var(--fs-micro);
         color: var(--ink-3);
@@ -369,9 +425,34 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    // a line with money in it wraps between words, never inside the amount
+    &__note {
+        font-size: var(--fs-micro);
+        color: var(--ink-3);
+    }
 }
 
-// Four figures need ~1180px before "-64 581,84 грн" starts to ellipsize; below
+// income against spending in one bar: green is the share that came in
+.flow {
+    display: block;
+    width: 100%;
+    max-width: 180px;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 2px;
+    background: var(--neg);
+    overflow: hidden;
+
+    &__pos {
+        display: block;
+        height: 100%;
+        background: var(--pos);
+        transition: width var(--dur-slow) var(--ease);
+    }
+}
+
+// Four figures need ~1180px before a long amount crowds its tile; below
 // that, two per row keeps every number whole.
 @media (max-width: 1180px) {
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -381,7 +462,42 @@
 
 @media (max-width: 900px) {
     :host { padding: var(--space-4); }
-    .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+}
+
+// A phone or a narrow tablet: the hero stacks — money, card, then the pace.
+@media (max-width: 720px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .hero__money { padding: var(--space-4); }
+    .hero__pace {
+        padding: var(--space-3) var(--space-4) var(--space-2);
+        border-left: 0;
+        border-top: 1px solid var(--line);
+    }
+}
+
+// Narrow screens: «Завантажити історію» keeps its words in the label and tooltip, the button keeps the icon.
+@media (max-width: 720px) {
+    .period__history {
+        justify-content: center;
+        width: var(--control-lg);
+        padding: 0;
+
+        svg { width: 16px; height: 16px; }
+        .btn__text { display: none; }
+    }
+}
+
+// A phone: the band is one row — the month across, history at the end. The card
+// switch lives in the hero (the card itself), so the band's chip steps aside.
+@media (max-width: 560px) {
+    .period { column-gap: var(--space-2); }
+    .period__nav { flex: 1; min-width: 0; }
+    .period__label { flex: 1; justify-content: center; padding: 0 var(--space-2) 0 var(--space-3); }
+    .period__step { width: 40px; }
+    .period__card { display: none; }
+
+    .sum__label { display: none; }
+    .kpi { padding: var(--space-3) var(--space-4); }
 }
 
 // ── Board: ledger + side column ──────────────────────────────
@@ -397,13 +513,6 @@
         gap: var(--space-4);
         min-width: 0;
     }
-}
-
-.chart-placeholder {
-    height: 220px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--line);
-    background: var(--surface);
 }
 
 // ── Empty ────────────────────────────────────────────────────
@@ -426,15 +535,3 @@
 @media (max-width: 1180px) {
     .board { grid-template-columns: minmax(0, 1fr); }
 }
-
-// Fixed-width month label: every month is laid over an invisible "Листопад 2026" and
-// "Вересень 2026" (the widest, depending on the font), so stepping through months never
-// shifts the arrows away from the cursor.
-.period__text {
-    display: inline-grid;
-    justify-items: center;
-
-    > * { grid-area: 1 / 1; white-space: nowrap; }
-}
-
-.period__sizer { visibility: hidden; }

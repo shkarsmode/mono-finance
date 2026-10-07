@@ -29,6 +29,12 @@ export const routes: Routes = [
                     import('./pages/main-page/pages/trends/trends.component'),
             },
             {
+                // «Олена А. за всі місяці» — /trends/counterparty?q=<label>, under Динаміка
+                path: 'trends/counterparty',
+                loadComponent: () =>
+                    import('./pages/main-page/pages/counterparty/counterparty.component'),
+            },
+            {
                 path: 'categories',
                 loadComponent: () =>
                     import('./pages/main-page/pages/categories/categories.component'),

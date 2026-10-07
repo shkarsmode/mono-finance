@@ -1,4 +1,4 @@
-<!-- ── Period band: one shared time context for the whole screen ── -->
+<!-- ── Period band: the one context for the whole screen — which month, which card ── -->
 <header class="period">
     <div class="period__nav">
         <button type="button" class="period__step" (click)="stepPeriod(-1)" aria-label="Попередній місяць">
@@ -20,7 +20,16 @@
         </button>
     </div>
 
-    <span class="period__fill"></span>
+    <!-- every account lives behind this one button now: no carousel, no type filters.
+         On a phone it steps aside — the card in the hero is the same switch. -->
+    <app-account-switcher
+        class="period__card"
+        [accounts]="accountViews()"
+        [activeId]="activeCardId()"
+        [copiedId]="copiedId()"
+        (chooseAccount)="onChooseAccount($event)"
+        (copyAccount)="copyAccount($event)">
+    </app-account-switcher>
 
     @if (syncStatus.isBackfilling()) {
         <span class="capsule" role="status" aria-live="polite">
@@ -28,12 +37,12 @@
             <span class="capsule__text">{{ syncStatus.capsuleLabel() }}</span>
         </span>
     } @else {
-        <button type="button" class="btn btn--quiet" (click)="onBackfillClick()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5" /></svg>
-            Завантажити історію
+        <button type="button" class="btn btn--quiet period__history" (click)="onBackfillClick()"
+                aria-label="Завантажити історію" title="Завантажити всю історію операцій">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5M12 7.5V12l3 2" /></svg>
+            <span class="btn__text">Завантажити історію</span>
         </button>
     }
-
 </header>
 
 <ng-template cdkConnectedOverlay
@@ -51,101 +60,140 @@
     </app-month-picker>
 </ng-template>
 
-<!-- ── Hero: the net position for the period ── -->
+<!-- ── Hero: all the money that is yours, the card in hand, and how the month is going ── -->
 <section class="hero">
-    <div class="hero__net">
-        <span class="micro">Різниця за період</span>
-        <span class="hero__figure num" [class.is-pos]="netTotal() > 0" [class.is-neg]="netTotal() < 0">
-            {{ netTotal() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}
-        </span>
-        <span class="hero__sub num">{{ transactionCountLabel() }}</span>
-        <div class="seg seg--hero" role="group" aria-label="Як рахувати підсумки">
-            <button type="button" [class.seg--on]="countMode() === 'real'" (click)="setCountMode('real')"
-                    title="Без переказів між вашими банками, картками й рахунками; повернення зменшують витрати">Реальні</button>
-            <button type="button" [class.seg--on]="countMode() === 'all'" (click)="setCountMode('all')"
-                    title="Усі списання й зарахування — точно як у виписці">Усі операції</button>
-        </div>
-    </div>
-
-    <div class="hero__flow">
-        <div class="flow__row">
-            <span class="flow__key"><i class="swatch swatch--pos"></i>Надходження</span>
-            <span class="flow__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
-        </div>
-        <!-- one bar, two proportions: the ratio reads without arithmetic -->
-        <div class="flow__bar" role="img" [attr.aria-label]="'Частка надходжень: ' + incomeShare() + '%'">
-            <span class="flow__bar-pos" [style.width.%]="incomeShare()"></span>
-        </div>
-        <div class="flow__row">
-            <span class="flow__key"><i class="swatch swatch--neg"></i>Витрачено</span>
-            <span class="flow__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() }}</span>
-        </div>
-        @if (countMode() === 'real' && (internalOut() || internalIn())) {
-            <!-- shown, not hidden: the money that only changed pockets -->
-            <div class="flow__own">
-                <span class="flow__key"><i class="swatch swatch--own"></i>{{ BETWEEN_ACCOUNTS_TITLE }}</span>
-                <span class="flow__own-val num">
-                    −{{ internalOut() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
-                    · +{{ internalIn() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}
+    <div class="hero__money">
+        <div class="worth">
+            <span class="micro" [title]="WORTH_HINT">Усі гроші</span>
+            @if (worth(); as w) {
+                <span class="worth__figure num balance-value" [title]="WORTH_HINT">{{ w.total }}</span>
+                <!-- two parts, spaced rather than dotted: on a narrow screen each takes its own line -->
+                <span class="worth__split num">
+                    <span class="nowrap">на картках <span class="balance-value">{{ w.cards }}</span></span>
+                    @if (w.jars) {
+                        <span class="nowrap">у банках <span class="balance-value">{{ w.jars }}</span></span>
+                    }
                 </span>
+                @if (w.missing) {
+                    <span class="worth__note">{{ w.missing }}</span>
+                }
+            } @else {
+                <span class="sk sk--figure" aria-hidden="true"></span>
+                <span class="sk sk--line" aria-hidden="true"></span>
+            }
+        </div>
+
+        @if (accountViews().length) {
+            <!-- the card in hand: its name, number and own money are the switch; the IBAN is one click away -->
+            <div class="now">
+                <app-account-switcher
+                    class="now__switch"
+                    variant="card"
+                    [accounts]="accountViews()"
+                    [activeId]="activeCardId()"
+                    [copiedId]="copiedId()"
+                    (chooseAccount)="onChooseAccount($event)"
+                    (copyAccount)="copyAccount($event)">
+                </app-account-switcher>
+                @if (activeAccount(); as card) {
+                    @if (card.copyValue) {
+                        <button type="button" class="copy"
+                                [class.copy--done]="copiedId() === card.id"
+                                [attr.aria-label]="card.copyIsIban ? 'Копіювати IBAN' : 'Копіювати номер картки'"
+                                [title]="card.copyIsIban ? 'Копіювати IBAN' : 'Копіювати номер картки'"
+                                (click)="copyAccount(card.id)">
+                            @if (copiedId() === card.id) {
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                            } @else {
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a1 1 0 0 1 1-1h9" /></svg>
+                            }
+                            <span class="copy__text">{{ card.copyIsIban ? 'IBAN' : 'Номер' }}</span>
+                        </button>
+                    }
+                }
+            </div>
+        } @else {
+            <div class="now now--loading" aria-hidden="true">
+                <span class="sk sk--id"></span>
+                <span class="sk sk--bal"></span>
             </div>
         }
     </div>
+
+    <!-- the month's pace sits on the hero's own surface: no frame inside a frame -->
+    <app-month-pace
+        class="hero__pace"
+        variant="inline"
+        [height]="136"
+        [transactions]="transactions()"
+        [year]="activeYearSignal()"
+        [month]="activeMonthSignal()"
+        [currency]="currency()">
+    </app-month-pace>
 </section>
 
-<!-- ── Accounts ── -->
-<section class="accounts">
-    @if (availableCardTypes().length > 1) {
-        <div class="accounts__filters">
-            @for (type of availableCardTypes(); track type) {
-                <button type="button" class="chip" [class.chip--on]="cardTypeFilters().has(type)" (click)="toggleCardTypeFilter(type)">{{ accountTypeLabel(type) }}</button>
-            }
-            @if (cardTypeFilters().size > 0) {
-                <button type="button" class="chip chip--clear" (click)="clearCardTypeFilters()">Скинути</button>
+<!-- ── The period in figures: one instrument, divided — whole units; exact amounts are in the ledger ── -->
+<section class="sum" aria-label="Підсумки за місяць">
+    <header class="sum__head">
+        <span class="sum__title">
+            <span class="micro sum__label">За місяць</span>
+            <span class="sum__count num">{{ transactionCountLabel() }}</span>
+        </span>
+        <div class="seg" role="group" aria-label="Як рахувати підсумки">
+            <button type="button" [class.seg--on]="countMode() === 'real'" [attr.aria-pressed]="countMode() === 'real'" (click)="setCountMode('real')"
+                    title="Без переказів між вашими банками, картками й рахунками; повернення зменшують витрати">Реальні</button>
+            <button type="button" [class.seg--on]="countMode() === 'all'" [attr.aria-pressed]="countMode() === 'all'" (click)="setCountMode('all')"
+                    title="Усі списання й зарахування — точно як у виписці">Усі операції</button>
+        </div>
+    </header>
+
+    <div class="kpis">
+        <div class="kpi">
+            <span class="micro">Витрачено</span>
+            <span class="kpi__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
+            @if (averageDailySpend()) {
+                <span class="kpi__note num" title="Середнє за день, коли були витрати">
+                    сер. <span class="nowrap">{{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span> на день
+                </span>
             }
         </div>
+        <div class="kpi">
+            <span class="micro">Надходження</span>
+            <span class="kpi__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
+        </div>
+        <div class="kpi">
+            <span class="micro">Різниця</span>
+            <span class="kpi__val num" [class.is-pos]="netSign() === '+'">{{ netSign() }}{{ netTotal() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
+            <!-- one bar, two proportions: the ratio reads without arithmetic -->
+            @if (hasFlow()) {
+                <span class="flow" role="img" [attr.aria-label]="'Частка надходжень: ' + incomeShare() + '%'">
+                    <span class="flow__pos" [style.width.%]="incomeShare()"></span>
+                </span>
+            }
+        </div>
+        <div class="kpi">
+            <span class="micro">Найбільша витрата</span>
+            @if (biggestExpense(); as biggest) {
+                <span class="kpi__val num">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode : 0 : 0 }}</span>
+                <span class="kpi__sub">{{ biggest.description }}</span>
+            } @else {
+                <span class="kpi__val num">—</span>
+            }
+        </div>
+    </div>
+
+    @if (countMode() === 'real' && (internalOut() || internalIn())) {
+        <!-- shown, not hidden: the money that only changed pockets -->
+        <footer class="sum__own">
+            <span class="sum__own-key"><i class="swatch" aria-hidden="true"></i>{{ BETWEEN_ACCOUNTS_TITLE }}</span>
+            <span class="sum__own-val num">
+                <span class="nowrap">−{{ internalOut() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
+                ·
+                <span class="nowrap">+{{ internalIn() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
+            </span>
+            <span class="sum__own-hint">не входить у підсумки</span>
+        </footer>
     }
-
-    <div class="accounts__row">
-        @for (account of sortedAccounts(); track account.id) {
-            <app-card
-                [class.active]="account.id === (activeCardId$ | async)"
-                [class.white]="account.type === 'white'"
-                [account]="account"
-                [name]="clientInfoSignal()?.name ?? ''"
-                (onClick)="onCardClick($event)">
-            </app-card>
-        } @empty {
-            <div class="acct-skeleton"></div>
-            <div class="acct-skeleton"></div>
-            <div class="acct-skeleton"></div>
-        }
-    </div>
-</section>
-
-<!-- ── KPI strip: one instrument, divided — whole hryvnias; the exact figures are in the card above ── -->
-<section class="kpis">
-    <div class="kpi">
-        <span class="micro">Витрачено</span>
-        <span class="kpi__val num">{{ totalExpenses() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
-    </div>
-    <div class="kpi">
-        <span class="micro">Надходження</span>
-        <span class="kpi__val num is-pos">{{ totalIncome() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
-    </div>
-    <div class="kpi">
-        <span class="micro">Сер. за активний день</span>
-        <span class="kpi__val num">{{ averageDailySpend() | displayMoneyMajor: currencyDisplay.selectedNumericCode() : 0 : 0 }}</span>
-    </div>
-    <div class="kpi">
-        <span class="micro">Найбільша витрата</span>
-        @if (biggestExpense(); as biggest) {
-            <span class="kpi__val num">{{ biggest.amount | displayMoney: biggest.cardCurrencyCode : 0 : 0 }}</span>
-            <span class="kpi__sub">{{ biggest.description }}</span>
-        } @else {
-            <span class="kpi__val num">—</span>
-        }
-    </div>
 </section>
 
 
@@ -172,13 +220,6 @@
                 (select)="onCategoryFilter($event)"
                 (categoryModeChange)="setCategoryMode($event)">
             </app-category-breakdown>
-
-            <app-month-pace
-                [transactions]="transactions()"
-                [year]="activeYearSignal()"
-                [month]="activeMonthSignal()"
-                [currency]="currency()">
-            </app-month-pace>
         </aside>
     </div>
 } @else {

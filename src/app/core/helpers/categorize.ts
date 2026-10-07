@@ -9,13 +9,15 @@ import { ICategoryGroup, ITransaction } from '@core/interfaces';
  *
  * Resolution, most specific first:
  *   1. a transaction pinned to a category by id;
- *   2. a system rule (`test`) — e.g. "this is your own money moving";
- *   3. the LONGEST text key that the description, merchant or counterparty
+ *   2. YOUR rule (`rules`) — what you said about a merchant beats every built-in
+ *      rule; the longest wins;
+ *   3. a system rule (`test`) — e.g. "this is your own money moving";
+ *   4. the LONGEST text key that the description, merchant or counterparty
  *      contains — "Дія | Штрафи" beats "Дія", whatever order the categories are in;
  *      equal lengths fall back to category order;
- *   4. the first category (in order) holding the transaction's MCC — a single code
+ *   5. the first category (in order) holding the transaction's MCC — a single code
  *      ("5411") or a range ("3000-3999");
- *   5. otherwise uncategorized.
+ *   6. otherwise uncategorized.
  *
  * A category with a `direction` only takes credits ('in') or debits ('out'), so
  * "transfers in" and "transfers to people" can share MCC 4829.
@@ -35,6 +37,8 @@ type Direction = 'in' | 'out' | undefined;
 
 interface Compiled {
     pinned: Map<string, number>;
+    /** Your rules, longest first. */
+    rules: Array<{ key: string; raw: string; index: number; dir: Direction; starts: boolean }>;
     tests: Array<{ test: (tx: ITransaction) => boolean; index: number; dir: Direction }>;
     /** Sorted longest-first, ties by category index. */
     text: Array<{ key: string; raw: string; index: number; dir: Direction; starts: boolean }>;
@@ -49,6 +53,7 @@ function compile(groups: readonly ICategoryGroup[]): Compiled {
     if (cached) return cached;
 
     const pinned = new Map<string, number>();
+    const rules: Compiled['rules'] = [];
     const tests: Compiled['tests'] = [];
     const text: Compiled['text'] = [];
     const mcc: Compiled['mcc'] = [];
@@ -57,6 +62,12 @@ function compile(groups: readonly ICategoryGroup[]): Compiled {
         const dir = group.direction;
         for (const id of group.txIds ?? []) {
             if (!pinned.has(id)) pinned.set(id, index);
+        }
+        for (const raw of group.rules ?? []) {
+            const key = String(raw ?? '').trim();
+            if (!key) continue;
+            const starts = key.startsWith('^') && key.length > 1;
+            rules.push({ key: (starts ? key.slice(1) : key).toLocaleLowerCase(), raw: key, index, dir: undefined, starts });
         }
         if (group.test) tests.push({ test: group.test, index, dir });
 
@@ -76,8 +87,9 @@ function compile(groups: readonly ICategoryGroup[]): Compiled {
     });
 
     text.sort((a, b) => Number(b.starts) - Number(a.starts) || b.key.length - a.key.length || a.index - b.index);
+    rules.sort((a, b) => b.key.length - a.key.length || a.index - b.index);
 
-    const result = { pinned, tests, text, mcc };
+    const result = { pinned, rules, tests, text, mcc };
     compiledCache.set(groups, result);
     return result;
 }
@@ -117,6 +129,7 @@ export function isMccKey(key: string): boolean {
 
 export type MatchReason =
     | { by: 'pin' }
+    | { by: 'rule'; key: string }
     | { by: 'system' }
     | { by: 'text'; key: string }
     | { by: 'mcc'; mcc: number }
@@ -130,11 +143,15 @@ export function explainCategory(tx: ITransaction, groups: readonly ICategoryGrou
     const pin = compiled.pinned.get(tx.id);
     if (pin !== undefined) return { index: pin, reason: { by: 'pin' } };
 
+    const fields = haystack(tx);
+    for (const entry of compiled.rules) {
+        if (textHit(entry, fields)) return { index: entry.index, reason: { by: 'rule', key: entry.raw } };
+    }
+
     for (const { test, index, dir } of compiled.tests) {
         if (fits(dir, tx) && test(tx)) return { index, reason: { by: 'system' } };
     }
 
-    const fields = haystack(tx);
     for (const entry of compiled.text) {
         if (fits(entry.dir, tx) && textHit(entry, fields)) return { index: entry.index, reason: { by: 'text', key: entry.raw } };
     }
@@ -160,10 +177,13 @@ export function matchingIndexes(tx: ITransaction, groups: readonly ICategoryGrou
     const pin = compiled.pinned.get(tx.id);
     if (pin !== undefined) hits.add(pin);
 
+    const fields = haystack(tx);
+    for (const entry of compiled.rules) {
+        if (textHit(entry, fields)) hits.add(entry.index);
+    }
     for (const { test, index, dir } of compiled.tests) {
         if (fits(dir, tx) && test(tx)) hits.add(index);
     }
-    const fields = haystack(tx);
     for (const entry of compiled.text) {
         if (fits(entry.dir, tx) && textHit(entry, fields)) hits.add(entry.index);
     }
@@ -176,6 +196,17 @@ export function matchingIndexes(tx: ITransaction, groups: readonly ICategoryGrou
 /** The key "everything from this merchant" is written as. */
 export function merchantLabel(tx: ITransaction): string {
     return (tx.description ?? '').trim();
+}
+
+/**
+ * The text a rule "everything like this" is written as: the description, except
+ * a transfer to a card number — Monobank writes the same card as «414960****3701»
+ * and «414960******3701», so the rule keeps only «*3701».
+ */
+export function ruleKeyFor(tx: ITransaction): string {
+    const description = merchantLabel(tx);
+    const card = /^\d{4,6}\*+(\d{4})$/.exec(description);
+    return card ? `*${card[1]}` : description;
 }
 
 /** False for transactions that resolve to an excluded (transfer) category. */

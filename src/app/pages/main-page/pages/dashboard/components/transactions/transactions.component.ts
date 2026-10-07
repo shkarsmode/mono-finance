@@ -408,7 +408,7 @@ export class TransactionsComponent {
 
     public openPicker(event: Event, row: LedgerRow): void {
         event.stopPropagation();
-        if (this.categoryMode() !== 'mine') return;
+        if (this.categoryMode() === 'auto') return;
         const origin = event.currentTarget as HTMLElement;
         this.picker.set(this.picker()?.row.tx.id === row.tx.id ? null : { row, origin });
     }
@@ -423,16 +423,9 @@ export class TransactionsComponent {
         const open = this.picker();
         if (!open) return;
         const title = this.groupList()[choice.index]?.title ?? '';
-        this.categories.assign(open.row.tx, choice.index, choice.mode);
+        if (!title) return;
+        this.categories.assign(open.row.tx, title, choice.mode);
         this.announce(open.row.tx, title, choice.mode);
-        this.closePicker();
-    }
-
-    public onCreate(choice: { title: string; mode: AssignMode }): void {
-        const open = this.picker();
-        if (!open) return;
-        this.categories.createAndAssign(open.row.tx, { title: choice.title }, choice.mode);
-        this.announce(open.row.tx, choice.title, choice.mode);
         this.closePicker();
     }
 

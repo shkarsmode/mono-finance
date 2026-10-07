@@ -12,8 +12,8 @@
     <!-- one filter row scopes everything below it -->
     <div class="filters">
         <div class="seg" role="group" aria-label="Які категорії">
-            <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Автокатегорії</button>
-            <button type="button" [class.seg--on]="mode() === 'mine'" (click)="setMode('mine')">Мої</button>
+            <button type="button" [class.seg--on]="mode() === 'auto'" (click)="setMode('auto')">Авто</button>
+            <button type="button" [class.seg--on]="mode() === 'plus'" (click)="setMode('plus')">+ мої правила</button>
         </div>
         <div class="seg" role="group" aria-label="Як рахувати витрати">
             <button type="button" [class.seg--on]="countMode() === 'real'" (click)="setCountMode('real')">Реальні</button>

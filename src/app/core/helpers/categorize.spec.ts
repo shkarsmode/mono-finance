@@ -1,6 +1,7 @@
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import {
-    assignTransaction, categoryIndexOf, isCounted, matchingIndexes, summarize, toDefinitions, UNCATEGORIZED,
+    assignTransaction, categoryIndexOf, explainCategory, isCounted, matchingIndexes, ruleKeyFor, summarize, toDefinitions,
+    UNCATEGORIZED,
 } from './categorize';
 
 const tx = (over: Partial<ITransaction> & { id?: string }): ITransaction => ({
@@ -161,6 +162,37 @@ describe('categorize', () => {
             ]);
             expect(out[0]).toEqual({ emoji: '', title: 'Shops', keys: ['a'], amount: 0, txIds: ['1'], excluded: true });
             expect(out[1]).toEqual({ emoji: '', title: 'Empty', keys: [], amount: 0 });
+        });
+    });
+
+    describe('your rules', () => {
+        const auto = () => [
+            group('Перекази людям', ['4829', 'Переказ на картку'], { direction: 'out' }),
+            group('Послуги', ['ФОП']),
+            group('Дім', ['4900'], { rules: ['ФОП Красний', 'Олена А.', '*3701'] }),
+        ];
+
+        it('beat every built-in rule, even a longer text key', () => {
+            expect(categoryIndexOf(tx({ description: 'ФОП Красний Владислав Анатолійович', mcc: 4829, amount: -2_600_000 }), auto())).toBe(2);
+            expect(categoryIndexOf(tx({ description: 'Олена А.', mcc: 4829, amount: -1_000_000 }), auto())).toBe(2);
+            expect(categoryIndexOf(tx({ description: '414960******3701', mcc: 4829, amount: -374_800 }), auto())).toBe(2);
+            expect(categoryIndexOf(tx({ description: 'ФОП Інший', amount: -100 }), auto())).toBe(1);
+        });
+
+        it('lose only to a pinned transaction', () => {
+            const groups = auto();
+            groups[0] = { ...groups[0], txIds: ['p'] };
+            expect(categoryIndexOf(tx({ id: 'p', description: 'Олена А.', amount: -1 }), groups)).toBe(0);
+        });
+
+        it('say which rule won', () => {
+            expect(explainCategory(tx({ description: 'Олена А.', amount: -1 }), auto()).reason).toEqual({ by: 'rule', key: 'Олена А.' });
+        });
+
+        it('write a card number as its last four digits', () => {
+            expect(ruleKeyFor(tx({ description: '414960******3701' }))).toBe('*3701');
+            expect(ruleKeyFor(tx({ description: '414960****3701' }))).toBe('*3701');
+            expect(ruleKeyFor(tx({ description: '  Сільпо ' }))).toBe('Сільпо');
         });
     });
 });

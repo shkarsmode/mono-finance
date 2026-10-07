@@ -63,10 +63,8 @@ export class TrendsService {
     private readonly categories = inject(CategoryGroupService);
     private readonly colors = inject(CategoryColorsService);
 
-    private readonly mode = toSignal(this.categories.mode$, { requireSync: true });
     private readonly countMode = toSignal(this.categories.countMode$, { requireSync: true });
     private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
-    private readonly mine = toSignal(this.categories.serverGroups$, { initialValue: [] as ICategoryGroup[] });
 
     private readonly history = signal<History | null>(null);
     public readonly loading = signal(false);
@@ -74,10 +72,8 @@ export class TrendsService {
 
     public readonly currency = computed(() => this.history()?.cardCurrencyCode ?? 980);
 
-    /** Category definitions only (no totals), so the classification is not redone on every refresh. */
-    private readonly definitions = computed<ICategoryGroup[]>(() =>
-        this.mode() === 'auto' ? buildAutoCategories(this.flowContext()) : this.mine(),
-    );
+    /** The active categories (automatic, with or without your rules) — definitions only, no totals. */
+    private readonly definitions = toSignal(this.categories.activeDefinitions$, { initialValue: [] as ICategoryGroup[] });
 
     /**
      * Every row with its category and its counted value: spending as a positive
@@ -130,7 +126,7 @@ export class TrendsService {
         const months = this.months();
         const slot = new Map(months.map((m, i) => [m.key, i]));
         const byTitle = new Map<string, TrendCategory>();
-        const uncategorizedTitle = this.mode() === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE;
+        const uncategorizedTitle = OTHER_TITLE;
 
         for (const row of this.classified()) {
             const d = new Date(row.time * 1000);
@@ -223,7 +219,7 @@ export class TrendsService {
             const ranked = this.categoryTrends()
                 .filter(c => c.title !== OTHER_TITLE && c.title !== UNCATEGORIZED_TITLE)
                 .map(c => c.title);
-            if (ranked.length) this.colors.setRanking(this.mode(), ranked);
+            if (ranked.length) this.colors.setRanking(ranked);
         }, { allowSignalWrites: true });
     }
 

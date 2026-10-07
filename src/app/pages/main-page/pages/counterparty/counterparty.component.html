@@ -1,0 +1,168 @@
+<section class="page">
+    <header class="page__head">
+        <button type="button" class="back" (click)="goBack()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+            Назад
+        </button>
+        <div class="page__heading">
+            <h1 class="page__title">{{ title() || 'Контрагент' }}</h1>
+            @if (title()) {
+                <p class="page__sub">{{ subtitle() }}</p>
+            }
+            @if (state() === 'ready' && merged()) {
+                <p class="page__merged">Також враховано: {{ merged() }}</p>
+            }
+        </div>
+    </header>
+
+    @switch (state()) {
+        @case ('no-query') {
+            <div class="state">
+                <p class="state__title">Не вказано, чию статистику показати</p>
+                <p class="state__text">Відкрийте її кнопкою «за всі місяці» на сторінці операції.</p>
+            </div>
+        }
+        @case ('loading') {
+            <div class="sk sk--tiles" aria-hidden="true"></div>
+            <div class="sk sk--chart" aria-hidden="true"></div>
+            <div class="sk sk--list" aria-hidden="true"></div>
+        }
+        @case ('error') {
+            <div class="state">
+                <p class="state__title">Не вдалося завантажити історію операцій</p>
+                <p class="state__text">Перевірте з’єднання й спробуйте ще раз.</p>
+                <button type="button" class="btn" (click)="retry()">Спробувати ще раз</button>
+            </div>
+        }
+        @case ('own') {
+            <div class="state">
+                <p class="state__title">Це ваші власні кошти</p>
+                <p class="state__text">Усі операції з «{{ title() }}» — перекази між вашими рахунками, тож тут вони не враховуються.</p>
+            </div>
+        }
+        @case ('empty') {
+            <div class="state">
+                <p class="state__title">Операцій не знайдено</p>
+                <p class="state__text">За останні {{ MONTHS }} місяці на ваших картках немає операцій з «{{ title() }}».</p>
+            </div>
+        }
+        @default {
+            <div class="body" [class.body--refreshing]="data.loading()">
+                @if (failedCards().length) {
+                    <p class="note" role="status">
+                        Не вдалося завантажити {{ failedCards().length === 1 ? 'картку' : 'картки' }} {{ failedCards().join(', ') }} — підсумки можуть бути неповні.
+                        <button type="button" class="note__retry" (click)="retry()">Спробувати ще раз</button>
+                    </p>
+                }
+                @if (ratesMissing()) {
+                    <p class="note" role="status">
+                        Курс валют недоступний — операції в інших валютах показано, але не враховано в сумах.
+                        <button type="button" class="note__retry" (click)="retry()">Спробувати ще раз</button>
+                    </p>
+                }
+
+                @if (totals(); as t) {
+                    <div class="tiles">
+                        <div class="tile">
+                            <span class="micro tile__label"><i class="swatch swatch--out"></i>Пішло на них</span>
+                            <span class="tile__v num">{{ money(t.spent) }}</span>
+                            <span class="tile__sub num">{{ t.outCount ? count(t.outCount, ['витрата', 'витрати', 'витрат']) : 'витрат не було' }}</span>
+                        </div>
+                        <div class="tile">
+                            <span class="micro tile__label"><i class="swatch swatch--in"></i>Прийшло від них</span>
+                            <span class="tile__v num" [class.is-pos]="t.received > 0">{{ money(t.received) }}</span>
+                            <span class="tile__sub num">{{ t.inCount ? count(t.inCount, ['надходження', 'надходження', 'надходжень']) : 'надходжень не було' }}</span>
+                        </div>
+                        <div class="tile">
+                            <span class="micro">Разом</span>
+                            <span class="tile__v num" [class.is-pos]="t.net > 0">{{ signed(t.net) }}</span>
+                            <span class="tile__sub">прийшло мінус пішло</span>
+                        </div>
+                        <div class="tile">
+                            <span class="micro">Операцій</span>
+                            <span class="tile__v num">{{ t.count }}</span>
+                            <span class="tile__sub num">у {{ t.activeMonths }} з {{ months().length }} місяців</span>
+                        </div>
+                        <div class="tile">
+                            <span class="micro">В середньому</span>
+                            @if (t.average; as avg) {
+                                <span class="tile__v num">{{ money(avg.value) }}</span>
+                                <span class="tile__sub">{{ avg.per === 'out' ? 'за одну витрату' : 'за одне надходження' }}</span>
+                            } @else {
+                                <span class="tile__v num">—</span>
+                            }
+                        </div>
+                        <div class="tile">
+                            <span class="micro">Перша / остання</span>
+                            <span class="tile__dates num">
+                                @if (sameDay(t.first, t.last)) {
+                                    <span>{{ t.last * 1000 | date: 'd MMM y' }}</span>
+                                } @else {
+                                    <span>{{ t.first * 1000 | date: 'd MMM y' }}</span>
+                                    <span>{{ t.last * 1000 | date: 'd MMM y' }}</span>
+                                }
+                            </span>
+                            <span class="tile__sub">востаннє {{ ago(t.last) }}</span>
+                        </div>
+                    </div>
+                }
+
+                <section class="card">
+                    <header class="card__head">
+                        <h2 class="card__title">Рух по місяцях</h2>
+                        <span class="card__hint">Натисніть на місяць, щоб перейти до його операцій</span>
+                    </header>
+                    <app-counterparty-chart
+                        [months]="months()"
+                        [currency]="displayCode()"
+                        (openMonth)="showMonth($event)">
+                    </app-counterparty-chart>
+                </section>
+
+                <section class="card card--flush">
+                    <header class="card__head card__head--pad">
+                        <h2 class="card__title">Операції</h2>
+                        <span class="card__hint">{{ count(ops().length, ['операція', 'операції', 'операцій']) }} · натисніть, щоб відкрити місяць в огляді</span>
+                    </header>
+
+                    <div class="list">
+                        @for (group of groups(); track group.key) {
+                            <div class="rule" [attr.data-month]="group.key" [class.rule--on]="highlight() === group.key">
+                                <span class="rule__title">{{ group.title }}</span>
+                                <span class="rule__count num">{{ group.ops.length }} оп.</span>
+                                <span class="rule__fill"></span>
+                                @if (group.received) { <span class="rule__in num">{{ signed(group.received) }}</span> }
+                                @if (group.spent) { <span class="rule__out num">{{ signed(-group.spent) }}</span> }
+                            </div>
+
+                            @for (op of group.ops; track op.id) {
+                                <a class="op"
+                                   [routerLink]="['/dashboard']"
+                                   [queryParams]="{ month: op.monthKey }"
+                                   (click)="openOp($event, op)"
+                                   title="Відкрити цей місяць в огляді">
+                                    <span class="op__date num">{{ op.time * 1000 | date: 'd MMM y' }}</span>
+                                    <span class="op__meta">
+                                        <span class="num">{{ op.time * 1000 | date: 'HH:mm' }}</span>
+                                        <span>{{ op.card }}</span>
+                                        @if (op.pending) { <span class="tag" title="Ще в обробці">Холд</span> }
+                                    </span>
+                                    @if (op.comment || op.variant) {
+                                        <span class="op__note">
+                                            @if (op.comment) { <span class="op__comment">{{ op.comment }}</span> }
+                                            @if (op.variant) { <span class="op__variant">{{ op.variant }}</span> }
+                                        </span>
+                                    }
+                                    <span class="op__amount num" [class.is-pos]="op.incoming">
+                                        {{ op.amountText }}
+                                        @if (op.convertedText) { <span class="op__converted">{{ op.convertedText }}</span> }
+                                    </span>
+                                </a>
+                            }
+                        }
+                    </div>
+                </section>
+            </div>
+        }
+    }
+</section>

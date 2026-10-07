@@ -43,6 +43,7 @@
                     </span>
                     <span class="catrow__note">{{ categoryReason() }} · автоматично</span>
                 } @else {
+                <!-- «Авто + мої правила»: the category can be changed here — as one move or as a rule -->
                 <button type="button" class="cat" [class.cat--none]="!category()" [class.cat--open]="!!pickerOrigin()"
                         (click)="togglePicker($event)"
                         [attr.aria-label]="category() ? 'Категорія ' + category()!.title + ' — змінити' : 'Вибрати категорію для цієї операції'">
@@ -55,6 +56,7 @@
                     }
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                 </button>
+                <span class="catrow__note">{{ categoryReason() }}</span>
                 }
                 @if (category() && category()!.excluded) { <span class="catrow__note">не враховано у витратах і надходженнях</span> }
             </div>
@@ -125,7 +127,6 @@
             [merchant]="merchant()"
             [merchantCount]="siblings().length"
             (pick)="onPick($event)"
-            (create)="onCreate($event)"
             (close)="closePicker()">
         </app-category-picker>
     </ng-template>

@@ -79,7 +79,7 @@ export default class TrendsComponent {
             .subscribe(id => this.trends.ensure(id));
     }
 
-    public setMode(mode: 'auto' | 'mine'): void {
+    public setMode(mode: 'auto' | 'plus'): void {
         this.selected.set(null);
         this.categories.setMode(mode);
     }

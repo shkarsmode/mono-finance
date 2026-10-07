@@ -1,13 +1,13 @@
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
-import { AsyncPipe, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
+import { currencyCodesMap } from '@core/data';
 import { BETWEEN_ACCOUNTS_TITLE } from '@core/helpers/category-titles';
 import { CountMode, flowOf, flowTotals } from '@core/helpers/flows';
-import { LocalStorage } from '@core/enums';
-import { IAccount, IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
+import { IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { CategoryMode } from '@core/services/category-group.service';
 import { SyncStatusService } from '@core/services/sync-status.service';
@@ -18,9 +18,12 @@ import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 import { TransactionsFilterPipe } from '../../../../shared/pipes/transactions-filter.pipe';
 import { MonthPaceComponent } from '../../../../shared/charts/month-pace.component';
 import { TrendsService } from '@core/services/trends.service';
-import { accountTypeLabel, CardComponent, TransactionsComponent } from './components';
+import { AccountSwitcherComponent } from './components/account-switcher/account-switcher.component';
+import {
+    AccountView, copyText, formatMoney, ownBalance, sortAccounts, toAccountView, toUah,
+} from './components/account-switcher/accounts';
 import { CategoryBreakdownComponent } from './components/category-breakdown/category-breakdown.component';
-import { INTERNAL_FILTER, UNCATEGORIZED_FILTER } from './components/transactions/transactions.component';
+import { TransactionsComponent } from './components/transactions/transactions.component';
 
 const MONTHS = [
     'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
@@ -52,8 +55,8 @@ function parsePeriod(value: string | null): { month: number; year: number } | nu
     selector: 'app-dashboard',
     standalone: true,
     imports: [
-        AsyncPipe, OverlayModule,
-        CardComponent, TransactionsComponent, CategoryBreakdownComponent, MonthPickerComponent, MonthPaceComponent,
+        OverlayModule,
+        AccountSwitcherComponent, TransactionsComponent, CategoryBreakdownComponent, MonthPickerComponent, MonthPaceComponent,
         DisplayMoneyPipe, DisplayMoneyMajorPipe,
     ],
     templateUrl: './dashboard.component.html',
@@ -87,9 +90,8 @@ export default class DashboardComponent implements OnInit {
     private readonly flowContext = toSignal(this.categoryGroupService.flowContext$, { requireSync: true });
 
     readonly BETWEEN_ACCOUNTS_TITLE = BETWEEN_ACCOUNTS_TITLE;
-    readonly accountTypeLabel = accountTypeLabel;
 
-    activeCardId$ = this.monobankService.activeCardId$;
+    readonly activeCardId = toSignal(this.monobankService.activeCardId$, { requireSync: true });
 
     // ── Honest totals ────────────────────────────────────────
 
@@ -122,6 +124,12 @@ export default class DashboardComponent implements OnInit {
         const flow = income + spend;
         return flow > 0 ? Math.round((income / flow) * 100) : 0;
     });
+
+    /** Any money moved at all — an empty month draws no income/spend bar. */
+    readonly hasFlow = computed(() => Math.abs(this.totalIncome()) + Math.abs(this.totalExpenses()) > 0);
+
+    /** The sign follows the whole figure on screen: «+0 ₴» would claim income that is not there. */
+    readonly netSign = computed(() => (Math.round(this.netTotal()) > 0 ? '+' : ''));
 
     /** Real spending only — a jar top-up is never "the largest expense". */
     private readonly spendTxs = computed(() => {
@@ -162,26 +170,53 @@ export default class DashboardComponent implements OnInit {
 
 
     // ── Accounts ─────────────────────────────────────────────
-    readonly cardTypeFilters = signal<Set<string>>(this.loadCardTypeFilters());
 
-    readonly availableCardTypes = computed(() => {
-        const info = this.clientInfoSignal();
-        if (!info?.accounts) return [];
-        return Array.from(new Set(info.accounts.map(a => a.type).filter(Boolean)));
+    /** Every card, white first, with its own money worked out once for the hero and the switcher. */
+    readonly accountViews = computed<AccountView[]>(() => {
+        const rates = this.currencyDisplay.rates();
+        return sortAccounts(this.clientInfoSignal()?.accounts ?? []).map(account => toAccountView(account, rates));
     });
 
-    /** Sorted accounts: type='white' always first, filtered by chip selection */
-    readonly sortedAccounts = computed(() => {
+    readonly activeAccount = computed(() => this.accountViews().find(a => a.id === this.activeCardId()) ?? null);
+
+    /**
+     * All the money that is yours, in hryvnias: every card's own balance (credit
+     * limit left out, so a card in debt counts below zero) plus every jar. Dollars
+     * and euros go through Monobank's rate. Null until the accounts — and, when
+     * foreign money is involved, the rates — have arrived.
+     */
+    readonly worth = computed(() => {
         const info = this.clientInfoSignal();
-        if (!info?.accounts) return [];
-        const filters = this.cardTypeFilters();
-        const filtered = filters.size > 0 ? info.accounts.filter(a => filters.has(a.type)) : info.accounts;
-        return [...filtered].sort((a, b) => {
-            if (a.type === 'white' && b.type !== 'white') return -1;
-            if (a.type !== 'white' && b.type === 'white') return 1;
-            return 0;
-        });
+        if (!info || !Array.isArray(info.accounts)) return null;
+        const rates = this.currencyDisplay.rates();
+        const jarsList = info.jars ?? [];
+        const missing = new Set<string>();
+        const add = (minor: number, code: number | undefined): number => {
+            const currency = Number(code) || 980;
+            const uah = toUah(Number(minor) || 0, currency, rates);
+            if (uah === null) missing.add(currencyCodesMap[currency]?.name ?? String(currency));
+            return uah ?? 0;
+        };
+
+        let cards = 0;
+        for (const account of info.accounts) cards += add(ownBalance(account), account.currencyCode);
+        let jars = 0;
+        for (const jar of jarsList) jars += add(jar.balance, jar.currencyCode);
+
+        if (missing.size && this.currencyDisplay.loading()) return null;
+        return {
+            total: formatMoney(cards + jars, 980, 0),
+            cards: formatMoney(cards, 980, 0),
+            jars: jarsList.length ? formatMoney(jars, 980, 0) : null,
+            missing: missing.size ? `Без ${[...missing].join(', ')}: курс недоступний` : null,
+        };
     });
+
+    readonly WORTH_HINT = 'Власні кошти на всіх картках і в банках, без кредитного ліміту. Долари й євро — за курсом Монобанку.';
+
+    /** The account whose IBAN was just copied: its button shows a check for a moment. */
+    readonly copiedId = signal<string | null>(null);
+    private copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
     ngOnInit(): void {
         this.monobankService.currentTransactions$
@@ -209,6 +244,8 @@ export default class DashboardComponent implements OnInit {
 
         // Ambient background-sync status (backfill progress, month freshness).
         this.syncStatus.start();
+
+        this.destroyRef.onDestroy(() => clearTimeout(this.copiedTimer));
     }
 
     // ── Period ───────────────────────────────────────────────
@@ -315,28 +352,25 @@ export default class DashboardComponent implements OnInit {
 
     // ── Accounts ─────────────────────────────────────────────
 
-    onCardClick(account: IAccount): void {
-        this.monobankService.setActiveCardId(account.id);
+    onChooseAccount(accountId: string): void {
+        this.monobankService.setActiveCardId(accountId);
     }
 
-    toggleCardTypeFilter(type: string): void {
-        const current = new Set(this.cardTypeFilters());
-        if (current.has(type)) current.delete(type);
-        else current.add(type);
-        this.cardTypeFilters.set(current);
-        localStorage.setItem(LocalStorage.CardTypeFilters, JSON.stringify([...current]));
-    }
-
-    clearCardTypeFilters(): void {
-        this.cardTypeFilters.set(new Set());
-        localStorage.removeItem(LocalStorage.CardTypeFilters);
-    }
-
-    private loadCardTypeFilters(): Set<string> {
-        try {
-            const raw = localStorage.getItem(LocalStorage.CardTypeFilters);
-            if (raw) return new Set(JSON.parse(raw));
-        } catch { /* ignore */ }
-        return new Set();
+    /**
+     * Monobank's API never gives the full card number (only 444111******8813), so
+     * the button copies what a transfer actually needs: the account's IBAN.
+     */
+    copyAccount(accountId: string): void {
+        const account = this.accountViews().find(a => a.id === accountId);
+        if (!account?.copyValue) return;
+        copyText(account.copyValue).then(
+            () => {
+                this.toast.success(account.copyIsIban ? 'IBAN скопійовано' : 'Номер картки скопійовано');
+                this.copiedId.set(accountId);
+                clearTimeout(this.copiedTimer);
+                this.copiedTimer = setTimeout(() => this.copiedId.set(null), 1600);
+            },
+            () => this.toast.error('Не вдалося скопіювати'),
+        );
     }
 }

@@ -101,7 +101,11 @@ export default class TransactionDetailsComponent implements OnInit {
         if (tx && kind) return this.ownMoveText(kind, tx);
         const reason = this.explained().reason;
         switch (reason.by) {
-            case 'pin': return 'закріплено';
+            case 'pin': return 'перенесено вручну';
+            case 'rule': {
+                const note = this.category()?.ruleNotes?.[reason.key];
+                return `ваше правило «${reason.key}»${note ? ` · ${note}` : ''}`;
+            }
             case 'system': return 'за формулюванням виписки';
             case 'text': return `збіг із «${reason.key}»`;
             case 'mcc': return `за MCC ${reason.mcc}`;
@@ -213,8 +217,8 @@ export default class TransactionDetailsComponent implements OnInit {
 
     openMerchantSearch(): void {
         const tx = this.transaction();
-        const merchant = tx?.merchantKey || tx?.merchantName || tx?.description;
-        if (merchant) this.router.navigate(['/analytics/mcc'], { queryParams: { search: merchant } });
+        const merchant = (tx?.description ?? '').trim();
+        if (merchant) this.router.navigate(['/trends/counterparty'], { queryParams: { q: merchant } });
     }
 
     // ── picker ───────────────────────────────────────────────
@@ -225,7 +229,7 @@ export default class TransactionDetailsComponent implements OnInit {
     ];
 
     togglePicker(event: Event): void {
-        if (this.categoryMode() !== 'mine') return;
+        if (this.categoryMode() === 'auto') return;
         const origin = event.currentTarget as HTMLElement;
         this.pickerOrigin.set(this.pickerOrigin() ? null : origin);
     }
@@ -239,16 +243,10 @@ export default class TransactionDetailsComponent implements OnInit {
     onPick(choice: { index: number; mode: AssignMode }): void {
         const tx = this.transaction();
         if (!tx) return;
-        this.categories.assign(tx, choice.index, choice.mode);
-        this.toast.success(`Перенесено до «${this.groups()[choice.index]?.title ?? ''}»`);
-        this.closePicker();
-    }
-
-    onCreate(choice: { title: string; mode: AssignMode }): void {
-        const tx = this.transaction();
-        if (!tx) return;
-        this.categories.createAndAssign(tx, { title: choice.title }, choice.mode);
-        this.toast.success(`Перенесено до «${choice.title}»`);
+        const title = this.groups()[choice.index]?.title;
+        if (!title) return;
+        this.categories.assign(tx, title, choice.mode);
+        this.toast.success(choice.mode === 'merchant' ? `Правило: «${this.merchant()}» → ${title}` : `Перенесено до «${title}»`);
         this.closePicker();
     }
 }

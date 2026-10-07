@@ -1,4 +1,3 @@
-import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -7,17 +6,17 @@ import { Router } from '@angular/router';
 import {
     AssignMode, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
 } from '@core/helpers/categorize';
-import { OTHER_TITLE, OWN_MONEY_TITLES, UNCATEGORIZED_TITLE } from '@core/helpers/category-titles';
-import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { OTHER_TITLE, OWN_MONEY_TITLES } from '@core/helpers/category-titles';
+import { ICategoryGroup, IPersonalRules, ITransaction } from '@core/interfaces';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
 import { MonobankService } from '@core/services/monobank.service';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
-import { flowOf } from '@core/helpers/flows';
 import { Observable } from 'rxjs';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
 const INBOX = '\u0000inbox';
+const RULES = '\u0000rules';
 
 /** Lower case: the period sits inside a sentence, «Дані за лютий 2026». */
 const MONTHS = [
@@ -25,26 +24,22 @@ const MONTHS = [
     'липень', 'серпень', 'вересень', 'жовтень', 'листопад', 'грудень',
 ];
 
-/** The not-counted category one click creates for own-money merchants. */
-const TRANSFERS_TITLE = 'Перекази';
-/** Names that count as that category already, including the one it had in English. */
-const TRANSFERS_NAMES = [TRANSFERS_TITLE, 'Transfers'].map(name => name.toLocaleLowerCase());
+type MerchantBucket = { label: string; count: number; net: number; last: number; sample: ITransaction };
+type BuiltinRule = { key: string; kind: 'MCC' | 'Starts' | 'Merchant'; hits: number };
+type MyRule = { category: string; emoji: string; key: string; note: string; hits: number };
 
-type MerchantBucket = {
-    label: string;
-    count: number;
-    net: number;
-    last: number;
-    sample: ITransaction;
-    ownMoney: boolean;
-};
-
-type RuleView = { key: string; raw: string; kind: 'Merchant' | 'MCC' | 'Starts'; hits: number };
+/** Does this text rule match the transaction — the same test the engine runs. */
+function textMatches(rule: string, tx: ITransaction): boolean {
+    const starts = rule.startsWith('^');
+    const needle = (starts ? rule.slice(1) : rule).toLocaleLowerCase();
+    if (starts) return (tx.description ?? '').toLocaleLowerCase().startsWith(needle);
+    return [tx.description, tx.merchantName, tx.counterName].some(field => (field ?? '').toLocaleLowerCase().includes(needle));
+}
 
 @Component({
     selector: 'app-categories',
     standalone: true,
-    imports: [DatePipe, DisplayMoneyPipe, DragDropModule, OverlayModule, CategoryPickerComponent],
+    imports: [DatePipe, DisplayMoneyPipe, OverlayModule, CategoryPickerComponent],
     templateUrl: './categories.component.html',
     styleUrl: './categories.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,44 +49,31 @@ export default class CategoriesComponent {
     private readonly monobank = inject(MonobankService);
     private readonly toast = inject(ToastService);
     private readonly router = inject(Router);
+    private readonly colors = inject(CategoryColorsService);
 
     readonly INBOX = INBOX;
+    readonly RULES = RULES;
     readonly OTHER_TITLE = OTHER_TITLE;
-    readonly UNCATEGORIZED_TITLE = UNCATEGORIZED_TITLE;
-    private readonly flowContext = toSignal(this.categories.flowContext$, { requireSync: true });
+
     readonly mode = toSignal(this.categories.mode$, { requireSync: true });
-    readonly readonly = computed(() => this.mode() === 'auto');
-    readonly mineCount = toSignal(this.categories.serverGroups$, { initialValue: [] as ICategoryGroup[] });
-    readonly confirmReplace = signal(false);
+    /** Your rules apply: «Авто + мої правила». */
+    readonly plus = computed(() => this.mode() === 'plus');
+    readonly personal = toSignal(this.categories.rules$, { initialValue: [] as IPersonalRules[] });
 
-    setMode(mode: CategoryMode): void {
-        this.categories.setMode(mode);
-        this.select(INBOX);
-    }
-
-    /** Copy the automatic set into yours: everything, only what is missing, or one category. */
-    adopt(how: 'replace' | 'append', only?: string): void {
-        if (how === 'replace' && this.mineCount().length && !this.confirmReplace()) {
-            this.confirmReplace.set(true);
-            setTimeout(() => this.confirmReplace.set(false), 4000);
-            return;
-        }
-        this.confirmReplace.set(false);
-        this.categories.adoptAuto(how, only ? [only] : undefined);
-        this.toast.success(only ? `«${only}» скопійовано до ваших категорій` : 'Скопійовано — перейдіть у «Мої», щоб їх змінити');
-    }
     readonly groups = toSignal(this.categories.categoryGroups$, { initialValue: [] as ICategoryGroup[] });
     readonly transactions = toSignal(
         this.monobank.currentTransactions$ as Observable<ITransaction[]>,
         { initialValue: [] as ITransaction[] },
     );
 
-    readonly selected = signal<string>(INBOX);
+    readonly selected = signal<string>(RULES);
     readonly periodLabel = `${MONTHS[this.monobank.activeMonth - 1] ?? ''} ${this.monobank.activeYear}`;
     readonly currency = computed(() => this.transactions()[0]?.cardCurrencyCode ?? 980);
-
-    private readonly colors = inject(CategoryColorsService);
     readonly color = (title: string | null | undefined) => this.colors.colorFor(title);
+
+    setMode(mode: CategoryMode): void {
+        this.categories.setMode(mode);
+    }
 
     /** «1 правило», «3 правила», «5 правил»: `forms` are the words for 1, for 2–4 and for 5+. */
     plural(n: number, forms: readonly string[]): string {
@@ -103,12 +85,21 @@ export default class CategoriesComponent {
         return `${n} ${form}`;
     }
 
-    /** The built-in own-money category, under its current or its old English title. */
     isOwnMoney(title: string): boolean {
         return OWN_MONEY_TITLES.includes(title);
     }
 
-    // ── list ─────────────────────────────────────────────────
+    select(id: string): void {
+        this.selected.set(id);
+        this.ruleDraft.set('');
+        this.noteDraft.set('');
+        // On a phone the panel sits under the list — jump to it, without animation.
+        if (window.innerWidth < 960) {
+            setTimeout(() => document.querySelector('app-categories .detail')?.scrollIntoView({ block: 'start' }), 0);
+        }
+    }
+
+    // ── «Інше» ───────────────────────────────────────────────
 
     readonly uncategorized = computed(() => {
         const groups = this.groups();
@@ -119,25 +110,6 @@ export default class CategoriesComponent {
         this.uncategorized().reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0),
     );
 
-    readonly selectedIndex = computed(() => this.groups().findIndex(g => g.title === this.selected()));
-    readonly selectedGroup = computed(() => this.groups()[this.selectedIndex()] ?? null);
-
-    select(title: string): void {
-        this.selected.set(title);
-        this.confirmDelete.set(false);
-        this.ruleDraft.set('');
-        // On a phone the editor sits under the list — jump to it, without animation.
-        if (window.innerWidth < 960) {
-            setTimeout(() => document.querySelector('app-categories .detail')?.scrollIntoView({ block: 'start' }), 0);
-        }
-    }
-
-    onDrop(event: CdkDragDrop<ICategoryGroup[]>): void {
-        this.categories.move(event.previousIndex, event.currentIndex);
-    }
-
-    // ── inbox ────────────────────────────────────────────────
-
     readonly inbox = computed<MerchantBucket[]>(() => {
         const buckets = new Map<string, MerchantBucket>();
         for (const tx of this.uncategorized()) {
@@ -145,7 +117,7 @@ export default class CategoriesComponent {
             const id = label.toLocaleLowerCase();
             let bucket = buckets.get(id);
             if (!bucket) {
-                bucket = { label, count: 0, net: 0, last: 0, sample: tx, ownMoney: flowOf(tx, this.flowContext()) === 'internal' };
+                bucket = { label, count: 0, net: 0, last: 0, sample: tx };
                 buckets.set(id, bucket);
             }
             bucket.count += 1;
@@ -158,50 +130,142 @@ export default class CategoriesComponent {
         return Array.from(buckets.values()).sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
     });
 
-    readonly ownMoneyBuckets = computed(() => this.inbox().filter(bucket => bucket.ownMoney));
-    readonly ownMoneyPreview = computed(() => {
-        const labels = this.ownMoneyBuckets().map(bucket => bucket.label);
-        return labels.slice(0, 4).join(' · ') + (labels.length > 4 ? ' …' : '');
+    // ── your rules ───────────────────────────────────────────
+
+    readonly myRules = computed<MyRule[]>(() => {
+        const txs = this.transactions();
+        const emojiOf = new Map(this.groups().map(group => [group.title, group.emoji]));
+        return this.personal().flatMap(entry => entry.keys.map(key => ({
+            category: entry.title,
+            emoji: emojiOf.get(entry.title) ?? '',
+            key,
+            note: entry.notes?.[key] ?? '',
+            hits: txs.filter(tx => textMatches(key, tx)).length,
+        })));
     });
 
-    /**
-     * Where "own money" goes: the first not-counted category, else one already called
-     * «Перекази» (or "Transfers", its English name), else a new one.
-     */
-    readonly transfersTarget = computed(() => {
-        const groups = this.groups();
-        const excluded = groups.findIndex(g => g.excluded);
-        if (excluded >= 0) return { index: excluded, title: groups[excluded].title };
-        const named = groups.findIndex(g => TRANSFERS_NAMES.includes(g.title.trim().toLocaleLowerCase()));
-        if (named >= 0) return { index: named, title: groups[named].title };
-        return { index: -1, title: TRANSFERS_TITLE };
-    });
+    readonly myPins = computed(() => this.personal().reduce((sum, entry) => sum + (entry.txIds?.length ?? 0), 0));
 
-    /** One click: every own-money merchant into a category that is not counted. */
-    createTransfers(): void {
-        const keys = this.ownMoneyBuckets().map(bucket => bucket.label);
-        if (!keys.length) return;
-        const target = this.transfersTarget();
+    /** Categories you can point a rule at, in the order they are listed. */
+    readonly targets = computed(() => this.groups().map(group => ({ title: group.title, emoji: group.emoji })));
 
-        let groups = [...this.categories.definitions];
-        let index = target.index;
-        if (index < 0) {
-            groups.push({ emoji: '🔁', title: target.title, keys: [], excluded: true, amount: 0 });
-            index = groups.length - 1;
-        }
+    readonly ruleDraft = signal('');
+    readonly noteDraft = signal('');
+    readonly categoryDraft = signal('');
 
-        // the target owns these keys from now on — drop identical ones elsewhere
-        const lower = new Set(keys.map(k => k.toLocaleLowerCase()));
-        groups = groups.map((group, i) => {
-            const kept = (group.keys ?? []).filter(k => !lower.has(String(k).trim().toLocaleLowerCase()));
-            return i === index ? { ...group, excluded: true, keys: [...kept, ...keys] } : { ...group, keys: kept };
-        });
-
-        this.categories.replaceAll(groups);
-        this.toast.success(`${target.title}: ще ${this.plural(keys.length, ['опис', 'описи', 'описів'])} — не враховано у витратах і надходженнях`);
+    onRuleInput(event: Event): void {
+        this.ruleDraft.set((event.target as HTMLInputElement).value);
     }
 
-    // ── picker (inbox rows) ──────────────────────────────────
+    onNoteInput(event: Event): void {
+        this.noteDraft.set((event.target as HTMLInputElement).value);
+    }
+
+    onCategoryDraft(event: Event): void {
+        this.categoryDraft.set((event.target as HTMLSelectElement).value);
+    }
+
+    /** From the «Мої правила» panel: text + category + optional note. */
+    addFromPanel(event?: Event): void {
+        event?.preventDefault();
+        const key = this.ruleDraft().trim();
+        const category = this.categoryDraft();
+        if (!key || !category) return;
+        this.categories.addRule(category, key, this.noteDraft());
+        this.toast.success(`«${key}» → ${category}`);
+        this.ruleDraft.set('');
+        this.noteDraft.set('');
+    }
+
+    /** From a category's own panel: the category is the selected one. */
+    addToSelected(event?: Event): void {
+        event?.preventDefault();
+        const key = this.ruleDraft().trim();
+        const group = this.selectedGroup();
+        if (!key || !group) return;
+        this.categories.addRule(group.title, key, this.noteDraft());
+        this.ruleDraft.set('');
+        this.noteDraft.set('');
+    }
+
+    removeRule(category: string, key: string): void {
+        this.categories.removeRule(category, key);
+        this.toast.success(`Правило «${key}» видалено`);
+    }
+
+    unpin(id: string): void {
+        const group = this.selectedGroup();
+        if (group) this.categories.unpin(group.title, id);
+    }
+
+    /** Suggestions for the rule box: this month's descriptions, «Інше» first. */
+    readonly suggestions = computed(() => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        const push = (label: string) => {
+            const id = label.toLocaleLowerCase();
+            if (label && !seen.has(id)) { seen.add(id); out.push(label); }
+        };
+        this.inbox().forEach(bucket => push(bucket.label));
+        this.transactions().forEach(tx => push(merchantLabel(tx)));
+        return out.slice(0, 200);
+    });
+
+    // ── a category ───────────────────────────────────────────
+
+    readonly selectedIndex = computed(() => this.groups().findIndex(g => g.title === this.selected()));
+    readonly selectedGroup = computed(() => this.groups()[this.selectedIndex()] ?? null);
+
+    /** The built-in rules of the selected category, with this month's hits. */
+    readonly builtin = computed<BuiltinRule[]>(() => {
+        const group = this.selectedGroup();
+        if (!group) return [];
+        const txs = this.transactions();
+        return (group.keys ?? []).map(key => {
+            const k = String(key).trim();
+            const isMcc = isMccKey(k);
+            const [from, to] = k.includes('-') ? k.split('-').map(Number) : [Number(k), Number(k)];
+            const hits = isMcc
+                ? txs.filter(tx => [tx.mcc, tx.originalMcc].some(code => code >= from && code <= to)).length
+                : txs.filter(tx => textMatches(k, tx)).length;
+            const kind = isMcc ? 'MCC' as const : k.startsWith('^') ? 'Starts' as const : 'Merchant' as const;
+            return { key: kind === 'Starts' ? k.slice(1) : k, kind, hits };
+        }).sort((a, b) => b.hits - a.hits);
+    });
+
+    /** Built-in rules shown before «show all» — the ones that caught something first. */
+    readonly showAllBuiltin = signal(false);
+
+    /** Your rules on the selected category. */
+    readonly selectedRules = computed(() => this.myRules().filter(rule => rule.category === this.selected()));
+
+    readonly pinned = computed(() => {
+        const entry = this.personal().find(item => item.title === this.selected());
+        if (!entry?.txIds?.length) return [];
+        const byId = new Map(this.transactions().map(tx => [tx.id, tx]));
+        return entry.txIds.map(id => ({ id, tx: byId.get(id) ?? null }));
+    });
+
+    /** What this category wins, and what its rules match but lose to another category. */
+    readonly preview = computed(() => {
+        const index = this.selectedIndex();
+        const groups = this.groups();
+        if (index < 0) return { won: [] as ITransaction[], lost: [] as Array<{ tx: ITransaction; to: string; color: string }> };
+
+        const won: ITransaction[] = [];
+        const lost: Array<{ tx: ITransaction; to: string; color: string }> = [];
+        for (const tx of this.transactions()) {
+            const winner = categoryIndexOf(tx, groups);
+            if (winner === index) won.push(tx);
+            else if (matchingIndexes(tx, groups).includes(index)) {
+                lost.push({ tx, to: groups[winner]?.title ?? '—', color: this.colors.colorFor(groups[winner]?.title) });
+            }
+        }
+        won.sort((a, b) => b.time - a.time);
+        return { won, lost };
+    });
+
+    // ── picker («Інше» rows) ─────────────────────────────────
 
     readonly picker = signal<{ bucket: MerchantBucket; origin: HTMLElement } | null>(null);
     readonly pickerPositions: ConnectedPosition[] = [
@@ -223,165 +287,16 @@ export default class CategoriesComponent {
 
     onPick(choice: { index: number; mode: AssignMode }): void {
         const open = this.picker();
-        if (!open) return;
-        this.categories.assign(open.bucket.sample, choice.index, choice.mode);
-        this.toast.success(`«${open.bucket.label}» → ${this.groups()[choice.index]?.title ?? ''}`);
+        const title = this.groups()[choice.index]?.title;
+        if (!open || !title) return;
+        if (!this.plus()) this.categories.setMode('plus');
+        this.categories.assign(open.bucket.sample, title, choice.mode);
+        this.toast.success(`«${open.bucket.label}» → ${title}`);
         this.closePicker();
-    }
-
-    onCreate(choice: { title: string; mode: AssignMode }): void {
-        const open = this.picker();
-        if (!open) return;
-        this.categories.createAndAssign(open.bucket.sample, { title: choice.title }, choice.mode);
-        this.toast.success(`«${open.bucket.label}» → ${choice.title}`);
-        this.closePicker();
-    }
-
-    // ── editor ───────────────────────────────────────────────
-
-    readonly confirmDelete = signal(false);
-    readonly ruleDraft = signal('');
-
-    /** What this category wins, and what its rules match but lose to another category. */
-    readonly preview = computed(() => {
-        const index = this.selectedIndex();
-        const groups = this.groups();
-        if (index < 0) return { won: [] as ITransaction[], lost: [] as Array<{ tx: ITransaction; to: string; color: string }> };
-
-        const won: ITransaction[] = [];
-        const lost: Array<{ tx: ITransaction; to: string; color: string }> = [];
-        for (const tx of this.transactions()) {
-            const winner = categoryIndexOf(tx, groups);
-            if (winner === index) won.push(tx);
-            else if (matchingIndexes(tx, groups).includes(index)) {
-                lost.push({ tx, to: groups[winner]?.title ?? '—', color: this.colors.colorFor(groups[winner]?.title) });
-            }
-        }
-        won.sort((a, b) => b.time - a.time);
-        return { won, lost };
-    });
-
-    readonly rules = computed<RuleView[]>(() => {
-        const group = this.selectedGroup();
-        if (!group) return [];
-        const txs = this.transactions();
-        return (group.keys ?? []).map(key => {
-            const k = String(key).trim();
-            const isMcc = isMccKey(k);
-            const starts = !isMcc && k.startsWith('^');
-            const needle = (starts ? k.slice(1) : k).toLocaleLowerCase();
-            const [from, to] = k.includes('-') ? k.split('-').map(Number) : [Number(k), Number(k)];
-            const hits = txs.filter(tx => isMcc
-                ? [tx.mcc, tx.originalMcc].some(code => code >= from && code <= to)
-                : starts
-                    ? (tx.description ?? '').toLocaleLowerCase().startsWith(needle)
-                    : [tx.description, tx.merchantName, tx.counterName].some(f => (f ?? '').toLocaleLowerCase().includes(needle)),
-            ).length;
-            return { key: starts ? k.slice(1) : key, raw: key, kind: isMcc ? 'MCC' : starts ? 'Starts' : 'Merchant', hits };
-        });
-    });
-
-    readonly pinned = computed(() => {
-        const group = this.selectedGroup();
-        if (!group?.txIds?.length) return [];
-        const byId = new Map(this.transactions().map(tx => [tx.id, tx]));
-        return group.txIds.map(id => ({ id, tx: byId.get(id) ?? null }));
-    });
-
-    /** Suggestions for the rule box: this month's merchants, uncategorized first. */
-    readonly suggestions = computed(() => {
-        const seen = new Set<string>();
-        const out: string[] = [];
-        const push = (label: string) => {
-            const id = label.toLocaleLowerCase();
-            if (label && !seen.has(id)) { seen.add(id); out.push(label); }
-        };
-        this.inbox().forEach(bucket => push(bucket.label));
-        this.transactions().forEach(tx => push(merchantLabel(tx)));
-        return out.slice(0, 200);
-    });
-
-    rename(event: Event): void {
-        const input = event.target as HTMLInputElement;
-        const group = this.selectedGroup();
-        const title = input.value.trim();
-        if (!group || title === group.title) return;
-        if (!title) { input.value = group.title; return; }
-        if (this.categories.isTitleTaken(title, group.title)) {
-            this.toast.error(`«${title}» вже існує`);
-            input.value = group.title;
-            return;
-        }
-        this.categories.upsert(group.title, { ...group, title });
-        this.selected.set(title);
-    }
-
-    setEmoji(event: Event): void {
-        const group = this.selectedGroup();
-        const emoji = (event.target as HTMLInputElement).value.trim();
-        if (!group || emoji === (group.emoji ?? '')) return;
-        this.categories.upsert(group.title, { ...group, emoji });
-    }
-
-    toggleCounted(): void {
-        const group = this.selectedGroup();
-        if (!group) return;
-        this.categories.upsert(group.title, { ...group, excluded: !group.excluded });
-    }
-
-    onRuleInput(event: Event): void {
-        this.ruleDraft.set((event.target as HTMLInputElement).value);
-    }
-
-    addRule(event?: Event): void {
-        event?.preventDefault();
-        const key = this.ruleDraft().trim();
-        const index = this.selectedIndex();
-        if (!key || index < 0) return;
-        this.categories.addKey(index, key);
-        this.ruleDraft.set('');
-    }
-
-    removeRule(key: string): void {
-        const index = this.selectedIndex();
-        if (index >= 0) this.categories.removeKey(index, key);
-    }
-
-    unpin(id: string): void {
-        const index = this.selectedIndex();
-        if (index >= 0) this.categories.unpin(index, id);
-    }
-
-    remove(): void {
-        const group = this.selectedGroup();
-        if (!group) return;
-        if (!this.confirmDelete()) {
-            this.confirmDelete.set(true);
-            setTimeout(() => this.confirmDelete.set(false), 4000);
-            return;
-        }
-        this.categories.delete(group);
-        this.toast.success(`Видалено «${group.title}»`);
-        this.select(INBOX);
-    }
-
-    createCategory(): void {
-        const title = this.uniqueTitle('Нова категорія');
-        this.categories.upsert(null, { emoji: '', title, keys: [], amount: 0 });
-        this.select(title);
-        // let the editor render, then put the cursor in the name
-        setTimeout(() => (document.getElementById('category-name') as HTMLInputElement | null)?.select(), 0);
     }
 
     openTransaction(tx: ITransaction): void {
         this.monobank.rememberTransaction(tx);
         this.router.navigate(['/transactions', tx.id], { state: { transaction: tx } });
-    }
-
-    private uniqueTitle(base: string): string {
-        let title = base;
-        let n = 2;
-        while (this.categories.isTitleTaken(title)) title = `${base} ${n++}`;
-        return title;
     }
 }

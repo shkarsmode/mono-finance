@@ -53,9 +53,9 @@ const empty = (): Bucket => ({ spent: 0, income: 0, refunds: 0, spentCount: 0, i
                 </div>
                 <div class="seg" role="group" aria-label="Які категорії">
                     <button type="button" [class.seg--on]="categoryMode === 'auto'" (click)="categoryModeChange.emit('auto')"
-                            title="Вбудовані категорії за MCC і назвою торговця">Авто</button>
-                    <button type="button" [class.seg--on]="categoryMode === 'mine'" (click)="categoryModeChange.emit('mine')"
-                            title="Категорії, які ви створили">Мої</button>
+                            title="Лише вбудовані категорії за MCC і назвою торговця">Авто</button>
+                    <button type="button" [class.seg--on]="categoryMode === 'plus'" (click)="categoryModeChange.emit('plus')"
+                            title="Вбудовані категорії разом із вашими правилами">+ мої</button>
                 </div>
             </div>
 
@@ -80,7 +80,7 @@ const empty = (): Bucket => ({ spent: 0, income: 0, refunds: 0, spentCount: 0, i
                                 <span class="line__bar"><span [style.width.%]="line.width" [style.background]="line.color"></span></span>
                                 <span class="line__meta num">
                                     {{ line.count }} оп. · {{ line.share }}%
-                                    @if (line.uncategorized && categoryMode === 'mine') { <span class="line__cta">Вибрати категорії →</span> }
+                                    @if (line.uncategorized && categoryMode === 'plus') { <span class="line__cta">Призначити →</span> }
                                 </span>
                             </button>
                         </li>
@@ -357,7 +357,7 @@ export class CategoryBreakdownComponent {
         if (magnitude(uncategorized) > 0) {
             raw.push({
                 filter: UNCATEGORIZED_FILTER,
-                title: this.categoryMode === 'auto' ? OTHER_TITLE : UNCATEGORIZED_TITLE,
+                title: OTHER_TITLE,
                 emoji: '',
                 color: this.colors.colorFor(null),
                 magnitude: magnitude(uncategorized),

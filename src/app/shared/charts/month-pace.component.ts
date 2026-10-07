@@ -1,6 +1,6 @@
 import {
-    AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, Input, OnDestroy, signal,
-    ViewChild,
+    AfterViewInit, ChangeDetectionStrategy, Component, computed, ElementRef, HostBinding, HostListener, inject, Input, OnDestroy,
+    signal, ViewChild,
 } from '@angular/core';
 import { ITransaction } from '@core/interfaces';
 import { TrendsService } from '@core/services/trends.service';
@@ -13,6 +13,9 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
  * This month against your usual month, as cumulative spending by day. One line is
  * the point (this month, accent), the other is context (the average of the six
  * months before, gray). The line stops at today — no flat tail into the future.
+ *
+ * `variant="inline"` drops the chart's own frame for a host that already is a
+ * surface (the dashboard hero); `height` sets the plot height.
  */
 @Component({
     selector: 'app-month-pace',
@@ -38,7 +41,7 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
                 }
             </p>
 
-            <div class="pace__plot" #plot (pointerleave)="leave($event)">
+            <div class="pace__plot" #plot (pointerleave)="leave($event)" [style.min-height.px]="variant === 'inline' ? height : null">
                 @if (width() > 0 && actual(); as a) {
                     <svg [attr.width]="width()" [attr.height]="height" role="img"
                          [attr.aria-label]="'Витрати з початку місяця: ' + total()"
@@ -193,6 +196,30 @@ const M = { top: 22, right: 44, bottom: 24, left: 34 };
             font-size: var(--fs-meta);
             color: var(--ink-3);
         }
+
+        /* inline: the host is the surface — no frame of its own, the title reads as a label */
+        :host(.is-inline) .pace {
+            background: none;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+        }
+
+        :host(.is-inline) .pace__title {
+            font-size: var(--fs-micro);
+            font-weight: 600;
+            letter-spacing: var(--tracking-micro);
+            text-transform: uppercase;
+            color: var(--ink-3);
+        }
+
+        /* the plot keeps its height while empty, so the host does not jump when data lands */
+        :host(.is-inline) .pace__empty {
+            display: grid;
+            place-items: center;
+            min-height: inherit;
+            padding: 0;
+        }
     `],
 })
 export class MonthPaceComponent implements AfterViewInit, OnDestroy {
@@ -202,11 +229,18 @@ export class MonthPaceComponent implements AfterViewInit, OnDestroy {
     @Input() public set year(value: number) { this.y_.set(value); }
     @Input() public set month(value: number) { this.m_.set(value); }
     @Input() public currency = 980;
+    /** 'card' (default): its own bordered surface. 'inline': no frame, for a host that is one. */
+    @Input() public variant: 'card' | 'inline' = 'card';
+    /** Plot height in px. */
+    @Input() public set height(value: number) { this.h_.set(value >= 80 ? value : HEIGHT); }
+    public get height(): number { return this.h_(); }
+
+    @HostBinding('class.is-inline') public get inline(): boolean { return this.variant === 'inline'; }
 
     @ViewChild('plot') private readonly plotRef!: ElementRef<HTMLElement>;
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-    public readonly height = HEIGHT;
+    private readonly h_ = signal(HEIGHT);
     public readonly m = M;
     public readonly width = signal(0);
     public readonly hover = signal<number | null>(null);
@@ -317,7 +351,8 @@ export class MonthPaceComponent implements AfterViewInit, OnDestroy {
 
     public y(value: number): number {
         const top = this.ticks()[this.ticks().length - 1] || 1;
-        return HEIGHT - M.bottom - (value / top) * (HEIGHT - M.top - M.bottom);
+        const height = this.height;
+        return height - M.bottom - (value / top) * (height - M.top - M.bottom);
     }
 
     public path(values: number[]): string {
