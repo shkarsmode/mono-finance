@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Inject, Injectable, signal } from '@angular/core';
+import { silent } from '@core/interceptors/silent-errors';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 import { Observable } from 'rxjs';
 
@@ -92,7 +93,8 @@ export class SyncStatusService {
     }
 
     refreshOnce(): void {
-        this.http.get<SyncStatus>(`${this.basePathApi}/sync/status`).subscribe({
+        // a background poll: a miss is retried on the next tick, never toasted
+        this.http.get<SyncStatus>(`${this.basePathApi}/sync/status`, { context: silent() }).subscribe({
             next: (status) => {
                 this.status.set(status);
                 this.scheduleNext();

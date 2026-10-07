@@ -10,6 +10,14 @@ import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { LoadingService } from '@core/services/loading.service';
 import { catchError, throwError } from 'rxjs';
+import { SILENT_ERRORS } from './silent-errors';
+
+/** What to say when the server did not explain itself. */
+function fallbackMessage(status: number): string {
+    if (status === 0) return 'Немає зв’язку з сервером — перевірте інтернет.';
+    if (status >= 502 && status <= 504) return 'Сервер тимчасово недоступний — спробуйте за хвилину.';
+    return `Запит не вдався (${status})`;
+}
 
 @Injectable({
     providedIn: 'root',
@@ -43,18 +51,19 @@ export class ErrorInterceptor implements HttpInterceptor {
                     return throwError(() => error);
                 }
 
+                if (request.context.get(SILENT_ERRORS)) {
+                    return throwError(() => error);
+                }
+
                 // 429 is a normal, expected rate-limit signal handled by callers
                 // (cooldown timers / reschedule). Do not surface it as an error toast.
                 if (error.status !== 429) {
-                    const params = this.removeBasePathUrl(error.url ?? '');
                     // Angular's own error.message is always set and always English
-                    // ("Http failure response for …"), so it would hide the fallback;
-                    // the status code keeps the diagnostic part of it.
-                    const description =
-                        error.error?.message ??
-                        error.error?.errorDescription ??
-                        (error.status ? `Запит не вдався (${error.status})` : 'Запит не вдався');
-                    this.toast.error(`${description} · ${params}`);
+                    // ("Http failure response for …"), so only the server's own words
+                    // or a plain fallback reach the toast — never a raw URL.
+                    const message = error.error?.message ?? error.error?.errorDescription;
+                    const text = Array.isArray(message) ? message.join(', ') : message;
+                    this.toast.error(text || fallbackMessage(error.status));
                 }
 
                 // Preserve the HttpErrorResponse so status, headers (Retry-After) and
@@ -62,9 +71,5 @@ export class ErrorInterceptor implements HttpInterceptor {
                 return throwError(() => error);
             })
         );
-    }
-
-    private removeBasePathUrl(url: string): string {
-        return url.replace('https://api.monobank.ua', '');
     }
 }

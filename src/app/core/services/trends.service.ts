@@ -5,6 +5,7 @@ import { buildAutoCategories } from '@core/helpers/auto-categories';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
 import { OTHER_TITLE, UNCATEGORIZED_TITLE } from '@core/helpers/category-titles';
 import { flowOf } from '@core/helpers/flows';
+import { silent } from '@core/interceptors/silent-errors';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
 import { first } from 'rxjs';
@@ -239,6 +240,7 @@ export class TrendsService {
         this.http
             .get<{ cardCurrencyCode: number; rows: ITransaction[] }>(
                 `${this.basePathApi}/transaction/history/${cardId}?months=${HISTORY_MONTHS}&tz=${tz}`,
+                { context: silent() },   // the Trends page shows its own error state
             )
             .pipe(first())
             .subscribe({
