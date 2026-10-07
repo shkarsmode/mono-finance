@@ -13,9 +13,19 @@
                         @if (pending()) { <span class="tag tag--hold">Холд · ще в обробці</span> }
                         @if (flow() === 'internal') { <span class="tag">{{ OWN_MONEY_TITLE }} · не враховано</span> }
                         @if (flow() === 'refund') { <span class="tag tag--refund">Повернення · зменшує витрати</span> }
+                        @if (cancelPair() && tx.amount < 0) { <span class="tag tag--refund">Скасовано · гроші повернулися</span> }
                     </div>
                     <h1 class="hero__title">{{ tx.description }}</h1>
                     <p class="hero__when num">{{ tx.time * 1000 | date: 'EEEE, d MMMM y · HH:mm' }}</p>
+                    @if (cancelPair(); as twin) {
+                        <p class="hero__note">
+                            @if (tx.amount < 0) {
+                                {{ twin.time * 1000 | date: "d MMMM 'о' HH:mm" }} цю суму повернули: «{{ twin.description }}» +{{ original(twin.amount, twin.cardCurrencyCode) }}. Разом нуль — у витратах не рахується.
+                            } @else {
+                                Повертає операцію {{ twin.time * 1000 | date: "d MMMM 'о' HH:mm" }} на ту саму суму ({{ original(twin.amount, twin.cardCurrencyCode) }}). Разом нуль — у витратах не рахується.
+                            }
+                        </p>
+                    }
                     @if (staleHold()) {
                         <p class="hero__note">Monobank досі позначає це як холд, але гроші вже списано — для деяких операцій банк не знімає цю позначку.</p>
                     }

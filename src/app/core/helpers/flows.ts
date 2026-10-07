@@ -110,10 +110,88 @@ export function internalKind(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CON
 
 export function flowOf(tx: ITransaction, ctx: FlowContext = EMPTY_FLOW_CONTEXT): Flow {
     if (internalKind(tx, ctx)) return 'internal';
+    if (isRefund(tx)) return 'refund';
+    return (Number(tx.amount) || 0) < 0 ? 'spend' : 'income';
+}
 
-    const amount = Number(tx.amount) || 0;
-    if (amount > 0 && REFUND.test((tx.description ?? '').trim())) return 'refund';
-    return amount < 0 ? 'spend' : 'income';
+/** Money coming back by its wording: «Скасування. Glovo». */
+function isRefund(tx: ITransaction): boolean {
+    return (Number(tx.amount) || 0) > 0 && REFUND.test((tx.description ?? '').trim());
+}
+
+/** What a refund puts in front of the merchant's own name. */
+const REFUND_PREFIX = /^(?:Скасування|Повернення)(?!\p{L})[\s.:,;–—-]*/iu;
+
+/**
+ * Who a row is with, for adding up one merchant: the description, except that a
+ * refund belongs to the merchant it came back from — «Скасування. Glovo» is Glovo's.
+ * Matched on the description alone, a merchant's month counted every cancelled
+ * order as spent while its refunds sat under a name of their own.
+ */
+export function partyLabel(tx: ITransaction): string {
+    const label = (tx.description ?? '').trim();
+    if (!isRefund(tx)) return label;
+    return label.replace(REFUND_PREFIX, '').trim() || label;
+}
+
+/** A refund this much later than a charge is not taken as cancelling it. */
+export const CANCEL_WINDOW_SEC = 45 * 86400;
+
+/**
+ * Orders the merchant cancelled. Monobank leaves the charge in the statement and
+ * books «Скасування. X» for the same amount beside it, so a month with seven
+ * cancelled Glovo orders lists 21 charges where 14 were real.
+ *
+ * Each refund takes the latest earlier charge with the same party, card and exact
+ * amount that no other refund took, within CANCEL_WINDOW_SEC. The result maps both
+ * ways — a charge to its refund and the refund to its charge; a pair adds up to
+ * zero, so neither is an operation that really happened. A refund that matches no
+ * charge (a partial one, or an order older than the rows given) cancels nothing
+ * and stays a refund that reduces spending.
+ *
+ * `card` tells rows of different cards apart when the list mixes them.
+ */
+export function cancellationPairs<T>(
+    rows: readonly T[],
+    txOf: (row: T) => ITransaction,
+    card: (row: T) => string = () => '',
+): ReadonlyMap<string, ITransaction> {
+    const charges = new Map<string, ITransaction[]>();
+    const refunds: Array<{ tx: ITransaction; key: string }> = [];
+    for (const row of rows) {
+        const tx = txOf(row);
+        const amount = Number(tx.amount) || 0;
+        if (!amount) continue;
+        // a purchase abroad comes back in its own currency; the hryvnia figure may not match
+        const same = Number(tx.operationAmount) || amount;
+        const key = `${card(row)}|${partyLabel(tx).toLocaleLowerCase()}|${tx.currencyCode ?? ''}|${Math.abs(same)}`;
+        if (isRefund(tx)) refunds.push({ tx, key });
+        else if (amount < 0) {
+            const list = charges.get(key);
+            if (list) list.push(tx);
+            else charges.set(key, [tx]);
+        }
+    }
+
+    const pairs = new Map<string, ITransaction>();
+    if (!refunds.length) return pairs;
+    for (const list of charges.values()) list.sort((a, b) => a.time - b.time);
+    refunds.sort((a, b) => a.tx.time - b.tx.time);
+
+    for (const { tx: refund, key } of refunds) {
+        const list = charges.get(key);
+        if (!list) continue;
+        for (let i = list.length - 1; i >= 0; i--) {
+            const charge = list[i];
+            if (charge.time > refund.time) continue;
+            if (refund.time - charge.time > CANCEL_WINDOW_SEC) break;
+            list.splice(i, 1);
+            pairs.set(charge.id, refund);
+            pairs.set(refund.id, charge);
+            break;
+        }
+    }
+    return pairs;
 }
 
 /**

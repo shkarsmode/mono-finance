@@ -4,7 +4,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
 import { cardName } from '@core/helpers/card-names';
-import { flowOf, isPendingHold } from '@core/helpers/flows';
+import { cancellationPairs, flowOf, isPendingHold } from '@core/helpers/flows';
 import { IAccount, IAccountInfo } from '@core/interfaces';
 import { CategoryGroupService } from '@core/services/category-group.service';
 import {
@@ -43,6 +43,10 @@ interface Op {
     variant: string;
     /** A fresh hold, still being processed. */
     pending: boolean;
+    /** Money a merchant gave back: it comes off what went to them, it is not money from them. */
+    refund: boolean;
+    /** A cancelled order, or the refund that cancelled it: the pair adds up to zero and counts nowhere. */
+    cancelled: boolean;
     /** «2026-10». */
     monthKey: string;
 }
@@ -52,8 +56,42 @@ interface MonthGroup {
     /** «Жовтень 2026». */
     title: string;
     ops: Op[];
+    /** Operations that really happened: cancelled orders and their refunds left out. */
+    count: number;
     received: number;
     spent: number;
+}
+
+/** Sums over a run of operations: refunds come off spending, a cancelled pair counts nowhere. */
+interface Tally {
+    spent: number;
+    received: number;
+    outCount: number;
+    inCount: number;
+    /** Charges a refund took back in full. */
+    cancelled: number;
+    outValued: number;
+    inValued: number;
+}
+
+function tally(ops: readonly Op[]): Tally {
+    const t: Tally = { spent: 0, received: 0, outCount: 0, inCount: 0, cancelled: 0, outValued: 0, inValued: 0 };
+    for (const op of ops) {
+        if (op.cancelled) {
+            if (!op.incoming) t.cancelled++;
+        } else if (op.refund) {
+            if (op.value !== null) t.spent -= op.value;
+        } else if (op.incoming) {
+            t.inCount++;
+            if (op.value !== null) { t.received += op.value; t.inValued++; }
+        } else {
+            t.outCount++;
+            if (op.value !== null) { t.spent += -op.value; t.outValued++; }
+        }
+    }
+    // a refund for an order from before the window has nothing to come off
+    t.spent = Math.max(0, t.spent);
+    return t;
 }
 
 type PageState = 'no-query' | 'loading' | 'error' | 'own' | 'empty' | 'ready';
@@ -173,8 +211,11 @@ export default class CounterpartyComponent {
         const heading = counterpartyBase(counterpartyKey(this.query()));
         const comments = new Map<string, Map<string, string>>();
         const nowSec = Date.now() / 1000;
+        const ctx = this.flowContext();
+        const real = this.matched().real;
+        const pairs = cancellationPairs(real, row => row.tx, row => row.accountId);
 
-        return this.matched().real
+        return real
             .map(row => {
                 const tx = row.tx;
                 const amount = Number(tx.amount) || 0;
@@ -195,6 +236,8 @@ export default class CounterpartyComponent {
                     comment: (tx.comment || this.cachedComment(row, comments)).trim(),
                     variant: counterpartyBase(row.key) !== heading ? (tx.description ?? '').trim() : '',
                     pending: isPendingHold(tx, nowSec),
+                    refund: flowOf(tx, ctx) === 'refund',
+                    cancelled: pairs.has(tx.id),
                     monthKey: monthKey(date.getFullYear(), date.getMonth() + 1),
                 };
             })
@@ -203,36 +246,22 @@ export default class CounterpartyComponent {
 
     public readonly totals = computed(() => {
         const ops = this.ops();
-        let spent = 0;
-        let received = 0;
-        let outCount = 0;
-        let inCount = 0;
-        let outValued = 0;
-        let inValued = 0;
-        const months = new Set<string>();
-        for (const op of ops) {
-            months.add(op.monthKey);
-            if (op.incoming) {
-                inCount++;
-                if (op.value !== null) { received += op.value; inValued++; }
-            } else {
-                outCount++;
-                if (op.value !== null) { spent += -op.value; outValued++; }
-            }
-        }
+        const t = tally(ops);
+        const happened = ops.filter(op => !op.cancelled);
         return {
-            spent,
-            received,
-            net: received - spent,
-            count: ops.length,
-            outCount,
-            inCount,
+            spent: t.spent,
+            received: t.received,
+            net: t.received - t.spent,
+            count: happened.length,
+            outCount: t.outCount,
+            inCount: t.inCount,
+            cancelled: t.cancelled,
             // per spending operation; a party that only ever paid you gets the average payment instead
-            average: outValued ? { value: spent / outValued, per: 'out' as const }
-                : inValued ? { value: received / inValued, per: 'in' as const } : null,
+            average: t.outValued ? { value: t.spent / t.outValued, per: 'out' as const }
+                : t.inValued ? { value: t.received / t.inValued, per: 'in' as const } : null,
             first: ops.length ? ops[ops.length - 1].time : 0,
             last: ops.length ? ops[0].time : 0,
-            activeMonths: months.size,
+            activeMonths: new Set(happened.map(op => op.monthKey)).size,
         };
     });
 
@@ -251,13 +280,12 @@ export default class CounterpartyComponent {
             };
         });
         const at = new Map(slots.map((slot, i) => [slot.key, i]));
-        for (const op of this.ops()) {
-            const slot = slots[at.get(op.monthKey) ?? -1];
+        for (const group of this.groups()) {
+            const slot = slots[at.get(group.key) ?? -1];
             if (!slot) continue;
-            slot.count++;
-            if (op.value === null) continue;
-            if (op.incoming) slot.received += op.value;
-            else slot.spent += -op.value;
+            slot.count = group.count;
+            slot.received = group.received;
+            slot.spent = group.spent;
         }
         return slots;
     });
@@ -269,13 +297,16 @@ export default class CounterpartyComponent {
             let group = groups[groups.length - 1];
             if (!group || group.key !== op.monthKey) {
                 const [year, month] = op.monthKey.split('-').map(Number);
-                group = { key: op.monthKey, title: `${MONTH_NAME[month - 1]} ${year}`, ops: [], received: 0, spent: 0 };
+                group = { key: op.monthKey, title: `${MONTH_NAME[month - 1]} ${year}`, ops: [], count: 0, received: 0, spent: 0 };
                 groups.push(group);
             }
             group.ops.push(op);
-            if (op.value === null) continue;
-            if (op.incoming) group.received += op.value;
-            else group.spent += -op.value;
+        }
+        for (const group of groups) {
+            const t = tally(group.ops);
+            group.count = group.ops.filter(op => !op.cancelled).length;
+            group.received = t.received;
+            group.spent = t.spent;
         }
         return groups;
     });
@@ -299,6 +330,7 @@ export default class CounterpartyComponent {
         ));
         if (foreign.length) parts.push(`${foreign.join(' і ')} — за поточним курсом`);
         if (this.matched().own) parts.push('без переказів між вашими рахунками');
+        if (this.ops().some(op => op.refund)) parts.push('повернення віднято від витрат');
         return parts.join(' · ');
     });
 

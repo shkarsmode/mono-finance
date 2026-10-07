@@ -4,9 +4,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
-    AssignMode, categoryIndexOf, isMccKey, matchingIndexes, merchantLabel, UNCATEGORIZED,
+    AssignMode, categoryIndexOf, isMccKey, matchingIndexes, UNCATEGORIZED,
 } from '@core/helpers/categorize';
 import { OTHER_TITLE, OWN_MONEY_TITLES } from '@core/helpers/category-titles';
+import { partyLabel } from '@core/helpers/flows';
 import { ICategoryGroup, IPersonalRules, ITransaction } from '@core/interfaces';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 import { CategoryGroupService, CategoryMode } from '@core/services/category-group.service';
@@ -113,7 +114,7 @@ export default class CategoriesComponent {
     readonly inbox = computed<MerchantBucket[]>(() => {
         const buckets = new Map<string, MerchantBucket>();
         for (const tx of this.uncategorized()) {
-            const label = merchantLabel(tx) || '—';
+            const label = partyLabel(tx) || '—';
             const id = label.toLocaleLowerCase();
             let bucket = buckets.get(id);
             if (!bucket) {
@@ -207,7 +208,7 @@ export default class CategoriesComponent {
             if (label && !seen.has(id)) { seen.add(id); out.push(label); }
         };
         this.inbox().forEach(bucket => push(bucket.label));
-        this.transactions().forEach(tx => push(merchantLabel(tx)));
+        this.transactions().forEach(tx => push(partyLabel(tx)));
         return out.slice(0, 200);
     });
 

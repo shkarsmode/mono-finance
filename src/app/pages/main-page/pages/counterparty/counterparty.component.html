@@ -66,7 +66,7 @@
                         <div class="tile">
                             <span class="micro tile__label"><i class="swatch swatch--out"></i>Пішло на них</span>
                             <span class="tile__v num">{{ money(t.spent) }}</span>
-                            <span class="tile__sub num">{{ t.outCount ? count(t.outCount, ['витрата', 'витрати', 'витрат']) : 'витрат не було' }}</span>
+                            <span class="tile__sub num">{{ t.outCount ? count(t.outCount, ['витрата', 'витрати', 'витрат']) : 'витрат не було' }}@if (t.cancelled) { · без {{ count(t.cancelled, ['скасованої', 'скасованих', 'скасованих']) }}}</span>
                         </div>
                         <div class="tile">
                             <span class="micro tile__label"><i class="swatch swatch--in"></i>Прийшло від них</span>
@@ -122,14 +122,14 @@
                 <section class="card card--flush">
                     <header class="card__head card__head--pad">
                         <h2 class="card__title">Операції</h2>
-                        <span class="card__hint">{{ count(ops().length, ['операція', 'операції', 'операцій']) }} · натисніть, щоб відкрити місяць в огляді</span>
+                        <span class="card__hint">{{ count(totals().count, ['операція', 'операції', 'операцій']) }}@if (totals().cancelled) { і {{ count(totals().cancelled, ['скасоване замовлення', 'скасовані замовлення', 'скасованих замовлень']) }}} · натисніть, щоб відкрити місяць в огляді</span>
                     </header>
 
                     <div class="list">
                         @for (group of groups(); track group.key) {
                             <div class="rule" [attr.data-month]="group.key" [class.rule--on]="highlight() === group.key">
                                 <span class="rule__title">{{ group.title }}</span>
-                                <span class="rule__count num">{{ group.ops.length }} оп.</span>
+                                <span class="rule__count num">{{ group.count }} оп.</span>
                                 <span class="rule__fill"></span>
                                 @if (group.received) { <span class="rule__in num">{{ signed(group.received) }}</span> }
                                 @if (group.spent) { <span class="rule__out num">{{ signed(-group.spent) }}</span> }
@@ -137,6 +137,7 @@
 
                             @for (op of group.ops; track op.id) {
                                 <a class="op"
+                                   [class.op--void]="op.cancelled"
                                    [routerLink]="['/dashboard']"
                                    [queryParams]="{ month: op.monthKey }"
                                    (click)="openOp($event, op)"
@@ -147,8 +148,13 @@
                                         <span>{{ op.card }}</span>
                                         @if (op.pending) { <span class="tag" title="Ще в обробці">Холд</span> }
                                     </span>
-                                    @if (op.comment || op.variant) {
+                                    @if (op.comment || op.variant || op.refund || op.cancelled) {
                                         <span class="op__note">
+                                            @if (op.cancelled && !op.incoming) {
+                                                <span class="tag tag--void" title="Гроші повернулися тією ж сумою — не враховано">Скасовано</span>
+                                            } @else if (op.refund) {
+                                                <span class="tag tag--refund" [title]="op.cancelled ? 'Повертає скасоване замовлення — разом нуль' : 'Зменшує витрати'">Повернення</span>
+                                            }
                                             @if (op.comment) { <span class="op__comment">{{ op.comment }}</span> }
                                             @if (op.variant) { <span class="op__variant">{{ op.variant }}</span> }
                                         </span>

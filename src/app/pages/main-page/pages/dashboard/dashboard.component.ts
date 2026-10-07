@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { categoryIndexOf, UNCATEGORIZED } from '@core/helpers/categorize';
 import { currencyCodesMap } from '@core/data';
 import { BETWEEN_ACCOUNTS_TITLE } from '@core/helpers/category-titles';
-import { CountMode, flowOf, flowTotals } from '@core/helpers/flows';
+import { cancellationPairs, CountMode, flowOf, flowTotals } from '@core/helpers/flows';
 import { IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, CurrencyDisplayService, MonobankService } from '@core/services';
 import { CategoryMode } from '@core/services/category-group.service';
@@ -131,13 +131,14 @@ export default class DashboardComponent implements OnInit {
     /** The sign follows the whole figure on screen: «+0 ₴» would claim income that is not there. */
     readonly netSign = computed(() => (Math.round(this.netTotal()) > 0 ? '+' : ''));
 
-    /** Real spending only — a jar top-up is never "the largest expense". */
+    /** Real spending only — a jar top-up or a cancelled order is never "the largest expense". */
     private readonly spendTxs = computed(() => {
         if (this.countMode() === 'all') return this.transactions().filter(t => +t.amount < 0);
         const ctx = this.flowContext();
         const groups = this.groupsSignal();
+        const cancelled = cancellationPairs(this.transactions(), t => t);
         return this.transactions().filter(t => {
-            if (flowOf(t, ctx) !== 'spend') return false;
+            if (flowOf(t, ctx) !== 'spend' || cancelled.has(t.id)) return false;
             const index = categoryIndexOf(t, groups);
             return index === UNCATEGORIZED || !groups[index]?.excluded;
         });

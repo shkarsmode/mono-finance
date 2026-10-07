@@ -1,4 +1,5 @@
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
+import { partyLabel } from './flows';
 
 /**
  * The one place that decides which category a transaction belongs to. The ledger,
@@ -200,11 +201,12 @@ export function merchantLabel(tx: ITransaction): string {
 
 /**
  * The text a rule "everything like this" is written as: the description, except
- * a transfer to a card number — Monobank writes the same card as «414960****3701»
- * and «414960******3701», so the rule keeps only «*3701».
+ * a refund names its merchant («Скасування. Glovo» → «Glovo», so the rule takes
+ * the orders too) and a transfer to a card number — Monobank writes the same card
+ * as «414960****3701» and «414960******3701», so the rule keeps only «*3701».
  */
 export function ruleKeyFor(tx: ITransaction): string {
-    const description = merchantLabel(tx);
+    const description = partyLabel(tx);
     const card = /^\d{4,6}\*+(\d{4})$/.exec(description);
     return card ? `*${card[1]}` : description;
 }

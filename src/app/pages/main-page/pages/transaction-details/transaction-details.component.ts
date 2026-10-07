@@ -4,12 +4,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { currencyCodesMap } from '@core/data';
-import { AssignMode, explainCategory, merchantLabel, UNCATEGORIZED } from '@core/helpers/categorize';
+import { AssignMode, explainCategory, UNCATEGORIZED } from '@core/helpers/categorize';
 import { OTHER_TITLE, OWN_MONEY_TITLE } from '@core/helpers/category-titles';
 import { CategoryColorsService } from '@core/services/category-colors.service';
 
 import { cardAccusative } from '@core/helpers/card-names';
-import { flowOf, InternalKind, internalKind, isPendingHold } from '@core/helpers/flows';
+import { cancellationPairs, flowOf, InternalKind, internalKind, isPendingHold, partyLabel } from '@core/helpers/flows';
 import { IAccountInfo, ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryGroupService, MonobankService } from '@core/services';
 import { CategoryPickerComponent, ToastService } from '@shared/components';
@@ -18,6 +18,12 @@ import { mccName } from '../../../../features/analytics-mcc/mcc-map';
 import { DisplayMoneyPipe } from '../../../../shared/pipes/display-money.pipe';
 
 type DetailRow = { label: string; value: string; mono?: boolean; copy?: boolean };
+
+/** «2026-9» — the calendar month a timestamp falls in, local time. */
+function monthOf(timeSec: number): string {
+    const date = new Date(timeSec * 1000);
+    return `${date.getFullYear()}-${date.getMonth() + 1}`;
+}
 
 /** Ukrainian plural: 1 операція, 2–4 операції, 5+ операцій (11–14 take the last form). */
 function plural(n: number, forms: readonly [string, string, string]): string {
@@ -128,21 +134,41 @@ export default class TransactionDetailsComponent implements OnInit {
     private readonly colors = inject(CategoryColorsService);
     readonly categoryColor = computed(() => this.colors.colorFor(this.category()?.title));
 
+    /** Who the row is with — a refund counts as the merchant it came back from. */
     readonly merchant = computed(() => {
         const tx = this.transaction();
-        return tx ? merchantLabel(tx) : '';
+        return tx ? partyLabel(tx) : '';
     });
 
-    /** Same merchant this month — context for the amount and for "every X" in the picker. */
+    /**
+     * The same merchant in the same month — context for the amount and for "every X"
+     * in the picker. Its refunds («Скасування. Glovo») are in, so the sum is what
+     * the merchant really cost.
+     */
     readonly siblings = computed(() => {
+        const tx = this.transaction();
         const label = this.merchant().toLocaleLowerCase();
-        if (!label) return [];
-        return this.monthRows().filter(tx => merchantLabel(tx).toLocaleLowerCase() === label);
+        if (!tx || !label) return [];
+        const month = monthOf(tx.time);
+        return this.monthRows().filter(row => monthOf(row.time) === month && partyLabel(row).toLocaleLowerCase() === label);
     });
+    /** Cancelled orders and the refunds that cancelled them, both ways. */
+    private readonly pairs = computed(() => cancellationPairs(this.siblings(), tx => tx));
     readonly siblingsNet = computed(() => this.siblings().reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0));
+    /** «14 операцій · без 7 скасованих» — a cancelled order and its refund are no operation at all. */
     readonly siblingsCountLabel = computed(() => {
-        const n = this.siblings().length;
-        return `${n} ${plural(n, ['операція', 'операції', 'операцій'])}`;
+        const pairs = this.pairs();
+        const rows = this.siblings();
+        const real = rows.filter(tx => !pairs.has(tx.id)).length;
+        const cancelled = rows.filter(tx => pairs.has(tx.id) && tx.amount < 0).length;
+        const text = `${real} ${plural(real, ['операція', 'операції', 'операцій'])}`;
+        return cancelled ? `${text} · без ${cancelled} ${plural(cancelled, ['скасованої', 'скасованих', 'скасованих'])}` : text;
+    });
+
+    /** The other half when this row is a cancelled order, or the refund that cancelled one. */
+    readonly cancelPair = computed(() => {
+        const tx = this.transaction();
+        return tx ? this.pairs().get(tx.id) ?? null : null;
     });
 
     // ── figures ──────────────────────────────────────────────
@@ -216,8 +242,7 @@ export default class TransactionDetailsComponent implements OnInit {
     }
 
     openMerchantSearch(): void {
-        const tx = this.transaction();
-        const merchant = (tx?.description ?? '').trim();
+        const merchant = this.merchant();
         if (merchant) this.router.navigate(['/trends/counterparty'], { queryParams: { q: merchant } });
     }
 

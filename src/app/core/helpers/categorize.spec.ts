@@ -193,6 +193,8 @@ describe('categorize', () => {
             expect(ruleKeyFor(tx({ description: '414960******3701' }))).toBe('*3701');
             expect(ruleKeyFor(tx({ description: '414960****3701' }))).toBe('*3701');
             expect(ruleKeyFor(tx({ description: '  Сільпо ' }))).toBe('Сільпо');
+            // a rule written from a refund names the merchant, so it takes the orders too
+            expect(ruleKeyFor(tx({ description: 'Скасування. Glovo', amount: 47655 }))).toBe('Glovo');
         });
     });
 });

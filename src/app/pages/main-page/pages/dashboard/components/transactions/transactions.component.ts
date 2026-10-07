@@ -5,12 +5,12 @@ import {
     signal, ViewChild,
 } from '@angular/core';
 import {
-    AssignMode, explainCategory, MatchReason, merchantLabel, UNCATEGORIZED,
+    AssignMode, explainCategory, MatchReason, UNCATEGORIZED,
 } from '@core/helpers/categorize';
 import {
     BETWEEN_ACCOUNTS_TITLE, OTHER_TITLE, OWN_MONEY_TITLE, UNCATEGORIZED_TITLE,
 } from '@core/helpers/category-titles';
-import { Flow, flowOf, isPendingHold, isRoundUp, roundUpJar } from '@core/helpers/flows';
+import { Flow, flowOf, isPendingHold, isRoundUp, partyLabel, roundUpJar } from '@core/helpers/flows';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ICategoryGroup, ITransaction } from '@core/interfaces';
 import { CategoryColorsService } from '@core/services/category-colors.service';
@@ -296,7 +296,7 @@ export class TransactionsComponent {
                 title = row.category ?? uncategorizedTitle;
                 color = row.color;
             } else {
-                const label = merchantLabel(row.tx) || '—';
+                const label = partyLabel(row.tx) || '—';
                 id = label.toLocaleLowerCase();
                 title = label;
             }
@@ -395,15 +395,15 @@ export class TransactionsComponent {
 
     public readonly pickerMerchant = computed(() => {
         const open = this.picker();
-        return open ? merchantLabel(open.row.tx) : '';
+        return open ? partyLabel(open.row.tx) : '';
     });
 
     public readonly pickerMerchantCount = computed(() => {
         const open = this.picker();
         if (!open) return 0;
-        const label = merchantLabel(open.row.tx).toLocaleLowerCase();
+        const label = partyLabel(open.row.tx).toLocaleLowerCase();
         if (!label) return 0;
-        return this.txList().filter(tx => merchantLabel(tx).toLocaleLowerCase() === label).length;
+        return this.txList().filter(tx => partyLabel(tx).toLocaleLowerCase() === label).length;
     });
 
     public openPicker(event: Event, row: LedgerRow): void {
@@ -430,7 +430,7 @@ export class TransactionsComponent {
     }
 
     private announce(tx: ITransaction, title: string, mode: AssignMode): void {
-        const merchant = merchantLabel(tx);
+        const merchant = partyLabel(tx);
         this.toast.success(mode === 'merchant' && merchant
             ? `Усі операції «${merchant}» → ${title}`
             : `Перенесено до «${title}»`);

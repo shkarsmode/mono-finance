@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { merchantLabel } from '@core/helpers/categorize';
+import { partyLabel } from '@core/helpers/flows';
 import { silent } from '@core/interceptors/silent-errors';
 import { IAccount, ITransaction } from '@core/interfaces';
 import { BASE_PATH_API } from '@core/tokens/monobank-environment.tokens';
@@ -18,7 +18,7 @@ export interface CounterpartyRow {
     readonly accountId: string;
     /** The card's currency — `tx.amount` is in its minor units. */
     readonly currencyCode: number;
-    /** `counterpartyKey` of the row's label, worked out once per fetch. */
+    /** `counterpartyKey` of the row's party (a refund is its merchant's), worked out once per fetch. */
     readonly key: string;
 }
 
@@ -193,7 +193,7 @@ export class CounterpartyHistoryService {
                     const currencyCode = account.currencyCode || response?.cardCurrencyCode || 980;
                     const rows = (response?.rows ?? [])
                         .filter(tx => !!tx?.id)
-                        .map(tx => ({ tx, accountId: id, currencyCode, key: counterpartyKey(merchantLabel(tx)) }));
+                        .map(tx => ({ tx, accountId: id, currencyCode, key: counterpartyKey(partyLabel(tx)) }));
                     this.histories.update(map => new Map(map).set(id, { currencyCode, rows, fetchedAt: Date.now() }));
                     this.pending.update(set => without(set, id));
                 },
